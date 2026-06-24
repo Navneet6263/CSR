@@ -91,7 +91,7 @@ export default function RegisterForm() {
 
       <div className="relative py-1">
         <Separator className="bg-slate-200" />
-        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[10px] uppercase text-slate-400">or register with email</span>
+        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[10px] uppercase text-slate-600 font-medium">or register with email</span>
       </div>
 
       {apiError && (

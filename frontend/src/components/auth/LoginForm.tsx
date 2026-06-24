@@ -74,7 +74,7 @@ export default function LoginForm() {
 
       <div className="relative py-2">
         <Separator className="bg-slate-200" />
-        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-xs text-slate-400">
+        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-xs text-slate-600 font-medium">
           or continue with email
         </span>
       </div>
