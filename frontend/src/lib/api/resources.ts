@@ -2,8 +2,13 @@ import { StudentProfile, Scholarship, EligibilityRule, Application, Institution 
 import { ScholarshipListResponse } from '@/types/domain';
 import { apiClient } from './client';
 
+import { mapStudentProfile } from '../mappers';
+
 export const studentApi = {
-  getProfile: () => apiClient<StudentProfile>('/students/me'),
+  getProfile: async () => {
+    const res = await apiClient<any>('/students/me');
+    return { ...res, data: mapStudentProfile(res.data) };
+  },
   updateProfile: (data: Partial<StudentProfile>) =>
     apiClient<StudentProfile>('/students/me', { method: 'PUT', body: JSON.stringify(data) }),
   getDocuments: () => apiClient<any[]>('/students/me/documents'),

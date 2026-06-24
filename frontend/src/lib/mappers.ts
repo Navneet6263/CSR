@@ -4,9 +4,43 @@ import type {
   DocumentChecklistItem, ReviewApplicationRow, ScreeningApplicationRow,
   CSRApplicationRow, BGCheckApplicationRow, PaymentQueueRow, PendingPaymentRow,
 } from '@/types/domain';
-import type { Scholarship } from '@/types';
+import type { Scholarship, StudentProfile } from '@/types';
 
 type Raw = Record<string, unknown>;
+
+export function mapStudentProfile(raw: Raw): StudentProfile {
+  return {
+    studentId: Number(raw.StudentID ?? raw.studentId),
+    userId: Number(raw.UserID ?? raw.userId),
+    fullName: String(raw.FullName ?? raw.fullName ?? ''),
+    firstName: String(raw.FullName ?? raw.fullName ?? '').split(' ')[0] || '',
+    lastName: String(raw.FullName ?? raw.fullName ?? '').split(' ').slice(1).join(' ') || '',
+    email: String(raw.Email ?? raw.email ?? ''),
+    phone: String(raw.Phone ?? raw.phone ?? ''),
+    aadharNumber: (raw.AadharNumber ?? raw.aadharNumber) as string | undefined,
+    dob: (raw.DOB ?? raw.dob) as string | undefined,
+    gender: (raw.Gender ?? raw.gender) as string | undefined,
+    category: (raw.Category ?? raw.category) as string | undefined,
+    address: (raw.Address ?? raw.address) as string | undefined,
+    city: (raw.City ?? raw.city) as string | undefined,
+    state: (raw.State ?? raw.state) as string | undefined,
+    pincode: (raw.Pincode ?? raw.pincode) as string | undefined,
+    annualFamilyIncome: Number(raw.AnnualFamilyIncome ?? raw.annualFamilyIncome ?? 0) || undefined,
+    familySize: Number(raw.FamilySize ?? raw.familySize ?? 0) || undefined,
+    course: (raw.Course ?? raw.course) as string | undefined,
+    currentDegree: (raw.Course ?? raw.course) as string | undefined,
+    institutionId: Number(raw.InstitutionID ?? raw.institutionId) || undefined,
+    otherInstitutionName: (raw.OtherInstitutionName ?? raw.otherInstitutionName) as string | undefined,
+    institutionName: (raw.InstitutionName ?? raw.institutionName) as string | undefined,
+    enrollmentYear: Number(raw.EnrollmentYear ?? raw.enrollmentYear) || undefined,
+    yearOfStudy: Number(raw.EnrollmentYear ?? raw.enrollmentYear) || undefined,
+    bankAccountNo: (raw.BankAccountNo ?? raw.bankAccountNo) as string | undefined,
+    bankAccountNumber: (raw.BankAccountNo ?? raw.bankAccountNo) as string | undefined,
+    bankIFSC: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
+    ifscCode: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
+    bankName: (raw.BankName ?? raw.bankName) as string | undefined,
+  };
+}
 
 export function mapDocument(raw: Raw): DocumentChecklistItem {
   return {
