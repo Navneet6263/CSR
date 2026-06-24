@@ -3,8 +3,6 @@ import type { NavItem } from '@/types';
 export const navByRole: Record<string, NavItem[]> = {
   Student: [
     { label: 'Dashboard', href: '/student', icon: 'LayoutDashboard' },
-    { label: 'Apply', href: '/student/apply', icon: 'GraduationCap' },
-    { label: 'Notifications', href: '/student/notifications', icon: 'Bell' },
     { label: 'Profile', href: '/student/profile', icon: 'User' },
   ],
   Agent: [

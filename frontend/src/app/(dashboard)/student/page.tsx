@@ -116,7 +116,7 @@ export default function StudentDashboard() {
                 </div>
               ))}
               <button 
-                onClick={() => router.push('/student/apply')}
+                onClick={() => router.push('#')}
                 className="w-full mt-2 p-4 rounded-2xl border-2 border-dashed border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 text-sm font-semibold text-slate-600"
               >
                 + Apply for another scholarship
@@ -146,7 +146,7 @@ export default function StudentDashboard() {
                   <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-wider">95% Match</span>
                   <span className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-500 text-[10px] font-medium border border-slate-100">Engineering</span>
                 </div>
-                <button onClick={() => router.push('/student/apply')} className="mt-1 w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 transition-colors">
+                <button onClick={() => router.push(`/student/apply/${s.scholarshipId}`)} className="mt-1 w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 transition-colors">
                   Apply now
                 </button>
               </div>

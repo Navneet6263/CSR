@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import TopBar from '@/components/dashboard/TopBar';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { studentApi } from '@/lib/api';
@@ -17,9 +17,10 @@ export type TabType = 'personal' | 'education' | 'bank' | 'documents';
 
 export default function StudentProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('personal');
+  const [activeTab, setActiveTab] = useState<TabType>((searchParams?.get('tab') as TabType) || 'personal');
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = async () => {
