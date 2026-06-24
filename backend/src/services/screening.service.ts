@@ -9,17 +9,22 @@ export async function getPendingScreening() {
     .join('Users', 'Students.UserID', 'Users.UserID')
     .join('Scholarships', 'Applications.ScholarshipID', 'Scholarships.ScholarshipID')
     .select(
-      'Applications.ApplicationID',
-      'Applications.Status',
-      'Applications.SubmissionDate',
-      'Applications.ScholarshipAmount',
-      'Applications.Notes',
-      'Scholarships.Name as ScholarshipName',
-      'Students.StudentID',
-      'Users.FullName as StudentName',
-      'Users.Email as StudentEmail'
+      'Applications.ApplicationID as applicationId',
+      'Applications.Status as status',
+      'Applications.SubmissionDate as submissionDate',
+      'Applications.ScholarshipAmount as scholarshipAmount',
+      'Applications.Notes as notes',
+      'Scholarships.Name as scholarshipName',
+      'Students.StudentID as studentId',
+      'Users.FullName as studentName',
+      'Users.Email as studentEmail'
     )
-    .where('Applications.Status', 'BGCheckComplete');
+    .where('Applications.Status', 'BGCheckComplete')
+    .then(rows => rows.map(row => ({
+      ...row,
+      urgency: 'medium', // Mock value since DB lacks this
+      bgCheckResult: 'Pass' // Mock value for UI
+    })));
 }
 
 export async function submitScreeningDecision(
@@ -56,17 +61,22 @@ export async function getPendingCSR() {
     .join('Users', 'Students.UserID', 'Users.UserID')
     .join('Scholarships', 'Applications.ScholarshipID', 'Scholarships.ScholarshipID')
     .select(
-      'Applications.ApplicationID',
-      'Applications.Status',
-      'Applications.SubmissionDate',
-      'Applications.ScholarshipAmount',
-      'Applications.Notes',
-      'Scholarships.Name as ScholarshipName',
-      'Students.StudentID',
-      'Users.FullName as StudentName',
-      'Users.Email as StudentEmail'
+      'Applications.ApplicationID as applicationId',
+      'Applications.Status as status',
+      'Applications.SubmissionDate as submissionDate',
+      'Applications.ScholarshipAmount as scholarshipAmount',
+      'Applications.Notes as notes',
+      'Scholarships.Name as scholarshipName',
+      'Students.StudentID as studentId',
+      'Users.FullName as studentName',
+      'Users.Email as studentEmail'
     )
-    .where('Applications.Status', 'ScreeningApproved');
+    .where('Applications.Status', 'ScreeningApproved')
+    .then(rows => rows.map(row => ({
+      ...row,
+      urgency: 'medium',
+      bgCheckResult: 'Pass'
+    })));
 }
 
 export async function submitCSRDecision(

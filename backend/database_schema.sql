@@ -75,6 +75,7 @@ CREATE TABLE Students (
     FamilySize INT,
     Course NVARCHAR(200),
     InstitutionID INT NULL FOREIGN KEY REFERENCES Institutions(InstitutionID) ON DELETE SET NULL,
+    OtherInstitutionName NVARCHAR(200),
     EnrollmentYear INT,
     BankAccountNo NVARCHAR(50),
     BankIFSC NVARCHAR(20),

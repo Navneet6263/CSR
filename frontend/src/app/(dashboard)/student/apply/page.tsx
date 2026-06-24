@@ -46,7 +46,7 @@ export default function ApplyPage() {
             enrollmentYear: String(p.enrollmentYear || ''),
             annualFamilyIncome: String(p.annualFamilyIncome || ''),
             familySize: String(p.familySize || ''),
-            bankAccountNo: p.bankAccountNo || '', bankIFSC: p.bankIFSC || '', bankName: p.bankName || '',
+            bankAccountNo: p.bankAccountNo || '', bankAccountConfirm: p.bankAccountNo || '', bankIFSC: p.bankIFSC || '', bankName: p.bankName || '',
           }));
         }
       })
@@ -64,17 +64,24 @@ export default function ApplyPage() {
       if (!data.dob) errs.dob = 'Date of birth is required';
       if (!data.gender) errs.gender = 'Select gender';
       if (!data.category) errs.category = 'Select category';
+      if (!data.address || data.address.trim().length < 5) errs.address = 'Address must be at least 5 characters';
+      if (!data.city || data.city.trim().length < 2) errs.city = 'City must be at least 2 characters';
+      if (!data.state) errs.state = 'Select state';
+      if (!data.pincode || data.pincode.trim().length < 6) errs.pincode = 'Valid 6-digit pincode is required';
     } else if (step === 1) {
-      if (!data.course) errs.course = 'Course is required';
+      if (!data.course || data.course.trim().length < 2) errs.course = 'Course name must be at least 2 characters';
       if (!data.institutionId) errs.institutionId = 'Select an institution';
+      if (data.institutionId === 'other' && (!data.otherInstitutionName || data.otherInstitutionName.trim().length < 2)) {
+        errs.otherInstitutionName = 'Institution name must be at least 2 characters';
+      }
     } else if (step === 2) {
       if (!data.annualFamilyIncome) errs.annualFamilyIncome = 'Income is required';
       if (!data.familySize) errs.familySize = 'Family size is required';
     } else if (step === 3) {
-      if (!data.bankAccountNo) errs.bankAccountNo = 'Account number is required';
+      if (!data.bankAccountNo || data.bankAccountNo.trim().length < 5) errs.bankAccountNo = 'Account number must be at least 5 digits';
       if (data.bankAccountNo !== data.bankAccountConfirm) errs.bankAccountNo = 'Account numbers must match';
-      if (!data.bankIFSC) errs.bankIFSC = 'IFSC code is required';
-      if (!data.bankName) errs.bankName = 'Bank name is required';
+      if (!data.bankIFSC || data.bankIFSC.trim().length !== 11) errs.bankIFSC = 'IFSC code must be exactly 11 characters';
+      if (!data.bankName || data.bankName.trim().length < 2) errs.bankName = 'Valid bank name is required';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -100,13 +107,22 @@ export default function ApplyPage() {
     setSubmitting(true);
     try {
       await studentApi.updateProfile({
-        dob: data.dob, gender: data.gender, category: data.category,
-        address: data.address, city: data.city, state: data.state, pincode: data.pincode,
-        course: data.course, institutionId: Number(data.institutionId),
-        enrollmentYear: Number(data.enrollmentYear),
-        annualFamilyIncome: Number(data.annualFamilyIncome),
-        familySize: Number(data.familySize),
-        bankAccountNo: data.bankAccountNo, bankIFSC: data.bankIFSC, bankName: data.bankName,
+        dob: data.dob || undefined, 
+        gender: data.gender || undefined, 
+        category: data.category || undefined,
+        address: data.address || undefined, 
+        city: data.city || undefined, 
+        state: data.state || undefined, 
+        pincode: data.pincode || undefined,
+        course: data.course || undefined, 
+        institutionId: data.institutionId === 'other' ? 'other' : (data.institutionId ? Number(data.institutionId) : undefined),
+        otherInstitutionName: data.otherInstitutionName || undefined,
+        enrollmentYear: data.enrollmentYear ? Number(data.enrollmentYear) : undefined,
+        annualFamilyIncome: data.annualFamilyIncome ? Number(data.annualFamilyIncome) : undefined,
+        familySize: data.familySize ? Number(data.familySize) : undefined,
+        bankAccountNo: data.bankAccountNo || undefined, 
+        bankIFSC: data.bankIFSC || undefined, 
+        bankName: data.bankName || undefined,
       });
       router.push('/student');
     } catch {

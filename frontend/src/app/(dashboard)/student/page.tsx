@@ -9,7 +9,7 @@ import TopBar from '@/components/dashboard/TopBar';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { ReUploadAlert } from '@/components/student/ReUploadAlert';
 import { authApi, applicationApi, scholarshipApi } from '@/lib/api';
-import { mapScholarship } from '@/lib/mappers';
+import { mapScholarship, mapApplication } from '@/lib/mappers';
 import type { Application, Scholarship, ApplicationStatus } from '@/types';
 
 const statusColors: Record<string, string> = {
@@ -37,7 +37,10 @@ export default function StudentDashboard() {
       applicationApi.getMy(),
       scholarshipApi.getAll('status=Active'),
     ]).then(([appsRes, schRes]) => {
-      if (appsRes.status === 'fulfilled') setApps(appsRes.value.data || []);
+      if (appsRes.status === 'fulfilled') {
+        const rawApps = appsRes.value.data || [];
+        setApps(rawApps.map((a: Record<string, unknown>) => mapApplication(a)));
+      }
       if (schRes.status === 'fulfilled') {
         const raw = schRes.value.data?.scholarships || [];
         setScholarships(raw.map((s) => mapScholarship(s as Record<string, unknown>)));
@@ -82,10 +85,8 @@ export default function StudentDashboard() {
           ) : (
             <div className="space-y-3">
               {apps.slice(0, 5).map((app) => (
-                <div key={app.applicationId} role="button" tabIndex={0}
-                  className="clickable-card p-4 rounded-2xl bg-white/50 border border-white/40 flex items-center justify-between"
-                  onClick={() => router.push('/student/apply')}
-                  onKeyDown={(e) => e.key === 'Enter' && router.push('/student/apply')}
+                <div key={app.applicationId}
+                  className="p-4 rounded-2xl bg-white/50 border border-white/40 flex items-center justify-between hover:shadow-[4px_4px_12px_rgba(0,0,0,0.06),-4px_-4px_12px_rgba(255,255,255,0.8)] transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-[#5b2c6f]/5">

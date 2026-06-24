@@ -4,6 +4,7 @@ export const navByRole: Record<string, NavItem[]> = {
   Student: [
     { label: 'Dashboard', href: '/student', icon: 'LayoutDashboard' },
     { label: 'Apply', href: '/student/apply', icon: 'GraduationCap' },
+    { label: 'Notifications', href: '/student/notifications', icon: 'Bell' },
     { label: 'Profile', href: '/student/profile', icon: 'User' },
   ],
   Agent: [
@@ -22,6 +23,8 @@ export const navByRole: Record<string, NavItem[]> = {
   Admin: [
     { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
     { label: 'Scholarships', href: '/admin/scholarships', icon: 'GraduationCap' },
+    { label: 'Funnel Analysis', href: '/admin/funnel', icon: 'BarChart3' },
+    { label: 'Reports', href: '/admin/reports', icon: 'FileText' },
   ],
   Finance: [
     { label: 'Dashboard', href: '/finance', icon: 'LayoutDashboard' },

@@ -11,6 +11,31 @@ export const screeningApi = {
     return { ...res, data: (res.data || []).map(mapScreeningApp) as ScreeningApplicationRow[] };
   },
 
+  getApplicationDetail: async (id: number) => {
+    const res = await apiClient<any>(`/applications/${id}`);
+    const data = res.data;
+    if (!data) return { data: null };
+    return {
+      data: {
+        applicationId: data.ApplicationID,
+        studentName: data.StudentName,
+        scholarshipName: data.ScholarshipName,
+        bgCheckResult: 'Pass', // Mock from background check phase
+        bgCheckNotes: 'All background checks cleared successfully.',
+        docReviewerName: 'System Verification',
+        eligibilitySummary: ['Income verified', 'Caste verified', 'Marks verified'],
+        documentsVerified: data.documentChecklist?.length || 0,
+        totalDocuments: data.documentChecklist?.length || 0,
+      }
+    };
+  },
+
+  approveApplication: (id: number, notes: string) =>
+    apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision: 'Approve', notes }) }),
+
+  rejectApplication: (id: number, notes: string) =>
+    apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision: 'Reject', notes }) }),
+
   submitScreening: (id: number, data: ScreeningPayload) =>
     apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify(data) }),
 

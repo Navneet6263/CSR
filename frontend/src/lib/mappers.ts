@@ -98,3 +98,16 @@ export function mapScholarship(raw: Raw): Scholarship {
     status: String(raw.Status ?? raw.status ?? ''),
   };
 }
+
+export function mapApplication(raw: Raw): import('@/types').Application {
+  return {
+    applicationId: Number(raw.ApplicationID ?? raw.applicationId),
+    studentId: Number(raw.StudentID ?? raw.studentId),
+    scholarshipId: Number(raw.ScholarshipID ?? raw.scholarshipId),
+    scholarshipName: String(raw.ScholarshipName ?? raw.scholarshipName ?? ''),
+    status: String(raw.Status ?? raw.status ?? ''),
+    submissionDate: (raw.SubmissionDate ?? raw.submissionDate) as string | undefined,
+    scholarshipAmount: Number(raw.ScholarshipAmount ?? raw.scholarshipAmount ?? 0) || undefined,
+    createdAt: String(raw.CreatedAt ?? raw.createdAt ?? ''),
+  };
+}

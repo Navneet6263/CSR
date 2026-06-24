@@ -18,6 +18,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string('Course', 200);
     table.integer('InstitutionID').unsigned().nullable()
       .references('InstitutionID').inTable('Institutions').onDelete('SET NULL');
+    table.string('OtherInstitutionName', 200);
     table.integer('EnrollmentYear');
     table.string('BankAccountNo', 50);
     table.string('BankIFSC', 20);

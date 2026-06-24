@@ -134,13 +134,29 @@ export async function matchStudentToScholarships(studentId: number) {
 
     if (requiredFails.length === 0) {
       // All rules passed — auto-create application
-      await db('Applications').insert({
+      const [appIdObj] = await db('Applications').insert({
         StudentID: studentId,
         ScholarshipID: scholarship.ScholarshipID,
         Status: 'AutoMatched',
         ScholarshipAmount: scholarship.PerStudentAmount,
         SponsorID: scholarship.SponsorID,
-      });
+      }).returning('ApplicationID');
+      
+      const newAppId = typeof appIdObj === 'object' ? appIdObj.ApplicationID : appIdObj;
+
+      // Initialize Document Checklist from StudentDocuments
+      const studentDocs = await db('StudentDocuments').where({ StudentID: studentId });
+      
+      if (studentDocs.length > 0) {
+        const checklistItems = studentDocs.map((doc) => ({
+          ApplicationID: newAppId,
+          DocumentType: doc.DocumentType,
+          Status: 'Uploaded',
+          FileURL: doc.FileURL,
+        }));
+        await db('DocumentChecklist').insert(checklistItems);
+      }
+
       matched.push({ scholarshipId: scholarship.ScholarshipID, name: scholarship.Name });
     } else {
       failed.push({

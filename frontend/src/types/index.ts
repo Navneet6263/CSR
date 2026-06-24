@@ -46,7 +46,8 @@ export interface StudentProfile {
   annualFamilyIncome?: number;
   familySize?: number;
   course?: string;
-  institutionId?: number;
+  institutionId?: number | 'other';
+  otherInstitutionName?: string;
   institutionName?: string;
   enrollmentYear?: number;
   bankAccountNo?: string;

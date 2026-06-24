@@ -19,7 +19,7 @@ export async function getStudentProfile(userId: number) {
       's.StudentID', 's.UserID', 's.AadharNumber', 's.DOB',
       's.Gender', 's.Category', 's.Address', 's.City',
       's.State', 's.Pincode', 's.AnnualFamilyIncome', 's.FamilySize',
-      's.Course', 's.InstitutionID', 's.EnrollmentYear',
+      's.Course', 's.InstitutionID', 's.OtherInstitutionName', 's.EnrollmentYear',
       's.BankAccountNo', 's.BankIFSC', 's.BankName', 's.CreatedAt',
       'u.FullName', 'u.Email', 'u.Phone', 'u.Role',
       'i.Name as InstitutionName'
@@ -60,6 +60,7 @@ export async function updateStudentProfile(
   if (data.familySize !== undefined) updatePayload.FamilySize = data.familySize;
   if (data.course !== undefined) updatePayload.Course = data.course;
   if (data.institutionId !== undefined) updatePayload.InstitutionID = data.institutionId;
+  if (data.otherInstitutionName !== undefined) updatePayload.OtherInstitutionName = data.otherInstitutionName;
   if (data.enrollmentYear !== undefined) updatePayload.EnrollmentYear = data.enrollmentYear;
   if (data.bankAccountNo !== undefined) updatePayload.BankAccountNo = data.bankAccountNo;
   if (data.bankIFSC !== undefined) updatePayload.BankIFSC = data.bankIFSC;

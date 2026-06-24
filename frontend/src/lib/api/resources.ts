@@ -6,6 +6,16 @@ export const studentApi = {
   getProfile: () => apiClient<StudentProfile>('/students/me'),
   updateProfile: (data: Partial<StudentProfile>) =>
     apiClient<StudentProfile>('/students/me', { method: 'PUT', body: JSON.stringify(data) }),
+  getDocuments: () => apiClient<any[]>('/students/me/documents'),
+  uploadDocument: (docType: string, file: File) => {
+    const formData = new FormData();
+    formData.append('docType', docType);
+    formData.append('file', file);
+    return apiClient<{ fileUrl: string }>('/students/me/documents', {
+      method: 'POST',
+      body: formData as any,
+    });
+  }
 };
 
 export const scholarshipApi = {

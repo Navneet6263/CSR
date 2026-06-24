@@ -6,8 +6,8 @@ import TopBar from '@/components/dashboard/TopBar';
 
 const cards = [
   { href: '/admin/scholarships', title: 'Scholarships', desc: 'Manage programs & eligibility rules', icon: GraduationCap, color: '#5b2c6f' },
-  { href: '/admin/applications', title: 'Applications', desc: 'Funnel overview & stage bottlenecks', icon: ClipboardList, color: '#2e86c1' },
-  { href: '/admin/reports', title: 'Reports', desc: 'SLA, funnel, and audit exports', icon: BarChart3, color: '#0e6251' },
+  { href: '/admin/funnel', title: 'Funnel Analysis', desc: 'Stage bottlenecks & SLA violations', icon: BarChart3, color: '#2e86c1' },
+  { href: '/admin/reports', title: 'Reports', desc: 'SLA, funnel, and audit exports', icon: ClipboardList, color: '#0e6251' },
 ];
 
 export default function AdminDashboard() {
