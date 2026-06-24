@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import AuthCard from '@/components/auth/AuthCard';
 import LoginForm from '@/components/auth/LoginForm';
 
 export const metadata: Metadata = {
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function LoginPage() {
-  return (
-    <AuthCard>
-      <LoginForm />
-    </AuthCard>
-  );
+  return <LoginForm />;
 }
