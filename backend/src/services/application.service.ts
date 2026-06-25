@@ -20,6 +20,9 @@ export async function createApplication(studentId: number, scholarshipId: number
     .first();
 
   if (existing) {
+    if (existing.Status === 'Draft') {
+      return existing; // Return existing draft so frontend can submit it
+    }
     throw new ValidationError('You already have an application for this scholarship.');
   }
 

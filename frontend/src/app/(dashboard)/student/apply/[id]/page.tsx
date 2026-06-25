@@ -11,6 +11,7 @@ import ConsentForm from '@/components/student/apply/ConsentForm';
 import SuccessView from '@/components/student/apply/SuccessView';
 
 import { studentApi, scholarshipApi, applicationApi } from '@/lib/api';
+import { mapScholarship } from '@/lib/mappers';
 import type { StudentProfile, Scholarship } from '@/types';
 
 type Step = 'review' | 'consent' | 'success';
@@ -30,6 +31,11 @@ export default function ApplyScholarshipPage() {
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
+    // Scroll to top whenever the step changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  useEffect(() => {
     if (!scholarshipId) {
       router.push('/student');
       return;
@@ -46,7 +52,7 @@ export default function ApplyScholarshipPage() {
       }
 
       if (schRes.status === 'fulfilled' && schRes.value.data) {
-        setScholarship(schRes.value.data);
+        setScholarship(mapScholarship(schRes.value.data as any));
       } else {
         setError('Scholarship not found or inactive.');
       }
@@ -62,8 +68,15 @@ export default function ApplyScholarshipPage() {
     try {
       // 1. Create the application (Draft)
       const createRes = await applicationApi.create(scholarshipId);
-      const appId = createRes.data?.applicationId;
-      if (!appId) throw new Error('Failed to generate application ID');
+      
+      let appId = createRes.data?.ApplicationID || createRes.data?.applicationId;
+      if (!appId && Array.isArray(createRes.data)) appId = createRes.data[0];
+      if (!appId && typeof createRes.data === 'number') appId = createRes.data;
+
+      if (!appId) {
+        console.error("Create Response:", createRes.data);
+        throw new Error('Failed to generate application ID. You might have already applied.');
+      }
 
       // 2. Immediately submit it (locks it in for Auto-Match/Screening)
       await applicationApi.submit(appId);
@@ -107,7 +120,7 @@ export default function ApplyScholarshipPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in pb-20">
+    <div className="space-y-6 animate-in fade-in pb-20">
       <TopBar title={`Apply: ${scholarship.name}`} subtitle="Follow the steps to submit your application" />
 
       {/* Breadcrumb Steps */}

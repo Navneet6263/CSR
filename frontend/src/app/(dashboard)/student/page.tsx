@@ -76,7 +76,20 @@ export default function StudentDashboard() {
 
       {/* 2. Application Journey Timeline */}
       <div className="clay-card p-6 border border-white/60 bg-white/70">
-        <h2 className="text-base font-bold text-slate-800 mb-6">Application Journey</h2>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-base font-bold text-slate-800">Application Journey</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Tracking your most recent application</p>
+          </div>
+          {apps.length > 0 && (
+            <button 
+              onClick={() => router.push('/student/applications')} 
+              className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+            >
+              View past journeys
+            </button>
+          )}
+        </div>
         <StatusTimeline currentStatus={activeAppStatus} />
       </div>
 
@@ -87,7 +100,9 @@ export default function StudentDashboard() {
         <div className="clay-card p-6 border border-white/60 bg-white/70 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-slate-800">My applications</h2>
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">See all</button>
+            {apps.length > 3 && (
+              <button onClick={() => router.push('/student/applications')} className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">See all</button>
+            )}
           </div>
           
           {apps.length === 0 ? (
@@ -116,7 +131,7 @@ export default function StudentDashboard() {
                 </div>
               ))}
               <button 
-                onClick={() => router.push('#')}
+                onClick={() => router.push('/student/scholarships')}
                 className="w-full mt-2 p-4 rounded-2xl border-2 border-dashed border-slate-200 hover:bg-slate-50 transition-colors flex items-center justify-center gap-2 text-sm font-semibold text-slate-600"
               >
                 + Apply for another scholarship
@@ -129,7 +144,7 @@ export default function StudentDashboard() {
         <div className="clay-card p-6 border border-white/60 bg-white/70 flex flex-col">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-slate-800">Open scholarships for you</h2>
-            <button onClick={() => router.push('/student/apply')} className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">View all</button>
+            <button onClick={() => router.push('/student/scholarships')} className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">View all</button>
           </div>
           
           <div className="space-y-3">

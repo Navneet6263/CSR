@@ -53,3 +53,8 @@ Thumbs.db
 *.pem
 .vercel
 /coverage
+ 
+Scholarship Audit Pro.zip
+lovable_temp/
+requirements_dump.txt
+

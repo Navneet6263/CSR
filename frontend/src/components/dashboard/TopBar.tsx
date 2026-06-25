@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Bell, Info, CheckCircle2, AlertCircle, LogOut, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
+import Logo from '@/components/shared/Logo';
 
 interface TopBarProps {
   title: string;
@@ -13,13 +14,18 @@ interface TopBarProps {
 export default function TopBar({ title, subtitle }: TopBarProps) {
   const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -27,11 +33,12 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
   }, []);
 
   // Hydration safe user fetching
-  const [user, setUser] = useState<{ fullName?: string } | null>(null);
+  const [user, setUser] = useState<{ fullName?: string, role?: string } | null>(null);
   useEffect(() => {
     setUser(authApi.getUser());
   }, []);
 
+  const isStudent = user?.role === 'Student';
   const profileCompletion = 85; // This would normally come from an API
   
   // Calculate SVG stroke dash offset
@@ -49,12 +56,21 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
   const unreadCount = notifications.filter(n => n.unread).length;
 
   return (
-    <header className="h-[80px] bg-white/60 backdrop-blur-xl border-b border-white/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center justify-between px-6 lg:px-10 relative z-50">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">{title}</h1>
-        {subtitle && (
-          <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">{subtitle}</p>
+    <header className="h-[80px] bg-white/80 backdrop-blur-xl border-b border-white/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center justify-between z-50 sticky -mt-4 sm:-mt-6 lg:-mt-8 top-0 -mx-4 sm:-mx-6 lg:-mx-8 mb-6 px-4 sm:px-6 lg:px-10 print:hidden">
+      <div className="flex items-center gap-6">
+        {isStudent && (
+          <div className="cursor-pointer border-r border-slate-200 pr-6 mr-2 hidden sm:block" onClick={() => router.push('/student')}>
+            <Logo size="sm" showSubtitle={false} />
+          </div>
         )}
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">{subtitle}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-4 sm:gap-6">
@@ -103,31 +119,63 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
         </div>
 
         {/* Circular Progress Avatar */}
-        <div 
-          className="relative flex items-center justify-center cursor-pointer group"
-          onClick={() => router.push('/student/profile')}
-        >
-          {/* SVG Ring */}
-          <svg className="w-[52px] h-[52px] transform -rotate-90 drop-shadow-sm">
-            <circle cx="26" cy="26" r={radius} className="stroke-slate-200/60" strokeWidth="4" fill="transparent" />
-            <circle cx="26" cy="26" r={radius} 
-              className="stroke-emerald-500 transition-all duration-1000 ease-out" 
-              strokeWidth="4" fill="transparent" 
-              strokeDasharray={circumference} 
-              strokeDashoffset={strokeDashoffset} 
-              strokeLinecap="round" 
-            />
-          </svg>
-          
-          {/* Inner Avatar */}
-          <div className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-sm font-extrabold shadow-md group-hover:scale-95 transition-transform border-2 border-white">
-            {user?.fullName?.charAt(0) || 'U'}
+        <div className="relative" ref={profileDropdownRef}>
+          <div 
+            className="relative flex items-center justify-center cursor-pointer group"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+          >
+            {/* SVG Ring */}
+            <svg className="w-[52px] h-[52px] transform -rotate-90 drop-shadow-sm">
+              <circle cx="26" cy="26" r={radius} className="stroke-slate-200/60" strokeWidth="4" fill="transparent" />
+              <circle cx="26" cy="26" r={radius} 
+                className="stroke-emerald-500 transition-all duration-1000 ease-out" 
+                strokeWidth="4" fill="transparent" 
+                strokeDasharray={circumference} 
+                strokeDashoffset={strokeDashoffset} 
+                strokeLinecap="round" 
+              />
+            </svg>
+            
+            {/* Inner Avatar */}
+            <div className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-sm font-extrabold shadow-md group-hover:scale-95 transition-transform border-2 border-white">
+              {user?.fullName?.charAt(0) || 'U'}
+            </div>
+            
+            {/* Tooltip on hover (only if dropdown is closed) */}
+            {!showProfileMenu && (
+              <div className="absolute top-[60px] right-0 sm:right-auto sm:-translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap pointer-events-none shadow-lg z-50">
+                {profileCompletion}% Profile Complete
+              </div>
+            )}
           </div>
-          
-          {/* Tooltip on hover */}
-          <div className="absolute top-[60px] right-0 sm:right-auto sm:-translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs font-bold py-1.5 px-3 rounded-lg whitespace-nowrap pointer-events-none shadow-lg z-50">
-            {profileCompletion}% Profile Complete
-          </div>
+
+          {/* Profile Dropdown Panel */}
+          {showProfileMenu && (
+            <div className="absolute right-0 mt-4 w-[240px] bg-white/95 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_30px_80px_rgba(0,0,0,0.15)] border border-white/80 overflow-hidden transform origin-top-right transition-all animate-in fade-in zoom-in-95 duration-200">
+              <div className="px-6 py-4 border-b border-slate-100/50 bg-slate-50/50 text-center">
+                <p className="font-bold text-slate-800 truncate">{user?.fullName || 'Student'}</p>
+                <p className="text-xs font-medium text-slate-500">{user?.role || 'Student'}</p>
+              </div>
+              <div className="p-2">
+                <button 
+                  onClick={() => { setShowProfileMenu(false); router.push(`/${(user?.role || 'Student').toLowerCase()}/profile`); }}
+                  className="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-3"
+                >
+                  <User size={16} className="text-slate-400" /> My Profile
+                </button>
+                <button 
+                  onClick={() => { 
+                    setShowProfileMenu(false); 
+                    authApi.logout(); 
+                    router.push('/login'); 
+                  }}
+                  className="w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
+                >
+                  <LogOut size={16} className="text-red-400" /> Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
