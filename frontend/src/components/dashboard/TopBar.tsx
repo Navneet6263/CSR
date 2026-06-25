@@ -34,12 +34,26 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
 
   // Hydration safe user fetching
   const [user, setUser] = useState<{ fullName?: string, role?: string } | null>(null);
+  const [profileCompletion, setProfileCompletion] = useState(0);
+
   useEffect(() => {
-    setUser(authApi.getUser());
+    const currentUser = authApi.getUser();
+    setUser(currentUser);
+    
+    if (currentUser?.role === 'Student') {
+      import('@/lib/api').then(({ studentApi }) => {
+        studentApi.getProfile().then(res => {
+          if (res.data) {
+            import('@/lib/profileUtils').then(({ calculateProfileCompletion }) => {
+              setProfileCompletion(calculateProfileCompletion(res.data));
+            });
+          }
+        });
+      });
+    }
   }, []);
 
   const isStudent = user?.role === 'Student';
-  const profileCompletion = 85; // This would normally come from an API
   
   // Calculate SVG stroke dash offset
   const radius = 18;
@@ -128,7 +142,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
             <svg className="w-[52px] h-[52px] transform -rotate-90 drop-shadow-sm">
               <circle cx="26" cy="26" r={radius} className="stroke-slate-200/60" strokeWidth="4" fill="transparent" />
               <circle cx="26" cy="26" r={radius} 
-                className="stroke-emerald-500 transition-all duration-1000 ease-out" 
+                className={`${profileCompletion < 100 ? 'stroke-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse' : 'stroke-emerald-500'} transition-all duration-1000 ease-out`}
                 strokeWidth="4" fill="transparent" 
                 strokeDasharray={circumference} 
                 strokeDashoffset={strokeDashoffset} 
@@ -137,7 +151,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
             </svg>
             
             {/* Inner Avatar */}
-            <div className="absolute inset-0 m-auto h-[36px] w-[36px] rounded-full bg-gradient-to-br from-emerald-600 to-teal-500 flex items-center justify-center text-white text-sm font-extrabold shadow-md group-hover:scale-95 transition-transform border-2 border-white">
+            <div className={`absolute inset-0 m-auto h-[36px] w-[36px] rounded-full flex items-center justify-center text-white text-sm font-extrabold shadow-md group-hover:scale-95 transition-transform border-2 border-white ${profileCompletion < 100 ? 'bg-gradient-to-br from-red-600 to-rose-500' : 'bg-gradient-to-br from-emerald-600 to-teal-500'}`}>
               {user?.fullName?.charAt(0) || 'U'}
             </div>
             

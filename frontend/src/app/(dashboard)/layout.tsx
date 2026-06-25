@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
 import { authApi } from '@/lib/api';
 
@@ -12,11 +13,29 @@ export default function DashboardLayout({
   const [role, setRole] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  const pathname = usePathname();
+
   useEffect(() => {
     const user = authApi.getUser();
-    setRole(user?.role || null);
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Role-based route protection
+    const role = user.role;
+    if (role === 'BGCheckOfficer' && pathname.startsWith('/reviewer')) {
+      window.location.href = '/officer';
+      return;
+    }
+    if (role === 'DocReviewer' && pathname.startsWith('/officer')) {
+      window.location.href = '/reviewer';
+      return;
+    }
+
+    setRole(role);
     setMounted(true);
-  }, []);
+  }, [pathname]);
 
   // Prevent hydration mismatch by returning nothing until mounted,
   // or return a standard full-width layout temporarily.
@@ -26,7 +45,8 @@ export default function DashboardLayout({
 
   const isStudent = role === 'Student';
   const isDocReviewer = role === 'DocReviewer';
-  const hasSidebar = !isStudent && !isDocReviewer;
+  const isBGOfficer = role === 'BGCheckOfficer';
+  const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5] print:bg-none print:bg-white">
@@ -36,7 +56,7 @@ export default function DashboardLayout({
         </div>
       )}
       <main className={`flex-1 min-h-screen transition-all duration-300 ${hasSidebar ? 'ml-[280px]' : 'ml-0'} print:ml-0 print:p-0`}>
-        <div className={isStudent || isDocReviewer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
+        <div className={isStudent || isDocReviewer || isBGOfficer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
           {children}
         </div>
       </main>

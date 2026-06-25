@@ -13,8 +13,10 @@ interface ProfileSidebarProps {
 
 const tabs = [
   { id: 'personal', label: 'Personal Details', icon: User },
+  { id: 'family', label: 'Family & Demographics', icon: User }, // Re-using User icon or another
   { id: 'education', label: 'Education', icon: BookOpen },
   { id: 'bank', label: 'Bank Details', icon: CreditCard },
+  { id: 'corporate', label: 'Corporate Extras', icon: FileText },
   { id: 'documents', label: 'Documents', icon: FileText },
 ] as const;
 
@@ -25,7 +27,7 @@ export default function ProfileSidebar({ profile, completionPercentage, activeTa
       <div className="p-6 text-center border-b border-slate-100">
         <div className="relative inline-block mb-4 group cursor-pointer">
           <div className="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-[#5b2c6f] to-[#2e86c1] flex items-center justify-center text-white text-3xl font-black shadow-[4px_4px_15px_rgba(91,44,111,0.2),-4px_-4px_15px_rgba(255,255,255,0.8)] border-4 border-white transition-transform group-hover:scale-105">
-            {profile.firstName?.charAt(0) || 'U'}
+            {profile.fullName?.charAt(0) || 'U'}
           </div>
           {completionPercentage === 100 && (
             <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow-sm">
@@ -34,7 +36,7 @@ export default function ProfileSidebar({ profile, completionPercentage, activeTa
           )}
         </div>
         
-        <h2 className="text-lg font-bold text-slate-800 truncate px-2">{profile.firstName} {profile.lastName}</h2>
+        <h2 className="text-lg font-bold text-slate-800 truncate px-2">{profile.fullName || 'Student Name'}</h2>
         <p className="text-sm font-medium text-slate-500 mb-6">{profile.user?.email || 'student@example.com'}</p>
 
         {/* Progress Bar */}

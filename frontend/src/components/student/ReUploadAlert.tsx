@@ -32,17 +32,20 @@ export function ReUploadAlert() {
     if (!file) return;
     setUploadingId(doc.checklistId);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        await verificationApi.uploadDoc({
-          applicationId: doc.applicationId,
-          documentType: doc.documentType,
-          fileUrl: reader.result as string,
-        });
-        await fetchReuploads();
-      };
-      reader.readAsDataURL(file);
-    } catch {
+      // First, upload the actual file to get a valid URL
+      const { studentApi } = await import('@/lib/api/resources');
+      const uploadRes = await studentApi.uploadDocument(doc.documentType, file);
+      
+      // Then link it to the application
+      await verificationApi.uploadDoc({
+        applicationId: doc.applicationId,
+        documentType: doc.documentType,
+        fileUrl: uploadRes.data.fileUrl,
+      });
+      await fetchReuploads();
+      alert('Document re-uploaded successfully.');
+    } catch (err) {
+      console.error(err);
       alert('Upload failed.');
     } finally {
       setUploadingId(null);

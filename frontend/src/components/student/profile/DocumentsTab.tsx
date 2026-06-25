@@ -57,9 +57,15 @@ export default function DocumentsTab() {
 
   const documentTypes = [
     { type: 'Identity', label: 'Aadhaar Card / ID Proof', desc: 'Government issued identity card' },
-    { type: 'Income', label: 'Income Certificate', desc: 'Valid income proof for current financial year' },
-    { type: 'Academic', label: 'Previous Year Marksheet', desc: 'Marksheet of your last academic year' },
-    { type: 'Fee', label: 'Current Year Fee Receipt', desc: 'Proof of admission in current institution' },
+    { type: 'PassportPhoto', label: 'Passport Size Photo', desc: 'Recent clear passport size photograph' },
+    { type: 'Income', label: 'Income Certificate', desc: 'Valid income proof (BPL/Ration/Affidavit/ITR)' },
+    { type: 'CasteCertificate', label: 'Caste Certificate', desc: 'Mandatory for SC/ST/OBC category' },
+    { type: 'DomicileCertificate', label: 'Domicile Certificate', desc: 'Mandatory for State scholarships' },
+    { type: 'Academic10th', label: '10th Marksheet', desc: 'Original 10th marksheet document' },
+    { type: 'Academic12th', label: '12th Marksheet', desc: 'Original 12th marksheet document' },
+    { type: 'Bonafide', label: 'Bonafide Certificate', desc: 'Freshly issued by current college/institution' },
+    { type: 'BankPassbook', label: 'Bank Passbook / Cancelled Cheque', desc: 'Must clearly show Account No. and IFSC' },
+    { type: 'Recommendation', label: 'Recommendation Letter', desc: 'From Principal/Teacher (for Corporate CSR)' },
   ];
 
   return (

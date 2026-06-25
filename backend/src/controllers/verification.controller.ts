@@ -123,3 +123,33 @@ export async function getStatsHandler(req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+export async function getBGCheckDetailsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const applicationId = parseInt(req.params.applicationId as string, 10);
+    const details = await bgCheckService.getBGCheckDetails(applicationId);
+    sendSuccess(res, details, 'Background check details retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getBGOfficerLogsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const officerId = req.user!.userId;
+    const logs = await bgCheckService.getBGOfficerLogs(officerId);
+    sendSuccess(res, logs, 'Officer logs retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getBGOfficerStatsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const officerId = req.user!.userId;
+    const stats = await bgCheckService.getBGOfficerStats(officerId);
+    sendSuccess(res, stats, 'Officer stats retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}

@@ -15,13 +15,16 @@ export default function BankTab({ profile, onUpdate }: BankTabProps) {
   const [success, setSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
-    bankAccountNumber: profile.bankAccountNumber || '',
-    ifscCode: profile.ifscCode || '',
+    bankAccountNo: profile.bankAccountNo || '',
+    bankIFSC: profile.bankIFSC || '',
     bankName: profile.bankName || '',
+    isAadhaarLinkedToBank: profile.isAadhaarLinkedToBank || false,
+    isEKYCVerified: profile.isEKYCVerified || false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setFormData(prev => ({ ...prev, [e.target.name]: value }));
     setSuccess(false);
   };
 
@@ -30,9 +33,11 @@ export default function BankTab({ profile, onUpdate }: BankTabProps) {
     setLoading(true);
     try {
       await studentApi.updateProfile({
-        bankAccountNo: formData.bankAccountNumber,
-        bankIFSC: formData.ifscCode,
+        bankAccountNo: formData.bankAccountNo,
+        bankIFSC: formData.bankIFSC,
         bankName: formData.bankName,
+        isAadhaarLinkedToBank: formData.isAadhaarLinkedToBank,
+        isEKYCVerified: formData.isEKYCVerified,
       });
       setSuccess(true);
       onUpdate();
@@ -68,8 +73,8 @@ export default function BankTab({ profile, onUpdate }: BankTabProps) {
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Account Number</label>
             <input 
               type="text" 
-              name="bankAccountNumber"
-              value={formData.bankAccountNumber}
+              name="bankAccountNo"
+              value={formData.bankAccountNo}
               onChange={handleChange}
               required
               className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm tracking-widest font-mono"
@@ -81,8 +86,8 @@ export default function BankTab({ profile, onUpdate }: BankTabProps) {
             <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">IFSC Code</label>
             <input 
               type="text" 
-              name="ifscCode"
-              value={formData.ifscCode}
+              name="bankIFSC"
+              value={formData.bankIFSC}
               onChange={handleChange}
               required
               className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm uppercase font-mono tracking-wider"
@@ -101,6 +106,28 @@ export default function BankTab({ profile, onUpdate }: BankTabProps) {
               className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm"
               placeholder="e.g. State Bank of India"
             />
+          </div>
+
+          <div className="space-y-4 md:col-span-2 p-4 bg-slate-50 border border-slate-100 rounded-2xl mt-2">
+            <h3 className="text-sm font-bold text-slate-800 mb-2">Government Scholarship Mandates (NPCI)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center h-full gap-3 bg-white p-3 rounded-xl border border-slate-200 cursor-pointer shadow-sm">
+                <input 
+                  type="checkbox" name="isAadhaarLinkedToBank" checked={formData.isAadhaarLinkedToBank} onChange={handleChange}
+                  className="w-5 h-5 rounded border-slate-300 text-[#5b2c6f] focus:ring-[#5b2c6f]"
+                />
+                Is Aadhaar Linked to this Bank Account? (NPCI Mapping)
+              </label>
+              
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center h-full gap-3 bg-white p-3 rounded-xl border border-slate-200 cursor-pointer shadow-sm">
+                <input 
+                  type="checkbox" name="isEKYCVerified" checked={formData.isEKYCVerified} onChange={handleChange}
+                  className="w-5 h-5 rounded border-slate-300 text-[#5b2c6f] focus:ring-[#5b2c6f]"
+                />
+                Is Bank eKYC Verified?
+              </label>
+            </div>
+            <p className="text-[10px] text-slate-500 mt-2">* These are mandatory for DBT (Direct Benefit Transfer) government scholarships.</p>
           </div>
         </div>
 

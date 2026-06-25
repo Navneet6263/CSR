@@ -39,6 +39,17 @@ export function mapStudentProfile(raw: Raw): StudentProfile {
     bankIFSC: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
     ifscCode: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
     bankName: (raw.BankName ?? raw.bankName) as string | undefined,
+    // Extended fields
+    fatherName: (raw.FatherName ?? raw.fatherName) as string | undefined,
+    motherName: (raw.MotherName ?? raw.motherName) as string | undefined,
+    religion: (raw.Religion ?? raw.religion) as string | undefined,
+    tenthMarks: Number(raw.TenthMarks ?? raw.tenthMarks ?? 0) || undefined,
+    twelfthMarks: Number(raw.TwelfthMarks ?? raw.twelfthMarks ?? 0) || undefined,
+    statementOfPurpose: (raw.StatementOfPurpose ?? raw.statementOfPurpose) as string | undefined,
+    extracurricularActivities: (raw.ExtracurricularActivities ?? raw.extracurricularActivities) as string | undefined,
+    isHosteller: Boolean(raw.IsHosteller ?? raw.isHosteller),
+    hasGapYear: Boolean(raw.HasGapYear ?? raw.hasGapYear),
+    receivedPreviousScholarship: Boolean(raw.ReceivedPreviousScholarship ?? raw.receivedPreviousScholarship),
   };
 }
 

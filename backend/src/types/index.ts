@@ -54,6 +54,56 @@ export interface IStudent {
   BankAccountNo: string;
   BankIFSC: string;
   BankName: string;
+  
+  // Academic Details
+  PreviousYearMarks?: number;
+  TenthBoardName?: string;
+  TenthPassingYear?: number;
+  TenthMarks?: number;
+  TwelfthBoardName?: string;
+  TwelfthPassingYear?: number;
+  TwelfthMarks?: number;
+  CurrentSemesterOrYear?: string;
+  AdmissionRegistrationNo?: string;
+
+  // Family Details
+  FatherName?: string;
+  FatherOccupation?: string;
+  MotherName?: string;
+  MotherOccupation?: string;
+
+  // Demographics & Special Status
+  Religion?: string;
+  IsDisabled: boolean;
+  DisabilityPercentage?: number;
+  DomicileState?: string;
+  DomicileDistrict?: string;
+
+  // Financial
+  TuitionFee?: number;
+
+  // Additional Real-World Scholarship Fields
+  CasteCertificateNumber?: string;
+  CasteCertificateIssueDate?: Date;
+  DomicileCertificateNumber?: string;
+  AlternatePhone?: string;
+
+  IsHosteller: boolean;
+  DistanceFromHome?: number;
+  HasGapYear: boolean;
+  GapYearExplanation?: string;
+
+  ReceivedPreviousScholarship: boolean;
+  PreviousScholarshipName?: string;
+  PreviousScholarshipAmount?: number;
+  PreviousScholarshipYear?: number;
+
+  IsAadhaarLinkedToBank: boolean;
+  IsEKYCVerified: boolean;
+
+  StatementOfPurpose?: string;
+  ExtracurricularActivities?: string;
+
   CreatedAt: Date;
 }
 

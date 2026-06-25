@@ -16,11 +16,7 @@ export async function getStudentProfile(userId: number) {
     .join('Users as u', 'u.UserID', 's.UserID')
     .leftJoin('Institutions as i', 'i.InstitutionID', 's.InstitutionID')
     .select(
-      's.StudentID', 's.UserID', 's.AadharNumber', 's.DOB',
-      's.Gender', 's.Category', 's.Address', 's.City',
-      's.State', 's.Pincode', 's.AnnualFamilyIncome', 's.FamilySize',
-      's.Course', 's.InstitutionID', 's.OtherInstitutionName', 's.EnrollmentYear',
-      's.BankAccountNo', 's.BankIFSC', 's.BankName', 's.CreatedAt',
+      's.*',
       'u.FullName', 'u.Email', 'u.Phone', 'u.Role',
       'i.Name as InstitutionName'
     )
@@ -65,6 +61,52 @@ export async function updateStudentProfile(
   if (data.bankAccountNo !== undefined) updatePayload.BankAccountNo = data.bankAccountNo;
   if (data.bankIFSC !== undefined) updatePayload.BankIFSC = data.bankIFSC;
   if (data.bankName !== undefined) updatePayload.BankName = data.bankName;
+
+  // Extended Mapping
+  if (data.previousYearMarks !== undefined) updatePayload.PreviousYearMarks = data.previousYearMarks;
+  if (data.tenthBoardName !== undefined) updatePayload.TenthBoardName = data.tenthBoardName;
+  if (data.tenthPassingYear !== undefined) updatePayload.TenthPassingYear = data.tenthPassingYear;
+  if (data.tenthMarks !== undefined) updatePayload.TenthMarks = data.tenthMarks;
+  if (data.twelfthBoardName !== undefined) updatePayload.TwelfthBoardName = data.twelfthBoardName;
+  if (data.twelfthPassingYear !== undefined) updatePayload.TwelfthPassingYear = data.twelfthPassingYear;
+  if (data.twelfthMarks !== undefined) updatePayload.TwelfthMarks = data.twelfthMarks;
+  if (data.currentSemesterOrYear !== undefined) updatePayload.CurrentSemesterOrYear = data.currentSemesterOrYear;
+  if (data.admissionRegistrationNo !== undefined) updatePayload.AdmissionRegistrationNo = data.admissionRegistrationNo;
+
+  if (data.fatherName !== undefined) updatePayload.FatherName = data.fatherName;
+  if (data.fatherOccupation !== undefined) updatePayload.FatherOccupation = data.fatherOccupation;
+  if (data.motherName !== undefined) updatePayload.MotherName = data.motherName;
+  if (data.motherOccupation !== undefined) updatePayload.MotherOccupation = data.motherOccupation;
+
+  if (data.religion !== undefined) updatePayload.Religion = data.religion;
+  if (data.isDisabled !== undefined) updatePayload.IsDisabled = data.isDisabled;
+  if (data.disabilityPercentage !== undefined) updatePayload.DisabilityPercentage = data.disabilityPercentage;
+  if (data.domicileState !== undefined) updatePayload.DomicileState = data.domicileState;
+  if (data.domicileDistrict !== undefined) updatePayload.DomicileDistrict = data.domicileDistrict;
+
+  if (data.tuitionFee !== undefined) updatePayload.TuitionFee = data.tuitionFee;
+
+  // Real-World Mapping
+  if (data.casteCertificateNumber !== undefined) updatePayload.CasteCertificateNumber = data.casteCertificateNumber;
+  if (data.casteCertificateIssueDate !== undefined) updatePayload.CasteCertificateIssueDate = data.casteCertificateIssueDate;
+  if (data.domicileCertificateNumber !== undefined) updatePayload.DomicileCertificateNumber = data.domicileCertificateNumber;
+  if (data.alternatePhone !== undefined) updatePayload.AlternatePhone = data.alternatePhone;
+
+  if (data.isHosteller !== undefined) updatePayload.IsHosteller = data.isHosteller;
+  if (data.distanceFromHome !== undefined) updatePayload.DistanceFromHome = data.distanceFromHome;
+  if (data.hasGapYear !== undefined) updatePayload.HasGapYear = data.hasGapYear;
+  if (data.gapYearExplanation !== undefined) updatePayload.GapYearExplanation = data.gapYearExplanation;
+
+  if (data.receivedPreviousScholarship !== undefined) updatePayload.ReceivedPreviousScholarship = data.receivedPreviousScholarship;
+  if (data.previousScholarshipName !== undefined) updatePayload.PreviousScholarshipName = data.previousScholarshipName;
+  if (data.previousScholarshipAmount !== undefined) updatePayload.PreviousScholarshipAmount = data.previousScholarshipAmount;
+  if (data.previousScholarshipYear !== undefined) updatePayload.PreviousScholarshipYear = data.previousScholarshipYear;
+
+  if (data.isAadhaarLinkedToBank !== undefined) updatePayload.IsAadhaarLinkedToBank = data.isAadhaarLinkedToBank;
+  if (data.isEKYCVerified !== undefined) updatePayload.IsEKYCVerified = data.isEKYCVerified;
+
+  if (data.statementOfPurpose !== undefined) updatePayload.StatementOfPurpose = data.statementOfPurpose;
+  if (data.extracurricularActivities !== undefined) updatePayload.ExtracurricularActivities = data.extracurricularActivities;
 
   if (Object.keys(updatePayload).length === 0) {
     return student;

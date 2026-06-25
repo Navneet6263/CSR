@@ -8,9 +8,10 @@ import {
 } from 'lucide-react';
 import TopBar from '@/components/dashboard/TopBar';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
-import { scholarshipApi } from '@/lib/api';
+import { scholarshipApi, studentApi } from '@/lib/api';
 import { mapScholarship } from '@/lib/mappers';
 import type { Scholarship } from '@/types';
+import { calculateProfileCompletion } from '@/lib/profileUtils';
 
 export default function ScholarshipDetailPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function ScholarshipDetailPage() {
   const scholarshipId = Number(params?.id);
 
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,12 +28,22 @@ export default function ScholarshipDetailPage() {
       return;
     }
 
-    scholarshipApi.getById(scholarshipId)
-      .then(res => {
-        if (res.data) setScholarship(mapScholarship(res.data as any));
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+    const fetchDetails = async () => {
+      try {
+        const [schRes, profRes] = await Promise.all([
+          scholarshipApi.getById(scholarshipId),
+          studentApi.getProfile()
+        ]);
+        if (schRes.data) setScholarship(mapScholarship(schRes.data as any));
+        if (profRes.data) setProfile(profRes.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
   }, [scholarshipId, router]);
 
   if (loading) {
@@ -152,10 +164,26 @@ export default function ScholarshipDetailPage() {
             <p className="text-xs font-medium text-slate-500 mb-6">
               Make sure your profile is 100% complete and all documents are uploaded before applying.
             </p>
+
+            {profile && calculateProfileCompletion(profile) < 100 ? (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-xs font-bold text-amber-700 flex items-center gap-2 mb-2">
+                  <AlertCircle size={14} /> Profile Incomplete ({calculateProfileCompletion(profile)}%)
+                </p>
+                <p className="text-[10px] text-amber-600 mb-3">You must complete your profile before applying for any scholarship.</p>
+                <button 
+                  onClick={() => router.push('/student/profile')}
+                  className="w-full py-2 bg-amber-100 text-amber-800 text-xs font-bold rounded-lg hover:bg-amber-200 transition-colors"
+                >
+                  Complete Profile
+                </button>
+              </div>
+            ) : null}
             
             <button 
               onClick={() => router.push(`/student/apply/${scholarshipId}`)}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-[#5b2c6f] to-[#2e86c1] text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_8px_20px_rgba(91,44,111,0.2)]"
+              disabled={profile && calculateProfileCompletion(profile) < 100}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-[#5b2c6f] to-[#2e86c1] text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed shadow-[0_8px_20px_rgba(91,44,111,0.2)]"
             >
               Start Application
             </button>

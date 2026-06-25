@@ -13,6 +13,7 @@ import SuccessView from '@/components/student/apply/SuccessView';
 import { studentApi, scholarshipApi, applicationApi } from '@/lib/api';
 import { mapScholarship } from '@/lib/mappers';
 import type { StudentProfile, Scholarship } from '@/types';
+import { calculateProfileCompletion } from '@/lib/profileUtils';
 
 type Step = 'review' | 'consent' | 'success';
 
@@ -46,7 +47,12 @@ export default function ApplyScholarshipPage() {
       scholarshipApi.getById(scholarshipId),
     ]).then(([profRes, schRes]) => {
       if (profRes.status === 'fulfilled' && profRes.value.data) {
-        setProfile(profRes.value.data);
+        const profileData = profRes.value.data;
+        if (calculateProfileCompletion(profileData) < 100) {
+          setError(`Your profile is only ${calculateProfileCompletion(profileData)}% complete. Please complete it to 100% before applying.`);
+        } else {
+          setProfile(profileData);
+        }
       } else {
         setError('Failed to load your profile. Please complete your profile first.');
       }
@@ -100,12 +106,21 @@ export default function ApplyScholarshipPage() {
   }
 
   if (error || !profile || !scholarship) {
+    const isIncomplete = error?.includes('complete it to 100%');
+    
     return (
       <div className="flex items-center justify-center min-h-[70vh] flex-col gap-4 text-center">
         <p className="text-red-500 font-bold max-w-md">{error}</p>
-        <button onClick={() => router.push('/student')} className="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700">
-          Back to Dashboard
-        </button>
+        
+        {isIncomplete ? (
+          <button onClick={() => router.push('/student/profile')} className="px-6 py-3 mt-2 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-xl hover:scale-105 transition-transform shadow-lg">
+            Open Profile to Complete
+          </button>
+        ) : (
+          <button onClick={() => router.push('/student')} className="px-6 py-2 bg-slate-800 text-white font-bold rounded-xl hover:bg-slate-700">
+            Back to Dashboard
+          </button>
+        )}
       </div>
     );
   }

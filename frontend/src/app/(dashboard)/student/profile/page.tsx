@@ -9,11 +9,14 @@ import type { StudentProfile } from '@/types';
 
 import ProfileSidebar from '@/components/student/profile/ProfileSidebar';
 import PersonalTab from '@/components/student/profile/PersonalTab';
+import FamilyTab from '@/components/student/profile/FamilyTab';
 import EducationTab from '@/components/student/profile/EducationTab';
 import BankTab from '@/components/student/profile/BankTab';
+import CorporateTab from '@/components/student/profile/CorporateTab';
 import DocumentsTab from '@/components/student/profile/DocumentsTab';
+import { calculateProfileCompletion } from '@/lib/profileUtils';
 
-export type TabType = 'personal' | 'education' | 'bank' | 'documents';
+export type TabType = 'personal' | 'family' | 'education' | 'bank' | 'corporate' | 'documents';
 
 export default function StudentProfilePage() {
   const router = useRouter();
@@ -66,13 +69,7 @@ export default function StudentProfilePage() {
   }
 
   // Calculate profile completion percentage based on real data
-  let completedFields = 0;
-  const totalFields = 4; // basic, education, bank, identity
-  if (profile.firstName && profile.phone) completedFields++;
-  if (profile.institutionId || profile.currentDegree) completedFields++;
-  if (profile.bankAccountNumber && profile.ifscCode) completedFields++;
-  if (profile.identityDocumentId || profile.incomeCertificateId) completedFields++;
-  const completionPercentage = (completedFields / totalFields) * 100;
+  const completionPercentage = calculateProfileCompletion(profile);
 
   return (
     <div className="space-y-6 animate-in fade-in pb-10">
@@ -94,8 +91,10 @@ export default function StudentProfilePage() {
         <div className="lg:col-span-3">
           <div className="clay-card p-6 md:p-8 border border-white/60 bg-white/70 min-h-[500px]">
             {activeTab === 'personal' && <PersonalTab profile={profile} onUpdate={fetchProfile} />}
+            {activeTab === 'family' && <FamilyTab profile={profile} onUpdate={fetchProfile} />}
             {activeTab === 'education' && <EducationTab profile={profile} onUpdate={fetchProfile} />}
             {activeTab === 'bank' && <BankTab profile={profile} onUpdate={fetchProfile} />}
+            {activeTab === 'corporate' && <CorporateTab profile={profile} onUpdate={fetchProfile} />}
             {activeTab === 'documents' && <DocumentsTab />}
           </div>
         </div>

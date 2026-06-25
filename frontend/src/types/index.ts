@@ -53,6 +53,46 @@ export interface StudentProfile {
   bankAccountNo?: string;
   bankIFSC?: string;
   bankName?: string;
+  previousYearMarks?: number;
+  tenthBoardName?: string;
+  tenthPassingYear?: number;
+  tenthMarks?: number;
+  twelfthBoardName?: string;
+  twelfthPassingYear?: number;
+  twelfthMarks?: number;
+  currentSemesterOrYear?: string;
+  admissionRegistrationNo?: string;
+  fatherName?: string;
+  fatherOccupation?: string;
+  motherName?: string;
+  motherOccupation?: string;
+  religion?: string;
+  isDisabled?: boolean;
+  disabilityPercentage?: number;
+  domicileState?: string;
+  domicileDistrict?: string;
+  tuitionFee?: number;
+
+  casteCertificateNumber?: string;
+  casteCertificateIssueDate?: string;
+  domicileCertificateNumber?: string;
+  alternatePhone?: string;
+
+  isHosteller?: boolean;
+  distanceFromHome?: number;
+  hasGapYear?: boolean;
+  gapYearExplanation?: string;
+
+  receivedPreviousScholarship?: boolean;
+  previousScholarshipName?: string;
+  previousScholarshipAmount?: number;
+  previousScholarshipYear?: number;
+
+  isAadhaarLinkedToBank?: boolean;
+  isEKYCVerified?: boolean;
+
+  statementOfPurpose?: string;
+  extracurricularActivities?: string;
 }
 
 export interface Scholarship {

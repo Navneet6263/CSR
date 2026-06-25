@@ -26,6 +26,7 @@ export default function StudentDashboard() {
   const [user, setUser] = useState<{ fullName: string } | null>(null);
   const [apps, setApps] = useState<Application[]>([]);
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,7 +37,8 @@ export default function StudentDashboard() {
     Promise.allSettled([
       applicationApi.getMy(),
       scholarshipApi.getAll('status=Active'),
-    ]).then(([appsRes, schRes]) => {
+      import('@/lib/api').then(({ studentApi }) => studentApi.getProfile())
+    ]).then(([appsRes, schRes, profRes]) => {
       if (appsRes.status === 'fulfilled') {
         const rawApps = appsRes.value.data || [];
         setApps(rawApps.map((a: Record<string, unknown>) => mapApplication(a)));
@@ -44,6 +46,9 @@ export default function StudentDashboard() {
       if (schRes.status === 'fulfilled') {
         const raw = schRes.value.data?.scholarships || [];
         setScholarships(raw.map((s) => mapScholarship(s as Record<string, unknown>)));
+      }
+      if (profRes.status === 'fulfilled' && profRes.value?.data) {
+        setProfileData(profRes.value.data);
       }
       setLoading(false);
     });
@@ -179,37 +184,40 @@ export default function StudentDashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-bold text-slate-800">Complete your profile</h2>
             <button onClick={() => router.push('/student/profile')} className="text-xs font-semibold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-1">
-              <Edit3 size={12} /> Edit
+              <Edit3 size={12} /> Edit Profile
             </button>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3">
-              <div className="text-emerald-500"><CheckCircle size={18} /></div>
+            <div className={`flex items-center gap-3 p-3 ${profileData?.fullName ? 'opacity-100' : 'opacity-50'}`}>
+              {profileData?.fullName ? <div className="text-emerald-500"><CheckCircle size={18} /></div> : <div className="text-slate-300 border-2 border-slate-200 rounded-full w-4 h-4" />}
               <div>
                 <p className="text-xs font-bold text-slate-700">Personal details</p>
-                <p className="text-[10px] text-slate-400">Completed</p>
+                <p className="text-[10px] text-slate-400">{profileData?.fullName ? 'Completed' : 'Pending'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3">
-              <div className="text-emerald-500"><CheckCircle size={18} /></div>
+            
+            <div className={`flex items-center gap-3 p-3 ${profileData?.institutionId ? 'opacity-100' : 'opacity-50'}`}>
+              {profileData?.institutionId ? <div className="text-emerald-500"><CheckCircle size={18} /></div> : <div className="text-slate-300 border-2 border-slate-200 rounded-full w-4 h-4" />}
               <div>
                 <p className="text-xs font-bold text-slate-700">Education info</p>
-                <p className="text-[10px] text-slate-400">Completed</p>
+                <p className="text-[10px] text-slate-400">{profileData?.institutionId ? 'Completed' : 'Pending'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3">
-              <div className="text-emerald-500"><CheckCircle size={18} /></div>
+            
+            <div className={`flex items-center gap-3 p-3 ${profileData?.bankAccountNo ? 'opacity-100' : 'opacity-50'}`}>
+              {profileData?.bankAccountNo ? <div className="text-emerald-500"><CheckCircle size={18} /></div> : <div className="text-slate-300 border-2 border-slate-200 rounded-full w-4 h-4" />}
               <div>
                 <p className="text-xs font-bold text-slate-700">Bank details</p>
-                <p className="text-[10px] text-slate-400">Completed</p>
+                <p className="text-[10px] text-slate-400">{profileData?.bankAccountNo ? 'Completed' : 'Pending'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 opacity-50">
-              <div className="text-slate-300 border-2 border-slate-200 rounded-full w-4 h-4" />
+            
+            <div className={`flex items-center gap-3 p-3 ${profileData?.statementOfPurpose ? 'opacity-100' : 'opacity-50'}`}>
+              {profileData?.statementOfPurpose ? <div className="text-emerald-500"><CheckCircle size={18} /></div> : <div className="text-slate-300 border-2 border-slate-200 rounded-full w-4 h-4" />}
               <div>
-                <p className="text-xs font-bold text-slate-700">Verify identity</p>
-                <p className="text-[10px] text-slate-400">Pending</p>
+                <p className="text-xs font-bold text-slate-700">Corporate SOP</p>
+                <p className="text-[10px] text-slate-400">{profileData?.statementOfPurpose ? 'Completed' : 'Pending'}</p>
               </div>
             </div>
           </div>

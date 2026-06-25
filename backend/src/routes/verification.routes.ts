@@ -10,7 +10,10 @@ import {
   submitBGCheck,
   getAppDocs,
   getReviewerLogsHandler,
-  getStatsHandler
+  getStatsHandler,
+  getBGCheckDetailsHandler,
+  getBGOfficerLogsHandler,
+  getBGOfficerStatsHandler
 } from '../controllers/verification.controller';
 
 const router = Router();
@@ -30,7 +33,10 @@ router.get('/docs/reuploads', requireRole('Student'), getReUploads);
 router.post('/docs/upload', requireRole('Student'), uploadDoc); // No complex validation schema added but can be if needed.
 
 // ─── Background Check Routes ────────────────────────────────────────────────
+router.get('/bg-checks/stats', requireRole('BGCheckOfficer'), getBGOfficerStatsHandler);
+router.get('/bg-checks/logs', requireRole('BGCheckOfficer'), getBGOfficerLogsHandler);
 router.get('/bg-checks/pending', requireRole('BGCheckOfficer'), getBGChecksPending);
+router.get('/bg-checks/:applicationId', requireRole('BGCheckOfficer'), getBGCheckDetailsHandler);
 router.post('/bg-checks/:applicationId', requireRole('BGCheckOfficer'), validate(bgCheckSchema), submitBGCheck);
 
 export default router;

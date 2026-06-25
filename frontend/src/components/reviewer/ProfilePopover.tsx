@@ -46,22 +46,23 @@ export function ProfilePopover() {
           {initials}
         </div>
         <div className="hidden text-left leading-tight md:block">
-          <div className="text-xs font-semibold text-slate-800">{user?.fullName || "Doc Reviewer"}</div>
-          <div className="text-[10px] text-slate-500">{user?.email || "docreviewer@test.com"}</div>
+          <div className="text-xs font-semibold text-slate-800">{user?.fullName || "Loading..."}</div>
+          <div className="text-[10px] text-slate-500">{user?.email || "Please wait"}</div>
         </div>
       </button>
 
       {showProfileMenu && (
-        <div className="absolute right-0 mt-4 w-[280px] origin-top-right overflow-hidden rounded-3xl border border-white/80 bg-white/95 shadow-[0_30px_80px_rgba(0,0,0,0.15)] backdrop-blur-2xl transition-all animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute right-0 mt-4 w-[240px] origin-top-right overflow-hidden rounded-3xl border border-white/80 bg-white/95 shadow-[0_30px_80px_rgba(0,0,0,0.15)] backdrop-blur-2xl transition-all animate-in fade-in zoom-in-95 duration-200 z-50">
           <div className="border-b border-slate-100/50 bg-slate-50/50 px-6 py-5">
-            <h3 className="text-sm font-bold text-slate-800">{user?.fullName || "Doc Reviewer"}</h3>
-            <p className="mt-1 text-xs text-slate-500">{user?.email || "docreviewer@test.com"}</p>
+            <h3 className="text-sm font-bold text-slate-800">{user?.fullName || "User"}</h3>
+            <p className="mt-1 text-xs text-slate-500">{user?.email || "user@test.com"}</p>
           </div>
           <div className="p-2">
             <button
               onClick={() => {
                 setShowProfileMenu(false);
-                router.push('/reviewer/profile'); // Placeholder for now
+                const rolePath = user?.role === 'DocReviewer' ? 'reviewer' : 'officer';
+                router.push(`/${rolePath}/profile`);
               }}
               className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-indigo-600"
             >
