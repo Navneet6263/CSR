@@ -25,16 +25,18 @@ export default function DashboardLayout({
   }
 
   const isStudent = role === 'Student';
+  const isDocReviewer = role === 'DocReviewer';
+  const hasSidebar = !isStudent && !isDocReviewer;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5] print:bg-none print:bg-white">
-      {!isStudent && (
+      {hasSidebar && (
         <div className="print:hidden">
           <Sidebar />
         </div>
       )}
-      <main className={`flex-1 min-h-screen transition-all duration-300 ${!isStudent ? 'ml-[280px]' : 'ml-0'} print:ml-0 print:p-0`}>
-        <div className={isStudent ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
+      <main className={`flex-1 min-h-screen transition-all duration-300 ${hasSidebar ? 'ml-[280px]' : 'ml-0'} print:ml-0 print:p-0`}>
+        <div className={isStudent || isDocReviewer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
           {children}
         </div>
       </main>

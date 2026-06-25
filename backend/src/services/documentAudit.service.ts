@@ -128,3 +128,63 @@ export async function uploadDocument(applicationId: number, documentType: string
     return inserted;
   }
 }
+
+export async function getApplicationDocs(applicationId: number) {
+  return db('DocumentChecklist')
+    .where({ ApplicationID: applicationId })
+    .orderBy('CreatedAt', 'asc');
+}
+
+export async function getReviewerLogs(reviewerId: number) {
+  return db('DocumentChecklist as dc')
+    .join('Applications as a', 'a.ApplicationID', 'dc.ApplicationID')
+    .join('Students as s', 's.StudentID', 'a.StudentID')
+    .join('Users as u', 'u.UserID', 's.UserID')
+    .select(
+      'dc.ChecklistID as id',
+      'dc.Status as action',
+      'dc.DocumentType as docType',
+      'u.FullName as studentName',
+      'a.ApplicationID as appId',
+      'dc.RejectionReason as reason',
+      'dc.ReviewedAt as timestamp'
+    )
+    .where('dc.ReviewedBy', reviewerId)
+    .orderBy('dc.ReviewedAt', 'desc');
+}
+
+export async function getReviewerStats(reviewerId: number) {
+  // 1. Pending Review: count distinct applications awaiting review
+  const pendingRes = await db('Applications')
+    .whereIn('Status', ['Submitted', 'AutoMatched', 'DocAuditInProgress'])
+    .count('* as count')
+    .first();
+  const pendingCount = pendingRes ? Number(pendingRes.count) : 0;
+
+  // 2. Actions today
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const approvedTodayRes = await db('DocumentChecklist')
+    .where('ReviewedBy', reviewerId)
+    .where('Status', 'Verified')
+    .where('ReviewedAt', '>=', startOfDay.toISOString())
+    .count('* as count')
+    .first();
+  const approvedTodayCount = approvedTodayRes ? Number(approvedTodayRes.count) : 0;
+
+  const rejectedTodayRes = await db('DocumentChecklist')
+    .where('ReviewedBy', reviewerId)
+    .whereIn('Status', ['Rejected', 'ReUploadRequested'])
+    .where('ReviewedAt', '>=', startOfDay.toISOString())
+    .count('* as count')
+    .first();
+  const rejectedTodayCount = rejectedTodayRes ? Number(rejectedTodayRes.count) : 0;
+
+  return {
+    pendingReview: pendingCount,
+    approvedToday: approvedTodayCount,
+    rejectedToday: rejectedTodayCount,
+    avgAuditTime: "1.2m" // Mocked metric for now
+  };
+}

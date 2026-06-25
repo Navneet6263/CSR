@@ -29,4 +29,16 @@ export const verificationApi = {
 
   submitBGCheck: (appId: number, data: BGCheckPayload) =>
     apiClient(`/verify/bg-checks/${appId}`, { method: 'POST', body: JSON.stringify(data) }),
+
+  getAppDocs: async (applicationId: number) => {
+    return apiClient<any>(`/verify/docs/application/${applicationId}`);
+  },
+
+  getReviewerLogs: async () => {
+    return apiClient<any[]>('/verify/logs');
+  },
+
+  getReviewerStats: async () => {
+    return apiClient<any>('/verify/stats');
+  },
 };

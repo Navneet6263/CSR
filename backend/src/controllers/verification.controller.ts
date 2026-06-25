@@ -83,3 +83,43 @@ export async function submitBGCheck(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function getAppDocs(req: Request, res: Response, next: NextFunction) {
+  try {
+    const applicationId = parseInt(req.params.id as string, 10);
+    const docs = await docAuditService.getApplicationDocs(applicationId);
+    
+    // Also get student basic details for the UI header
+    const studentData = await db('Applications as a')
+      .join('Students as s', 's.StudentID', 'a.StudentID')
+      .join('Users as u', 'u.UserID', 's.UserID')
+      .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
+      .select('u.FullName as name', 'a.ApplicationID as applicationId', 'sc.Name as scholarship', 's.AadharNumber as aadhar', 's.AnnualFamilyIncome as income')
+      .where('a.ApplicationID', applicationId)
+      .first();
+
+    sendSuccess(res, { student: studentData, docs }, 'Application documents retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getReviewerLogsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const reviewerId = req.user!.userId;
+    const logs = await docAuditService.getReviewerLogs(reviewerId);
+    sendSuccess(res, logs, 'Reviewer logs retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getStatsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const reviewerId = req.user!.userId;
+    const stats = await docAuditService.getReviewerStats(reviewerId);
+    sendSuccess(res, stats, 'Reviewer stats retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}

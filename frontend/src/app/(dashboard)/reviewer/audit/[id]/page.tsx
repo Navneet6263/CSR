@@ -1,81 +1,147 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { applicationApi, verificationApi } from '@/lib/api';
-import DocumentChecklistPanel, { DocumentViewer, parseDocumentChecklist } from '@/components/reviewer/DocumentChecklistPanel';
-import type { DocumentChecklistItem } from '@/types/domain';
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, CircleDot, ScrollText, Loader2 } from "lucide-react";
+import { TopNav } from "@/components/reviewer/TopNav";
+import { DocumentViewer } from "@/components/reviewer/DocumentViewer";
+import { AuditPanel } from "@/components/reviewer/AuditPanel";
+import { verificationApi } from "@/lib/api/verification";
 
-export default function DocumentAuditPage() {
-  const { id } = useParams();
-  const [studentName, setStudentName] = useState('');
-  const [docs, setDocs] = useState<DocumentChecklistItem[]>([]);
+export default function AuditWorkspace() {
+  const params = useParams();
+  const id = params.id as string;
+  const router = useRouter();
+  
+  const [student, setStudent] = useState<Record<string, unknown> | null>(null);
+  const [docs, setDocs] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeDocUrl, setActiveDocUrl] = useState<string | null>(null);
-  const [rejectingDocId, setRejectingDocId] = useState<number | null>(null);
-  const [rejectionReason, setRejectionReason] = useState('');
 
-  const loadApp = async () => {
-    const res = await applicationApi.getById(Number(id));
-    const data = res.data || {};
-    setStudentName(String(data.StudentName ?? data.studentName ?? 'N/A'));
-    setDocs(parseDocumentChecklist(data));
-  };
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionDraft, setRejectionDraft] = useState("");
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
   useEffect(() => {
-    loadApp().catch(console.error).finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    verificationApi.getAppDocs(parseInt(id)).then(res => {
+      setStudent(res.data.student);
+      
+      const mappedDocs = res.data.docs.map((d: Record<string, unknown>) => ({
+        id: d.ChecklistID.toString(),
+        type: d.DocumentType,
+        status: d.Status === 'Uploaded' || d.Status === 'Pending' ? 'Pending' : d.Status === 'Verified' ? 'Approved' : d.Status,
+        url: d.FileURL,
+        rejectionReason: d.RejectionReason,
+      }));
+      setDocs(mappedDocs);
+      if (mappedDocs.length > 0) {
+        setSelectedId(mappedDocs[0].id);
+        // If all documents are already audited upon loading, this application was previously submitted.
+        if (mappedDocs.every((d: any) => d.status !== 'Pending')) {
+          setAlreadySubmitted(true);
+        }
+      }
+    }).finally(() => setLoading(false));
   }, [id]);
 
-  const handleReview = async (docId: number, isVerified: boolean) => {
-    if (!isVerified && !rejectionReason.trim()) {
-      alert('Rejection reason is required.');
-      return;
-    }
-    try {
-      await verificationApi.reviewDoc(docId, {
-        status: isVerified ? 'Verified' : 'Rejected',
-        rejectionReason: isVerified ? undefined : rejectionReason,
-      });
-      await loadApp();
-      setRejectingDocId(null);
-      setRejectionReason('');
-    } catch {
-      alert('Failed to update document status');
-    }
+  const selected = docs.find((d) => d.id === selectedId) ?? null;
+  const allDone = docs.length > 0 && docs.every((d) => d.status === 'Approved' || d.status === 'Rejected');
+
+  const approve = async (docId: string) => {
+    await verificationApi.reviewDoc(parseInt(docId), { status: 'Verified' });
+    setDocs((ds) => ds.map((d) => (d.id === docId ? { ...d, status: "Approved", rejectionReason: undefined } : d)));
+    setRejectingId(null); setRejectionDraft("");
+  };
+
+  const reject = async (docId: string, reason: string) => {
+    await verificationApi.reviewDoc(parseInt(docId), { status: 'Rejected', rejectionReason: reason });
+    setDocs((ds) => ds.map((d) => (d.id === docId ? { ...d, status: "Rejected", rejectionReason: reason } : d)));
+    setRejectingId(null); setRejectionDraft("");
+  };
+
+  const overall = docs.some((d) => d.status === "Rejected")
+    ? { label: "Action Required", tone: "bg-rose-100 text-rose-700" }
+    : allDone
+    ? { label: "Ready to Submit", tone: "bg-emerald-100 text-emerald-700" }
+    : { label: "In Review", tone: "bg-amber-100 text-amber-700" };
+
+  const handleSubmit = () => {
+    // In our backend, documents are updated one-by-one. 
+    // Submitting the whole audit just means going back to the logs/dashboard.
+    // If we wanted to change the overall application status to "DocAuditComplete", 
+    // we would call another API here. For now, just navigate.
+    
+    const approvedCount = docs.filter((d) => d.status === "Approved").length;
+    const rejectedCount = docs.filter((d) => d.status === "Rejected").length;
+    alert(`Audit submitted successfully\n${approvedCount} approved · ${rejectedCount} rejected`);
+    router.push("/reviewer/logs");
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="animate-spin text-[#5b2c6f] w-12 h-12" />
-      </div>
-    );
+    return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
+
+  if (!student) {
+    return <div className="flex h-screen items-center justify-center">Student not found</div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-card-entrance">
-      <div className="flex items-center space-x-4">
-        <Link href="/reviewer" className="clickable clay-card p-2 text-gray-500 hover:text-gray-800">
-          <ArrowLeft className="w-6 h-6" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Review Documents — App #{id}</h1>
-          <p className="text-gray-500 mt-1">Student: {studentName}</p>
+    <div className="min-h-screen pb-10">
+      <TopNav />
+      <main className="mx-auto mt-6 max-w-7xl space-y-5 px-4 sm:px-6">
+        <div className="glass flex flex-col gap-3 rounded-2xl px-6 py-5 sm:flex-row sm:items-center sm:justify-between bg-white/60 shadow-sm border border-white">
+          <div className="flex items-center gap-4">
+            <Link href="/reviewer" className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-white/80 hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-lg font-semibold tracking-tight">{student.name}</h1>
+                <span className="font-mono text-xs text-muted-foreground">#{student.applicationId}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{student.scholarship}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-xs">
+            <div className="hidden sm:block">
+              <div className="text-muted-foreground">Aadhar</div>
+              <div className="font-mono text-foreground">{student.aadhar}</div>
+            </div>
+            <div className="hidden sm:block">
+              <div className="text-muted-foreground">Annual Income</div>
+              <div className="font-medium text-foreground">₹{student.income}</div>
+            </div>
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${overall.tone}`}>
+              <CircleDot className="h-3 w-3" /> {overall.label}
+            </span>
+            <Link
+              href="/reviewer/logs"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-foreground transition-all hover:scale-[1.02] hover:bg-white"
+            >
+              <ScrollText className="h-3 w-3" /> Activity log
+            </Link>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2"><DocumentViewer url={activeDocUrl} /></div>
-        <DocumentChecklistPanel
-          docs={docs} activeUrl={activeDocUrl} rejectingId={rejectingDocId}
-          rejectionReason={rejectionReason} onSelect={setActiveDocUrl}
-          onRejectStart={setRejectingDocId} onRejectCancel={() => setRejectingDocId(null)}
-          onReasonChange={setRejectionReason} onReview={handleReview}
-        />
-      </div>
+        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]" style={{ minHeight: "calc(100vh - 220px)" }}>
+          <DocumentViewer doc={selected} />
+          <AuditPanel
+            docs={docs}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onApprove={approve}
+            onReject={reject}
+            rejectingId={rejectingId}
+            setRejectingId={setRejectingId}
+            rejectionDraft={rejectionDraft}
+            setRejectionDraft={setRejectionDraft}
+            onSubmit={handleSubmit}
+            allDone={allDone}
+            alreadySubmitted={alreadySubmitted}
+          />
+        </div>
+      </main>
     </div>
   );
 }

@@ -8,6 +8,9 @@ import {
   uploadDoc,
   getBGChecksPending,
   submitBGCheck,
+  getAppDocs,
+  getReviewerLogsHandler,
+  getStatsHandler
 } from '../controllers/verification.controller';
 
 const router = Router();
@@ -17,7 +20,10 @@ router.use(authenticate);
 
 // ─── Document Audit Routes ──────────────────────────────────────────────────
 router.get('/docs/pending', requireRole('DocReviewer'), getDocsPending);
+router.get('/docs/application/:id', requireRole('DocReviewer'), getAppDocs);
 router.put('/docs/:id/review', requireRole('DocReviewer'), validate(docReviewSchema), reviewDoc);
+router.get('/logs', requireRole('DocReviewer'), getReviewerLogsHandler);
+router.get('/stats', requireRole('DocReviewer'), getStatsHandler);
 
 // Student Docs
 router.get('/docs/reuploads', requireRole('Student'), getReUploads);
