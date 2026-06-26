@@ -21,13 +21,45 @@ export default function PersonalTab({ profile, onUpdate }: PersonalTabProps) {
     aadharNumber: profile.aadharNumber || '',
     alternatePhone: profile.alternatePhone || '',
     address: profile.address || '',
+    permanentAddress: profile.permanentAddress || '',
+    permanentCity: profile.permanentCity || '',
+    permanentState: profile.permanentState || '',
+    permanentPincode: profile.permanentPincode || '',
+    isPermanentSameAsCurrent: profile.isPermanentSameAsCurrent || false,
+    currentAddressDurationMonths: profile.currentAddressDurationMonths || '',
     city: profile.city || '',
     state: profile.state || '',
     pincode: profile.pincode || '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked,
+        ...(checked ? {
+          permanentAddress: prev.address,
+          permanentCity: prev.city,
+          permanentState: prev.state,
+          permanentPincode: prev.pincode
+        } : {})
+      }));
+    } else {
+      setFormData(prev => {
+        const next = { ...prev, [name]: value };
+        // Sync permanent fields if checkbox is checked and current fields are modified
+        if (next.isPermanentSameAsCurrent && ['address', 'city', 'state', 'pincode'].includes(name)) {
+          if (name === 'address') next.permanentAddress = value;
+          if (name === 'city') next.permanentCity = value;
+          if (name === 'state') next.permanentState = value;
+          if (name === 'pincode') next.permanentPincode = value;
+        }
+        return next;
+      });
+    }
     setSuccess(false);
   };
 
@@ -139,40 +171,99 @@ export default function PersonalTab({ profile, onUpdate }: PersonalTabProps) {
 
         <div className="space-y-6 pt-4 border-t border-slate-100">
           <h3 className="text-lg font-bold text-slate-800">Current Address</h3>
-          
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Full Address (Include Landmark)</label>
-            <textarea 
-              name="address" value={formData.address} onChange={handleChange} required rows={2}
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm resize-none"
-              placeholder="House No, Street, Landmark..."
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Street / House No.</label>
+              <textarea 
+                name="address" value={formData.address} onChange={handleChange} required rows={2}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none shadow-sm resize-none"
+                placeholder="House No, Street, Area..."
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">City</label>
+                <input 
+                  type="text" name="city" value={formData.city} onChange={handleChange} required
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">State</label>
+                <input 
+                  type="text" name="state" value={formData.state} onChange={handleChange} required
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Pincode</label>
+                <input 
+                  type="text" name="pincode" value={formData.pincode} onChange={handleChange} required maxLength={6}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Duration (Months)</label>
+                <input 
+                  type="number" name="currentAddressDurationMonths" value={formData.currentAddressDurationMonths} onChange={handleChange} min={0}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm"
+                  placeholder="e.g. 24"
+                />
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">City / District</label>
+        <div className="space-y-6 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-slate-800">Permanent Address</h3>
+            <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 transition-colors">
               <input 
-                type="text" name="city" value={formData.city} onChange={handleChange} required
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm"
-                placeholder="City"
+                type="checkbox" 
+                name="isPermanentSameAsCurrent"
+                checked={formData.isPermanentSameAsCurrent}
+                onChange={handleChange}
+                className="w-4 h-4 text-[#5b2c6f] rounded border-slate-300 focus:ring-[#5b2c6f]"
+              />
+              <span className="text-xs font-bold text-slate-700 uppercase">Same as Current</span>
+            </label>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Street / House No.</label>
+              <textarea 
+                name="permanentAddress" value={formData.permanentAddress} onChange={handleChange} required rows={2}
+                disabled={formData.isPermanentSameAsCurrent}
+                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none shadow-sm resize-none disabled:bg-slate-100 disabled:text-slate-500"
+                placeholder="Permanent Address..."
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">State</label>
-              <input 
-                type="text" name="state" value={formData.state} onChange={handleChange} required
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm"
-                placeholder="State"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Pincode</label>
-              <input 
-                type="text" name="pincode" value={formData.pincode} onChange={handleChange} required maxLength={6}
-                className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 focus:border-[#5b2c6f] outline-none transition-all shadow-sm"
-                placeholder="Pincode"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">City</label>
+                <input 
+                  type="text" name="permanentCity" value={formData.permanentCity} onChange={handleChange} required
+                  disabled={formData.isPermanentSameAsCurrent}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">State</label>
+                <input 
+                  type="text" name="permanentState" value={formData.permanentState} onChange={handleChange} required
+                  disabled={formData.isPermanentSameAsCurrent}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Pincode</label>
+                <input 
+                  type="text" name="permanentPincode" value={formData.permanentPincode} onChange={handleChange} required maxLength={6}
+                  disabled={formData.isPermanentSameAsCurrent}
+                  className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-[#5b2c6f]/20 outline-none shadow-sm disabled:bg-slate-100 disabled:text-slate-500"
+                />
+              </div>
             </div>
           </div>
         </div>

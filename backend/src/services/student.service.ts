@@ -108,6 +108,20 @@ export async function updateStudentProfile(
   if (data.statementOfPurpose !== undefined) updatePayload.StatementOfPurpose = data.statementOfPurpose;
   if (data.extracurricularActivities !== undefined) updatePayload.ExtracurricularActivities = data.extracurricularActivities;
 
+  // New Family, Address & Document Mapping
+  if (data.permanentAddress !== undefined) updatePayload.PermanentAddress = data.permanentAddress;
+  if (data.permanentCity !== undefined) updatePayload.PermanentCity = data.permanentCity;
+  if (data.permanentState !== undefined) updatePayload.PermanentState = data.permanentState;
+  if (data.permanentPincode !== undefined) updatePayload.PermanentPincode = data.permanentPincode;
+  if (data.isPermanentSameAsCurrent !== undefined) updatePayload.IsPermanentSameAsCurrent = data.isPermanentSameAsCurrent;
+  if (data.currentAddressDurationMonths !== undefined) updatePayload.CurrentAddressDurationMonths = data.currentAddressDurationMonths;
+  if (data.numberOfSiblings !== undefined) updatePayload.NumberOfSiblings = data.numberOfSiblings;
+  if (data.siblingDetails !== undefined) updatePayload.SiblingDetails = data.siblingDetails ? JSON.stringify(data.siblingDetails) : null;
+  if (data.fatherAadharFileURL !== undefined) updatePayload.FatherAadharFileURL = data.fatherAadharFileURL;
+  if (data.motherAadharFileURL !== undefined) updatePayload.MotherAadharFileURL = data.motherAadharFileURL;
+  if (data.fatherPayslipFileURL !== undefined) updatePayload.FatherPayslipFileURL = data.fatherPayslipFileURL;
+  if (data.bankStatement6MonthsFileURL !== undefined) updatePayload.BankStatement6MonthsFileURL = data.bankStatement6MonthsFileURL;
+
   if (Object.keys(updatePayload).length === 0) {
     return student;
   }

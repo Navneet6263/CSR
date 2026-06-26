@@ -7,7 +7,6 @@ async function seed() {
   // 1. Create a common password hash
   const commonPassword = await bcrypt.hash('Student@123', 10);
 
-  // 2. Ensure Sponsor User exists
   let sponsorUser = await db('Users').where('Email', 'sponsor@talentbridge.com').first();
   if (!sponsorUser) {
     const [insertedSponsorUser] = await db('Users').insert({
@@ -19,6 +18,19 @@ async function seed() {
       IsActive: true
     }).returning('*');
     sponsorUser = insertedSponsorUser;
+  }
+
+  // 2.1 Ensure Screener exists
+  let screenerUser = await db('Users').where('Email', 'screener@test.com').first();
+  if (!screenerUser) {
+    await db('Users').insert({
+      FullName: 'Screening Committee',
+      Email: 'screener@test.com',
+      PasswordHash: commonPassword,
+      Role: 'ScreeningOfficer',
+      AgentCode: 'SCREENER_1',
+      IsActive: true
+    });
   }
 
   // 2.5 Ensure Sponsor entity exists
@@ -157,7 +169,26 @@ async function seed() {
         StatementOfPurpose: 'I want to study hard and contribute to society.',
         ExtracurricularActivities: 'Football, Chess, Debating',
         IsAadhaarLinkedToBank: true,
-        IsEKYCVerified: true
+        IsEKYCVerified: true,
+        
+        // Extended Address & Family Details
+        PermanentAddress: i % 2 === 0 ? null : `${i + 40} Heritage Road, Native Town`,
+        PermanentCity: i % 2 === 0 ? null : 'Mumbai',
+        PermanentState: i % 2 === 0 ? null : 'Maharashtra',
+        PermanentPincode: i % 2 === 0 ? null : '400001',
+        IsPermanentSameAsCurrent: i % 2 === 0,
+        CurrentAddressDurationMonths: Math.floor(6 + Math.random() * 48), // Between 6 and 54 months
+        NumberOfSiblings: Math.floor(Math.random() * 4), // 0 to 3 siblings
+        SiblingDetails: JSON.stringify([
+          { age: 18 + Math.floor(Math.random() * 10), gender: 'Male', occupation: 'Student', salary: 0 },
+          { age: 22 + Math.floor(Math.random() * 10), gender: 'Female', occupation: 'Software Engineer', salary: 30000 + Math.floor(Math.random() * 40000) }
+        ].slice(0, Math.floor(Math.random() * 3))),
+        FatherOccupation: ['Farmer', 'Shopkeeper', 'Government Employee', 'Laborer', 'Private Job'][Math.floor(Math.random() * 5)],
+        MotherOccupation: ['Homemaker', 'Teacher', 'Tailor', 'Nurse'][Math.floor(Math.random() * 4)],
+        FatherAadharFileURL: 'https://placehold.co/800x600/ffffff/2e86c1?text=Father+Aadhar',
+        MotherAadharFileURL: 'https://placehold.co/800x600/ffffff/2e86c1?text=Mother+Aadhar',
+        FatherPayslipFileURL: 'https://placehold.co/800x1100/ffffff/emerald?text=Father+Payslip',
+        BankStatement6MonthsFileURL: 'https://placehold.co/800x1100/ffffff/rose?text=Bank+Statement'
       }).returning('*');
       studentProfile = insertedStudent;
     }

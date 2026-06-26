@@ -27,6 +27,43 @@ export async function getPendingScreening() {
     })));
 }
 
+export async function getScreeningHistory(userId: number) {
+  return await db('Applications')
+    .join('Students', 'Applications.StudentID', 'Students.StudentID')
+    .join('Users', 'Students.UserID', 'Users.UserID')
+    .join('Scholarships', 'Applications.ScholarshipID', 'Scholarships.ScholarshipID')
+    .select(
+      'Applications.ApplicationID as applicationId',
+      'Applications.Status as status',
+      'Applications.SubmissionDate as submissionDate',
+      'Applications.ScholarshipAmount as scholarshipAmount',
+      'Applications.Notes as notes',
+      'Scholarships.Name as scholarshipName',
+      'Students.StudentID as studentId',
+      'Users.FullName as studentName',
+      'Users.Email as studentEmail'
+    )
+    .where('Applications.AssignedScreener', userId)
+    .orderBy('Applications.ApplicationID', 'desc')
+    .then(rows => rows.map(row => ({
+      ...row,
+      urgency: 'medium',
+      bgCheckResult: 'Pass'
+    })));
+}
+export async function getScreenerStats(userId: number) {
+  const pendingCount = await db('Applications').where({ Status: 'BGCheckComplete' }).count('* as count').first();
+  const approvedCount = await db('Applications').where({ AssignedScreener: userId, Status: 'ScreeningApproved' }).count('* as count').first();
+  const rejectedCount = await db('Applications').where({ AssignedScreener: userId, Status: 'ScreeningRejected' }).count('* as count').first();
+
+  return {
+    pending: parseInt(pendingCount?.count as string) || 0,
+    approved: parseInt(approvedCount?.count as string) || 0,
+    rejected: parseInt(rejectedCount?.count as string) || 0,
+    totalReviewed: (parseInt(approvedCount?.count as string) || 0) + (parseInt(rejectedCount?.count as string) || 0)
+  };
+}
+
 export async function submitScreeningDecision(
   appId: number,
   userId: number,
@@ -104,4 +141,35 @@ export async function submitCSRDecision(
     });
 
   return { message: `CSR decision '${status}' recorded successfully` };
+}
+
+// ─── Consolidated View ──────────────────────────────────────────────────────
+
+export async function getConsolidatedApplication(appId: number) {
+  const application = await db('Applications')
+    .join('Students', 'Applications.StudentID', 'Students.StudentID')
+    .join('Users', 'Students.UserID', 'Users.UserID')
+    .join('Scholarships', 'Applications.ScholarshipID', 'Scholarships.ScholarshipID')
+    .select(
+      'Applications.*',
+      'Scholarships.Name as ScholarshipName',
+      'Scholarships.PerStudentAmount as ScholarshipAmount',
+      'Students.*',
+      'Users.FullName',
+      'Users.Email',
+      'Users.Phone'
+    )
+    .where('Applications.ApplicationID', appId)
+    .first();
+
+  if (!application) throw new NotFoundError('Application not found');
+
+  const documents = await db('DocumentChecklist').where('ApplicationID', appId);
+  const bgChecks = await db('BackgroundChecks').where('ApplicationID', appId);
+
+  return {
+    application,
+    documents,
+    bgChecks
+  };
 }

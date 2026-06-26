@@ -6,10 +6,24 @@ import { mapScreeningApp, mapCSRApp } from '@/lib/mappers';
 import { apiClient } from './client';
 
 export const screeningApi = {
+  getStats: async () => {
+    return await apiClient<any>('/screening/stats');
+  },
+
   getPendingScreening: async () => {
     const res = await apiClient<Record<string, unknown>[]>('/screening/pending');
     return { ...res, data: (res.data || []).map(mapScreeningApp) as ScreeningApplicationRow[] };
   },
+
+  getHistory: async () => {
+    const res = await apiClient<Record<string, unknown>[]>('/screening/history');
+    return { ...res, data: (res.data || []).map(mapScreeningApp) as ScreeningApplicationRow[] };
+  },
+
+  getConsolidated: async (id: number) => {
+    return await apiClient<any>(`/screening/${id}/consolidated`);
+  },
+
 
   getApplicationDetail: async (id: number) => {
     const res = await apiClient<any>(`/applications/${id}`);
@@ -35,6 +49,9 @@ export const screeningApi = {
 
   rejectApplication: (id: number, notes: string) =>
     apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision: 'Reject', notes }) }),
+
+  submitScreeningDecision: (id: number, decision: 'Approve' | 'Reject', notes: string) =>
+    apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, notes }) }),
 
   submitScreening: (id: number, data: ScreeningPayload) =>
     apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify(data) }),

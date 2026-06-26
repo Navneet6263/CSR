@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CircleDot, ScrollText, Loader2 } from "lucide-react";
+import { ArrowLeft, CircleDot, ScrollText, Loader2, User } from "lucide-react";
 import { TopNav } from "@/components/reviewer/TopNav";
 import { DocumentViewer } from "@/components/reviewer/DocumentViewer";
 import { AuditPanel } from "@/components/reviewer/AuditPanel";
 import { verificationApi } from "@/lib/api/verification";
+import ScreenerApplicantDetails from "@/components/screener/ScreenerApplicantDetails";
 
 export default function AuditWorkspace() {
   const params = useParams();
@@ -17,6 +18,7 @@ export default function AuditWorkspace() {
   const [student, setStudent] = useState<Record<string, unknown> | null>(null);
   const [docs, setDocs] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showProfile, setShowProfile] = useState(false);
 
   const [selectedId, setSelectedId] = useState<string>("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -115,6 +117,12 @@ export default function AuditWorkspace() {
             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${overall.tone}`}>
               <CircleDot className="h-3 w-3" /> {overall.label}
             </span>
+            <button
+              onClick={() => setShowProfile(true)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 transition-all hover:scale-[1.02] hover:bg-blue-100"
+            >
+              <User className="h-3 w-3" /> Full Profile
+            </button>
             <Link
               href="/reviewer/logs"
               className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-foreground transition-all hover:scale-[1.02] hover:bg-white"
@@ -142,6 +150,26 @@ export default function AuditWorkspace() {
           />
         </div>
       </main>
+
+      {/* Profile Modal */}
+      {showProfile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowProfile(false)}>
+          <div className="relative w-full max-w-5xl h-[85vh] bg-slate-50 rounded-2xl shadow-2xl overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200">
+              <h2 className="text-xl font-bold text-slate-800">Applicant Details</h2>
+              <button 
+                onClick={() => setShowProfile(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-6">
+              <ScreenerApplicantDetails student={student} hideBankDetails={true} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

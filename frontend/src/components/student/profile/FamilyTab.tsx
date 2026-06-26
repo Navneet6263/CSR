@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Save } from 'lucide-react';
 import { studentApi } from '@/lib/api';
 import type { StudentProfile } from '@/types';
+import SiblingsSection from './SiblingsSection';
 
 interface FamilyTabProps {
   profile: StudentProfile;
@@ -18,6 +19,8 @@ export default function FamilyTab({ profile, onUpdate }: FamilyTabProps) {
     fatherOccupation: profile.fatherOccupation || '',
     motherName: profile.motherName || '',
     motherOccupation: profile.motherOccupation || '',
+    numberOfSiblings: profile.numberOfSiblings || 0,
+    siblingDetails: profile.siblingDetails ? (typeof profile.siblingDetails === 'string' ? JSON.parse(profile.siblingDetails) : profile.siblingDetails) : [],
     annualFamilyIncome: profile.annualFamilyIncome || '',
     familySize: profile.familySize || '',
     religion: profile.religion || '',
@@ -99,6 +102,16 @@ export default function FamilyTab({ profile, onUpdate }: FamilyTabProps) {
             </div>
           </div>
         </div>
+
+        {/* Siblings Information */}
+        <SiblingsSection 
+          numberOfSiblings={formData.numberOfSiblings}
+          siblingDetails={formData.siblingDetails}
+          onChange={(num, details) => {
+            setFormData(prev => ({ ...prev, numberOfSiblings: num, siblingDetails: details }));
+            setSuccess(false);
+          }}
+        />
 
         {/* Economic Details */}
         <div>

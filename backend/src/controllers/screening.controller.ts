@@ -5,8 +5,54 @@ import {
   submitScreeningDecision,
   getPendingCSR,
   submitCSRDecision,
+  getConsolidatedApplication,
+  getScreenerStats,
+  getScreeningHistory,
 } from '../services/screening.service';
 import { ScreeningDecisionInput, CsrDecisionInput } from '../validators/screening.validator';
+
+export async function getScreeningHistoryHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const history = await getScreeningHistory(userId);
+    sendSuccess(res, history, 'Screening history retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getScreenerStatsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const stats = await getScreenerStats(userId);
+    sendSuccess(res, stats, 'Screener stats retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getConsolidatedHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const appId = parseInt(req.params.id as string, 10);
+    const data = await getConsolidatedApplication(appId);
+    sendSuccess(res, data, 'Consolidated application retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+}
+
 
 export async function getPendingScreeningHandler(
   req: Request,

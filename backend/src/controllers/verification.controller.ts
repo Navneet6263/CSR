@@ -94,7 +94,7 @@ export async function getAppDocs(req: Request, res: Response, next: NextFunction
       .join('Students as s', 's.StudentID', 'a.StudentID')
       .join('Users as u', 'u.UserID', 's.UserID')
       .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
-      .select('u.FullName as name', 'a.ApplicationID as applicationId', 'sc.Name as scholarship', 's.AadharNumber as aadhar', 's.AnnualFamilyIncome as income')
+      .select('u.FullName as name', 'u.Email as email', 'u.Phone as phone', 'a.ApplicationID as applicationId', 'sc.Name as scholarship', 's.AadharNumber as aadhar', 's.AnnualFamilyIncome as income', 's.*')
       .where('a.ApplicationID', applicationId)
       .first();
 

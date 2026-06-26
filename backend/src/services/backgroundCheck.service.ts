@@ -87,7 +87,8 @@ export async function getBGCheckDetails(applicationId: number) {
       's.AadharNumber as aadhar',
       's.AnnualFamilyIncome as income',
       'u.Phone as phone',
-      's.Address as address'
+      's.Address as address',
+      's.*'
     )
     .where('a.ApplicationID', applicationId)
     .first();

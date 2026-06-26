@@ -66,6 +66,10 @@ export default function DocumentsTab() {
     { type: 'Bonafide', label: 'Bonafide Certificate', desc: 'Freshly issued by current college/institution' },
     { type: 'BankPassbook', label: 'Bank Passbook / Cancelled Cheque', desc: 'Must clearly show Account No. and IFSC' },
     { type: 'Recommendation', label: 'Recommendation Letter', desc: 'From Principal/Teacher (for Corporate CSR)' },
+    { type: 'FatherAadhar', label: "Father's Aadhar", desc: "Copy of Father's Aadhar Card" },
+    { type: 'MotherAadhar', label: "Mother's Aadhar", desc: "Copy of Mother's Aadhar Card" },
+    { type: 'FatherPayslip', label: "Father's Payslip", desc: "Recent payslip (if employed)" },
+    { type: 'BankStatement6Months', label: '6 Months Bank Statement', desc: 'Last 6 months bank statement of parent/student' },
   ];
 
   return (

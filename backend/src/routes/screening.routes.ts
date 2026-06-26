@@ -5,6 +5,9 @@ import {
   submitScreeningDecisionHandler,
   getPendingCSRHandler,
   submitCSRDecisionHandler,
+  getConsolidatedHandler,
+  getScreenerStatsHandler,
+  getScreeningHistoryHandler,
 } from '../controllers/screening.controller';
 import {
   validateScreeningDecision,
@@ -18,9 +21,27 @@ router.use(authenticate);
 // ─── Screening Officer Routes ───────────────────────────────────────────────
 
 router.get(
+  '/stats',
+  requireRole('ScreeningOfficer'),
+  getScreenerStatsHandler
+);
+
+router.get(
+  '/history',
+  requireRole('ScreeningOfficer'),
+  getScreeningHistoryHandler
+);
+
+router.get(
   '/pending',
   requireRole('ScreeningOfficer'),
   getPendingScreeningHandler
+);
+
+router.get(
+  '/:id/consolidated',
+  requireRole('ScreeningOfficer'),
+  getConsolidatedHandler
 );
 
 router.post(

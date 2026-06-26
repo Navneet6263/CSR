@@ -6,6 +6,7 @@ import { verificationApi } from '@/lib/api';
 import { TopNav } from '@/components/officer/TopNav';
 import { Shield, MapPin, User, Banknote, ArrowLeft, CheckCircle2, XCircle, AlertTriangle, FileText } from 'lucide-react';
 import Link from 'next/link';
+import ScreenerApplicantDetails from '@/components/screener/ScreenerApplicantDetails';
 
 interface BGCheckDetail {
   student: {
@@ -123,37 +124,8 @@ export default function VerificationDetail() {
           
           {/* LEFT: Profile & Docs */}
           <div className="lg:col-span-5 space-y-6">
-            <div className="glass rounded-2xl bg-white/60 p-6 shadow-sm border border-white">
-              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                <User className="h-5 w-5 text-blue-600" /> Student Profile
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Full Name</div>
-                  <div className="font-semibold text-slate-800 text-lg">{student.name}</div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Contact</div>
-                    <div className="font-medium text-slate-700">{student.phone}</div>
-                    <div className="text-sm text-slate-500">{student.email}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Aadhar Number</div>
-                    <div className="font-mono text-sm font-semibold text-slate-700">{student.aadhar}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Annual Family Income</div>
-                  <div className="font-semibold text-green-700">₹ {student.income.toLocaleString('en-IN')}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Current Address</div>
-                  <div className="font-medium text-slate-700 bg-white/50 p-3 rounded-lg border border-white mt-1">
-                    {student.address}
-                  </div>
-                </div>
-              </div>
+            <div className="glass rounded-2xl bg-white/60 p-1 shadow-sm border border-white">
+              <ScreenerApplicantDetails student={student} hideBankDetails={true} />
             </div>
 
             {/* Documents */}

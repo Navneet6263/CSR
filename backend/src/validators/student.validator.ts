@@ -68,6 +68,20 @@ export const updateStudentProfileSchema = z.object({
 
   statementOfPurpose: z.string().optional(),
   extracurricularActivities: z.string().optional(),
+
+  // Newly Added Family & Address Fields
+  permanentAddress: z.string().max(500).optional(),
+  permanentCity: z.string().optional(),
+  permanentState: z.string().optional(),
+  permanentPincode: z.string().optional(),
+  isPermanentSameAsCurrent: z.boolean().optional(),
+  currentAddressDurationMonths: z.number().int().min(0).optional(),
+  numberOfSiblings: z.number().int().min(0).optional(),
+  siblingDetails: z.any().optional(), // Or a more specific array schema
+  fatherAadharFileURL: z.string().url().max(500).optional().or(z.literal('')),
+  motherAadharFileURL: z.string().url().max(500).optional().or(z.literal('')),
+  fatherPayslipFileURL: z.string().url().max(500).optional().or(z.literal('')),
+  bankStatement6MonthsFileURL: z.string().url().max(500).optional().or(z.literal('')),
 });
 
 export type UpdateStudentProfileInput = z.infer<typeof updateStudentProfileSchema>;

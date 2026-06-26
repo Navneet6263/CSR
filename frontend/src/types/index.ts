@@ -93,6 +93,19 @@ export interface StudentProfile {
 
   statementOfPurpose?: string;
   extracurricularActivities?: string;
+
+  permanentAddress?: string;
+  permanentCity?: string;
+  permanentState?: string;
+  permanentPincode?: string;
+  isPermanentSameAsCurrent?: boolean;
+  currentAddressDurationMonths?: number;
+  numberOfSiblings?: number;
+  siblingDetails?: any;
+  fatherAadharFileURL?: string;
+  motherAadharFileURL?: string;
+  fatherPayslipFileURL?: string;
+  bankStatement6MonthsFileURL?: string;
 }
 
 export interface Scholarship {

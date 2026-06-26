@@ -46,7 +46,8 @@ export default function DashboardLayout({
   const isStudent = role === 'Student';
   const isDocReviewer = role === 'DocReviewer';
   const isBGOfficer = role === 'BGCheckOfficer';
-  const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer;
+  const isScreener = role === 'ScreeningOfficer';
+  const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer && !isScreener;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5] print:bg-none print:bg-white">
@@ -56,7 +57,7 @@ export default function DashboardLayout({
         </div>
       )}
       <main className={`flex-1 min-h-screen transition-all duration-300 ${hasSidebar ? 'ml-[280px]' : 'ml-0'} print:ml-0 print:p-0`}>
-        <div className={isStudent || isDocReviewer || isBGOfficer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
+        <div className={isScreener ? "" : isStudent || isDocReviewer || isBGOfficer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
           {children}
         </div>
       </main>
