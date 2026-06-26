@@ -59,7 +59,7 @@ export default function RegisterForm() {
     setLoading(true);
     try {
       await authApi.register(form);
-      window.location.href = '/dashboard';
+      window.location.href = form.role === 'Agent' ? '/agent' : '/student';
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Registration failed');
     } finally {

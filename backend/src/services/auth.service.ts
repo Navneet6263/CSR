@@ -31,6 +31,9 @@ export async function registerUser(data: RegisterInput) {
 
   const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS);
 
+  // Generate a random AgentCode to prevent SQL Server UNIQUE constraint violation on NULLs
+  const uniqueAgentCode = `USR${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 1000)}`;
+
   // Insert user inside a transaction so Student row is atomic
   const result = await db.transaction(async (trx) => {
     const [inserted] = await trx('Users')
@@ -40,6 +43,7 @@ export async function registerUser(data: RegisterInput) {
         Phone: data.phone || null,
         PasswordHash: passwordHash,
         Role: data.role,
+        AgentCode: uniqueAgentCode,
         IsActive: true,
       })
       .returning('*');
