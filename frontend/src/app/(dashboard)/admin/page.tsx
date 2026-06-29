@@ -1,39 +1,64 @@
 'use client';
 
-import Link from 'next/link';
-import { GraduationCap, ClipboardList, BarChart3 } from 'lucide-react';
-import TopBar from '@/components/dashboard/TopBar';
+import { useState, useEffect } from 'react';
+import { adminApi } from '@/lib/api/admin';
+import { mockMetrics } from '@/lib/mockData';
+import MetricsRow from "@/components/admin/MetricsRow";
+import FunnelChart from "@/components/admin/FunnelChart";
+import WorkloadChart from "@/components/admin/WorkloadChart";
+import ZoneDistribution from "@/components/admin/ZoneDistribution";
+import CriticalAlerts from "@/components/admin/CriticalAlerts";
+import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
-const cards = [
-  { href: '/admin/scholarships', title: 'Scholarships', desc: 'Manage programs & eligibility rules', icon: GraduationCap, color: '#5b2c6f' },
-  { href: '/admin/funnel', title: 'Funnel Analysis', desc: 'Stage bottlenecks & SLA violations', icon: BarChart3, color: '#2e86c1' },
-  { href: '/admin/reports', title: 'Reports', desc: 'SLA, funnel, and audit exports', icon: ClipboardList, color: '#0e6251' },
-];
+export default function AdminOverviewPage() {
+  const [metrics, setMetrics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function AdminDashboard() {
+  useEffect(() => {
+    fetchMetrics();
+  }, []);
+
+  const fetchMetrics = async () => {
+    try {
+      const res = await adminApi.getDashboardMetrics();
+      if (res.success && res.data) {
+        setMetrics(res.data);
+      } else {
+        setMetrics(mockMetrics); // fallback to mock data if API response is empty
+      }
+    } catch (err) {
+      console.error("API failed, falling back to mock data:", err);
+      setMetrics(mockMetrics);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="h-full flex items-center justify-center min-h-[50vh]"><LoadingSpinner size="lg" /></div>;
+
   return (
-    <div className="space-y-6 animate-card-entrance">
-      <TopBar title="Admin Console" subtitle="Configure rules, manage stages, and monitor SLA" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {cards.map(({ href, title, desc, icon: Icon, color }) => (
-          <Link key={href} href={href} className="clickable-card clay-card p-6 block group">
-            <div className="p-3 rounded-2xl w-fit mb-4" style={{ backgroundColor: `${color}15` }}>
-              <Icon size={28} style={{ color }} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800 group-hover:text-[#5b2c6f] transition-colors">{title}</h3>
-            <p className="text-sm text-slate-500 mt-2">{desc}</p>
-          </Link>
-        ))}
-      </div>
-      <div className="clay-card p-6">
-        <h2 className="text-base font-bold text-slate-800 mb-4">Lifecycle Funnel</h2>
-        <div className="flex flex-wrap gap-2 text-xs font-medium">
-          {['Registered', 'Applied', 'AutoMatched', 'DocAudit', 'BGCheck', 'Screening', 'CSR', 'Funded'].map((s, i) => (
-            <span key={s} className="flex items-center gap-2">
-              <span className="px-3 py-1.5 rounded-xl bg-[#5b2c6f]/10 text-[#5b2c6f]">{s}</span>
-              {i < 7 && <span className="text-slate-300">→</span>}
-            </span>
-          ))}
+    <div className="space-y-5 animate-fade-in">
+      <header className="flex items-end justify-between">
+        <div>
+          <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">Overview</h1>
+          <p className="text-sm text-slate-500 mt-0.5">A snapshot of applications, funds, and bottlenecks.</p>
+        </div>
+      </header>
+
+      <MetricsRow data={metrics} />
+
+      <div className="grid grid-cols-12 gap-5">
+        <div className="col-span-12 md:col-span-5">
+          <FunnelChart data={metrics?.funnel} />
+        </div>
+        <div className="col-span-12 md:col-span-7">
+          <WorkloadChart data={metrics?.workload} />
+        </div>
+        <div className="col-span-12 md:col-span-5">
+          <CriticalAlerts data={metrics?.alerts} />
+        </div>
+        <div className="col-span-12 md:col-span-7">
+          <ZoneDistribution data={metrics} />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import db from '../config/database';
-import { NotFoundError, ValidationError } from '../utils/errors';
+import { NotFoundError, ValidationError, ForbiddenError } from '../utils/errors';
 
 export async function getPendingReviewApplications() {
   return db('Applications as a')
@@ -10,6 +10,8 @@ export async function getPendingReviewApplications() {
       'a.ApplicationID',
       'a.Status',
       'a.SubmissionDate',
+      'a.IsHeldByAdmin',
+      'a.AdminHoldReason',
       'u.FullName as StudentName',
       'u.Email as StudentEmail',
       'sc.Name as ScholarshipName'
@@ -27,6 +29,7 @@ export async function getPendingDocuments() {
       'dc.*',
       'a.ScholarshipID',
       'a.Status as ApplicationStatus',
+      'a.IsHeldByAdmin',
       'u.FullName as StudentName',
       'u.Email as StudentEmail'
     )
@@ -44,6 +47,11 @@ export async function reviewDocument(
   try {
     const doc = await trx('DocumentChecklist').where({ ChecklistID: checklistId }).first();
     if (!doc) throw new NotFoundError('Document not found');
+    
+    const app = await trx('Applications').where({ ApplicationID: doc.ApplicationID }).first();
+    if (app && app.IsHeldByAdmin) {
+      throw new ForbiddenError('Application is currently on hold by Admin');
+    }
 
     const updateData: any = {
       Status: status,

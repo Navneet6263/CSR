@@ -1,5 +1,5 @@
 import db from '../config/database';
-import { NotFoundError } from '../utils/errors';
+import { NotFoundError, ForbiddenError } from '../utils/errors';
 
 // ─── Screening Officer Workflow ─────────────────────────────────────────────
 
@@ -14,6 +14,8 @@ export async function getPendingScreening() {
       'Applications.SubmissionDate as submissionDate',
       'Applications.ScholarshipAmount as scholarshipAmount',
       'Applications.Notes as notes',
+      'Applications.IsHeldByAdmin as isHeldByAdmin',
+      'Applications.AdminHoldReason as adminHoldReason',
       'Scholarships.Name as scholarshipName',
       'Students.StudentID as studentId',
       'Users.FullName as studentName',
@@ -22,6 +24,7 @@ export async function getPendingScreening() {
     .where('Applications.Status', 'BGCheckComplete')
     .then(rows => rows.map(row => ({
       ...row,
+      isHeldByAdmin: !!row.isHeldByAdmin,
       urgency: 'medium', // Mock value since DB lacks this
       bgCheckResult: 'Pass' // Mock value for UI
     })));
@@ -38,6 +41,7 @@ export async function getScreeningHistory(userId: number) {
       'Applications.SubmissionDate as submissionDate',
       'Applications.ScholarshipAmount as scholarshipAmount',
       'Applications.Notes as notes',
+      'Applications.IsHeldByAdmin as isHeldByAdmin',
       'Scholarships.Name as scholarshipName',
       'Students.StudentID as studentId',
       'Users.FullName as studentName',
@@ -47,6 +51,7 @@ export async function getScreeningHistory(userId: number) {
     .orderBy('Applications.ApplicationID', 'desc')
     .then(rows => rows.map(row => ({
       ...row,
+      isHeldByAdmin: !!row.isHeldByAdmin,
       urgency: 'medium',
       bgCheckResult: 'Pass'
     })));
@@ -72,6 +77,7 @@ export async function submitScreeningDecision(
 ) {
   const app = await db('Applications').where({ ApplicationID: appId }).first();
   if (!app) throw new NotFoundError('Application not found');
+  if (app.IsHeldByAdmin) throw new ForbiddenError('Application is currently on hold by Admin');
 
   const status = decision === 'Approve' ? 'ScreeningApproved' : 'ScreeningRejected';
   let updatedNotes = app.Notes || '';
@@ -103,6 +109,8 @@ export async function getPendingCSR() {
       'Applications.SubmissionDate as submissionDate',
       'Applications.ScholarshipAmount as scholarshipAmount',
       'Applications.Notes as notes',
+      'Applications.IsHeldByAdmin as isHeldByAdmin',
+      'Applications.AdminHoldReason as adminHoldReason',
       'Scholarships.Name as scholarshipName',
       'Students.StudentID as studentId',
       'Users.FullName as studentName',
@@ -111,6 +119,7 @@ export async function getPendingCSR() {
     .where('Applications.Status', 'ScreeningApproved')
     .then(rows => rows.map(row => ({
       ...row,
+      isHeldByAdmin: !!row.isHeldByAdmin,
       urgency: 'medium',
       bgCheckResult: 'Pass'
     })));
@@ -124,6 +133,7 @@ export async function submitCSRDecision(
 ) {
   const app = await db('Applications').where({ ApplicationID: appId }).first();
   if (!app) throw new NotFoundError('Application not found');
+  if (app.IsHeldByAdmin) throw new ForbiddenError('Application is currently on hold by Admin');
 
   const status = decision === 'Approve' ? 'CSRApproved' : 'CSRDeclined';
   let updatedNotes = app.Notes || '';

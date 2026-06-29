@@ -64,7 +64,10 @@ export default function EvaluateApplicationPage({ params }: { params: { id: stri
         </div>
         <div className="lg:col-span-1">
           <div className="sticky top-24">
-            <ScreenerDecisionPanel onSubmit={handleDecision} />
+            <ScreenerDecisionPanel 
+              onSubmit={handleDecision} 
+              isHeldByAdmin={data.application.isHeldByAdmin || data.application.IsHeldByAdmin} 
+            />
           </div>
         </div>
       </div>

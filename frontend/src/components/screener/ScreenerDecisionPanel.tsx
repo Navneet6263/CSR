@@ -4,11 +4,18 @@ import { useState } from 'react';
 import { Check, X, ShieldAlert, Send } from 'lucide-react';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 
-export default function ScreenerDecisionPanel({ onSubmit }: { onSubmit: (decision: 'Approve' | 'Reject', notes: string) => void }) {
+export default function ScreenerDecisionPanel({ 
+  onSubmit, 
+  isHeldByAdmin = false 
+}: { 
+  onSubmit: (decision: 'Approve' | 'Reject', notes: string) => void;
+  isHeldByAdmin?: boolean;
+}) {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = (decision: 'Approve' | 'Reject') => {
+    if (isHeldByAdmin) return;
     if (!notes.trim()) {
       alert('Please add screening notes before submitting a decision.');
       return;
@@ -39,16 +46,24 @@ export default function ScreenerDecisionPanel({ onSubmit }: { onSubmit: (decisio
           <textarea 
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full h-32 bg-[#f8fafc] border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#2e86c1] focus:ring-2 focus:ring-[#2e86c1]/20 transition-all resize-none shadow-inner"
+            disabled={isSubmitting || isHeldByAdmin}
+            className="w-full h-32 bg-[#f8fafc] border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 font-medium placeholder:text-slate-400 focus:outline-none focus:border-[#2e86c1] focus:ring-2 focus:ring-[#2e86c1]/20 transition-all resize-none shadow-inner disabled:opacity-50"
             placeholder="Enter your comprehensive analysis and justification for the decision..."
           />
         </div>
 
+        {isHeldByAdmin && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-700 font-bold flex gap-3 shadow-sm animate-pulse">
+            <ShieldAlert size={16} className="shrink-0 text-rose-500" />
+            <p>🔒 This application is currently on HOLD by Admin. All actions have been locked.</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={() => handleSubmit('Reject')}
-            disabled={isSubmitting}
-            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 hover:border-rose-300 shadow-[4px_4px_10px_rgba(0,0,0,0.03),-4px_-4px_10px_rgba(255,255,255,1)] transition-all disabled:opacity-50"
+            disabled={isSubmitting || isHeldByAdmin}
+            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 hover:border-rose-300 shadow-[4px_4px_10px_rgba(0,0,0,0.03),-4px_-4px_10px_rgba(255,255,255,1)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">
               <X size={20} />
@@ -58,8 +73,8 @@ export default function ScreenerDecisionPanel({ onSubmit }: { onSubmit: (decisio
 
           <button 
             onClick={() => handleSubmit('Approve')}
-            disabled={isSubmitting}
-            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-[#2e86c1] hover:bg-[#256c9d] text-white shadow-[4px_4px_10px_rgba(46,134,193,0.3)] transition-all disabled:opacity-50"
+            disabled={isSubmitting || isHeldByAdmin}
+            className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-[#2e86c1] hover:bg-[#256c9d] text-white shadow-[4px_4px_10px_rgba(46,134,193,0.3)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
               {isSubmitting ? <LoadingSpinner size="sm" /> : <Check size={20} />}

@@ -1,107 +1,131 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Eye } from 'lucide-react';
-import TopBar from '@/components/dashboard/TopBar';
+import { useState, useEffect } from 'react';
+import Link from "next/link";
+import { Plus, GraduationCap, Users, Wallet, Calendar } from "lucide-react";
+import { apiClient } from '@/lib/api';
+import { mockScholarships } from '@/lib/mockData';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
-import { scholarshipApi } from '@/lib/api';
-import { mapScholarship } from '@/lib/mappers';
-import type { Scholarship } from '@/types';
-import Link from 'next/link';
 
-const statusBadge: Record<string, string> = {
-  Active: 'bg-[#0e6251]/10 text-[#0e6251]',
-  Inactive: 'bg-slate-100 text-slate-500',
-  Closed: 'bg-[#c0392b]/10 text-[#c0392b]',
-};
+function inr(n: number) {
+  return "₹ " + n.toLocaleString("en-IN");
+}
 
-export default function AdminScholarshipsPage() {
-  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+export default function ScholarshipsListPage() {
+  const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    scholarshipApi.getAll()
-      .then((res) => {
-        const raw = res.data?.scholarships || [];
-        setScholarships(raw.map((s) => mapScholarship(s as Record<string, unknown>)));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    fetchScholarships();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  const fetchScholarships = async () => {
+    try {
+      const res = await apiClient<any[]>('/scholarships/active');
+      if (res.success && res.data && res.data.length > 0) {
+        setPrograms(res.data);
+      } else {
+        setPrograms(mockScholarships);
+      }
+    } catch (err) {
+      console.error(err);
+      setPrograms(mockScholarships);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="h-full flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
 
   return (
-    <div className="space-y-6">
-      <TopBar title="Manage Scholarships" subtitle={`${scholarships.length} scholarships total`} />
-
-      <div className="flex justify-end">
-        <button className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold text-white bg-gradient-to-r from-[#5b2c6f] to-[#2e86c1] clay-button hover:shadow-lg transition-all">
-          <Plus size={16} /> New Scholarship
-        </button>
-      </div>
-
-      <div className="clay-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100">
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Name</th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Sponsor</th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Budget</th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Per Student</th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Open</th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Close</th>
-                <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                <th className="text-right px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scholarships.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-sm text-slate-400">
-                    No scholarships found. Create your first one!
-                  </td>
-                </tr>
-              ) : (
-                scholarships.map((s) => (
-                  <tr key={s.scholarshipId} className="border-b border-slate-50 hover:bg-white/40 transition-colors cursor-pointer">
-                    <td className="px-6 py-4 text-sm font-semibold text-slate-800">{s.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">{s.sponsorName}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">₹{s.totalBudget.toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-4 text-sm text-slate-500">₹{s.perStudentAmount.toLocaleString('en-IN')}</td>
-                    <td className="px-6 py-4 text-xs text-slate-400">{new Date(s.applicationOpenDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-xs text-slate-400">{new Date(s.applicationCloseDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4">
-                      <span className={`text-xs font-medium px-3 py-1 rounded-xl ${statusBadge[s.status] || 'bg-slate-100 text-slate-500'}`}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 rounded-xl text-slate-400 hover:text-[#5b2c6f] hover:bg-[#5b2c6f]/5 transition-colors" title="Edit">
-                          <Pencil size={14} />
-                        </button>
-                        <Link href={`/admin/scholarships/${s.scholarshipId}/rules`}
-                          className="p-2 rounded-xl text-slate-400 hover:text-[#2e86c1] hover:bg-[#2e86c1]/5 transition-colors" title="View Rules"
-                        >
-                          <Eye size={14} />
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+    <div className="mx-auto max-w-7xl space-y-6">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+            Scholarships
+          </h1>
+          <p className="text-[13px] text-slate-500">
+            Manage active programs, drafts and eligibility configurations.
+          </p>
         </div>
+        <Link
+          href="/admin/scholarships/new"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3.5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          New Scholarship
+        </Link>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {programs.map((p) => {
+          const pct = p.seats > 0 ? Math.round((p.filled / p.seats) * 100) : 0;
+          return (
+            <div key={p.name} className="rounded-2xl border border-slate-200/80 bg-white p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-900 text-white shrink-0">
+                  <GraduationCap className="h-4 w-4" />
+                </div>
+                <span
+                  className={
+                    "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider " +
+                    (p.status === "Live"
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-slate-100 text-slate-600")
+                  }
+                >
+                  {p.status}
+                </span>
+              </div>
+              <h3 className="mt-3 text-sm font-semibold text-slate-900 truncate">{p.name}</h3>
+              <p className="text-[12px] text-slate-500 truncate">{p.sponsor || "Corporate Sponsor"}</p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-[12px]">
+                <Stat icon={<Wallet className="h-3.5 w-3.5" />} label="Budget" value={inr(p.budget || 5000000)} />
+                <Stat icon={<Users className="h-3.5 w-3.5" />} label="Seats" value={`${p.filled || 0}/${p.seats || 100}`} />
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
+                  <span>Filled</span>
+                  <span className="tabular-nums">{pct}%</span>
+                </div>
+                <div className="mt-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full bg-slate-900 rounded-full"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  Closes {p.closes || "31 Dec 2026"}
+                </span>
+                <Link
+                  href={`/admin/scholarships/${p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
+                  className="text-slate-900 font-medium hover:underline"
+                >
+                  Manage →
+                </Link>
+              </div>
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200/80 bg-slate-50/60 p-2.5">
+      <div className="flex items-center gap-1 text-slate-500">
+        {icon}
+        <span className="text-[10px] uppercase tracking-wider">{label}</span>
+      </div>
+      <p className="mt-0.5 text-sm font-semibold text-slate-900 tabular-nums truncate">{value}</p>
     </div>
   );
 }

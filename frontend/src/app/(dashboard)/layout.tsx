@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
+import AdminSidebar from '@/components/admin/Sidebar';
+import AdminTopbar from '@/components/admin/Topbar';
 import { authApi } from '@/lib/api';
 
 export default function DashboardLayout({
@@ -47,10 +49,27 @@ export default function DashboardLayout({
   const isDocReviewer = role === 'DocReviewer';
   const isBGOfficer = role === 'BGCheckOfficer';
   const isScreener = role === 'ScreeningOfficer';
+  const isAdmin = role === 'Admin' || pathname.startsWith('/admin');
   const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer && !isScreener;
 
+  if (isAdmin) {
+    return (
+      <div className="h-screen overflow-hidden bg-slate-50 text-slate-900 font-sans antialiased">
+        <div className="flex h-full">
+          <AdminSidebar />
+          <main className="flex-1 min-w-0 flex flex-col h-full">
+            <AdminTopbar />
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {children}
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5] print:bg-none print:bg-white">
+    <div className={`flex min-h-screen print:bg-none print:bg-white bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5]`}>
       {hasSidebar && (
         <div className="print:hidden">
           <Sidebar />

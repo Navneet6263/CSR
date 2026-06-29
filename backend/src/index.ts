@@ -10,6 +10,7 @@ import institutionRoutes from './routes/institution.routes';
 import verificationRoutes from './routes/verification.routes';
 import screeningRoutes from './routes/screening.routes';
 import financeRoutes from './routes/finance.routes';
+import adminRoutes from './routes/admin.routes';
 import { errorHandler } from './middleware/errorHandler';
 import { sendError } from './utils/response';
 
@@ -46,6 +47,7 @@ app.use('/api/v1/institutions', institutionRoutes);
 app.use('/api/v1/verify', verificationRoutes);
 app.use('/api/v1/screening', screeningRoutes);
 app.use('/api/v1/finance', financeRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // ─── 404 Handler ────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

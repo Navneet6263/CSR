@@ -1,5 +1,5 @@
 import db from '../config/database';
-import { NotFoundError } from '../utils/errors';
+import { NotFoundError, ForbiddenError } from '../utils/errors';
 
 export async function getPendingBGChecks() {
   return db('Applications as a')
@@ -9,6 +9,8 @@ export async function getPendingBGChecks() {
       'a.ApplicationID',
       'a.Status as ApplicationStatus',
       'a.ScholarshipID',
+      'a.IsHeldByAdmin',
+      'a.AdminHoldReason',
       'u.FullName as StudentName',
       'u.Email as StudentEmail'
     )
@@ -28,6 +30,7 @@ export async function submitBGCheck(
   try {
     const app = await trx('Applications').where({ ApplicationID: applicationId }).first();
     if (!app) throw new NotFoundError('Application not found');
+    if (app.IsHeldByAdmin) throw new ForbiddenError('Application is currently on hold by Admin');
 
     if (app.Status === 'DocAuditComplete') {
       await trx('Applications')
