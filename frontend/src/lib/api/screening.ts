@@ -7,7 +7,7 @@ import { apiClient } from './client';
 
 export const screeningApi = {
   getStats: async () => {
-    return await apiClient<any>('/screening/stats');
+    return await apiClient<Record<string, unknown>>('/screening/stats');
   },
 
   getPendingScreening: async () => {
@@ -21,12 +21,12 @@ export const screeningApi = {
   },
 
   getConsolidated: async (id: number) => {
-    return await apiClient<any>(`/screening/${id}/consolidated`);
+    return await apiClient<Record<string, unknown>>(`/screening/${id}/consolidated`);
   },
 
 
   getApplicationDetail: async (id: number) => {
-    const res = await apiClient<any>(`/applications/${id}`);
+    const res = await apiClient<Record<string, unknown>>(`/applications/${id}`);
     const data = res.data;
     if (!data) return { data: null };
     return {
