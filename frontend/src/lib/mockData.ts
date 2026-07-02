@@ -96,3 +96,18 @@ export const mockScholarships = [
     closes: "—",
   },
 ];
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  time: string;
+  type: "info" | "action" | "success";
+}
+
+export const notifications: NotificationItem[] = [
+  { id: "n1", title: "Document re-upload required", body: "Your Income Certificate needs to be re-uploaded.", time: "2 hours ago", type: "action" },
+  { id: "n2", title: "Merit Excellence Grant funded", body: "₹25,000 has been credited to your account.", time: "1 day ago", type: "success" },
+  { id: "n3", title: "BG Check in progress", body: "STEM Future Leaders application moved to BG Check.", time: "2 days ago", type: "info" },
+  { id: "n4", title: "New scholarship matched", body: "3 new scholarships match your profile.", time: "4 days ago", type: "info" },
+];
