@@ -18,8 +18,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Text Content - No Box, Floating Freely */}
           <div className="px-2">
             <div className="flex items-center gap-3 mb-10">
-              <div className="bg-white p-3 rounded-2xl shadow-lg border border-white/40">
-                <img src="/logo.png" alt="Talent Foundation" className="h-14 w-auto object-contain" />
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-sm border border-white/20">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>
+              </div>
+              <div>
+                <h1 className="text-3xl font-extrabold text-white tracking-wide drop-shadow-md">TalentBridge</h1>
+                <p className="text-[0.7rem] text-emerald-200 tracking-widest uppercase font-bold drop-shadow-md">Scholarship Platform</p>
               </div>
             </div>
 
