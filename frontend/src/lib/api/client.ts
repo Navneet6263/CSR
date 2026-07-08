@@ -25,7 +25,7 @@ export async function apiClient<T>(
             userId: 99,
             fullName: email.split('@')[0],
             email,
-            role: email.includes('student') ? 'Student' : 'Admin'
+            role: email.includes('student') ? 'Student' : email.includes('reviewer') ? 'DocReviewer' : 'Admin'
           }
         }
       } as any;

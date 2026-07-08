@@ -1,3 +1,4 @@
+"use client";
 // src/components/reviewer/AuditPanel.tsx
 import { Check, ChevronRight, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

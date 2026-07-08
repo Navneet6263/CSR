@@ -68,6 +68,10 @@ export default function DashboardLayout({
     );
   }
 
+  if (isDocReviewer) {
+    return <div className="doc-reviewer-bg min-h-screen">{children}</div>;
+  }
+
   return (
     <div className={`flex min-h-screen print:bg-none print:bg-white bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5]`}>
       {hasSidebar && (
@@ -76,7 +80,7 @@ export default function DashboardLayout({
         </div>
       )}
       <main className={`flex-1 min-h-screen transition-all duration-300 ${hasSidebar ? 'ml-[280px]' : 'ml-0'} print:ml-0 print:p-0`}>
-        <div className={isScreener ? "" : isStudent || isDocReviewer || isBGOfficer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
+        <div className={isScreener ? "" : isStudent || isBGOfficer ? "p-4 sm:p-6 lg:p-8" : "p-6 lg:p-8"}>
           {children}
         </div>
       </main>

@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { authApi } from "@/lib/api";
+import { LogOut } from "lucide-react";
 
 type Item = { label: string; href: string; icon: React.ComponentType<{ className?: string }>; live?: boolean; badge?: string };
 
@@ -115,6 +117,15 @@ export default function Sidebar() {
         <Section title="Management" items={management} pathname={pathname} />
         <Section title="Activity" items={activity} pathname={pathname} />
       </nav>
+      <div className="p-4 border-t border-slate-200/80 shrink-0">
+        <button
+          onClick={() => authApi.logout()}
+          className="w-full flex items-center justify-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-2.5 text-sm font-semibold text-rose-600 hover:text-rose-700 hover:border-rose-200 hover:bg-rose-50 transition"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
+      </div>
     </aside>
   );
 }

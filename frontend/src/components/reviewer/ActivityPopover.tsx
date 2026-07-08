@@ -1,3 +1,4 @@
+"use client";
 // src/components/reviewer/ActivityPopover.tsx
 'use client';
 

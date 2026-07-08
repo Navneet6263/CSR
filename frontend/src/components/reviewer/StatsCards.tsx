@@ -1,3 +1,4 @@
+"use client";
 // src/components/reviewer/StatsCards.tsx
 'use client';
 

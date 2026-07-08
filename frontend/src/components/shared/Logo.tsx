@@ -17,16 +17,7 @@ export default function Logo({ size = 'md', showSubtitle = true }: LogoProps) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-3">
-        <div className="relative">
-          <div className="p-2 bg-gradient-to-br from-[#5b2c6f] to-[#2e86c1] rounded-2xl shadow-[4px_4px_10px_rgba(91,44,111,0.2),-2px_-2px_8px_rgba(255,255,255,0.8)]">
-            <GraduationCap size={s.icon} className="text-white" />
-          </div>
-        </div>
-        <h1
-          className={`${s.heading} font-bold bg-gradient-to-r from-[#5b2c6f] via-[#7d3c98] to-[#2e86c1] bg-clip-text text-transparent tracking-tight`}
-        >
-          TalentBridge
-        </h1>
+        <img src="/logo.png" alt="Talent Foundation" className="h-12 w-auto object-contain rounded-xl shadow-sm" />
       </div>
       {showSubtitle && (
         <p className={`${s.sub} text-slate-400 tracking-widest uppercase font-medium`}>

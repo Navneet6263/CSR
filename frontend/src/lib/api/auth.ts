@@ -30,6 +30,7 @@ export const authApi = {
   logout: () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
+    window.location.href = '/login';
   },
 
   getUser: (): AuthResponse['user'] | null => {

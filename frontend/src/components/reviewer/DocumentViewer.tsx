@@ -1,3 +1,4 @@
+"use client";
 // src/components/reviewer/DocumentViewer.tsx
 import { useState } from "react";
 import { Download, Maximize2, RotateCw, ZoomIn, ZoomOut, FileText } from "lucide-react";

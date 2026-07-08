@@ -1,142 +1,83 @@
-'use client';
-// src/components/reviewer/QueueTable.tsx
-import { useMemo, useState, useEffect } from "react";
+"use client";
 import Link from "next/link";
-import { ArrowRight, Search, SlidersHorizontal, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { verificationApi } from "@/lib/api/verification";
-import { ReviewApplicationRow } from "@/types/domain";
+import { Search, Filter, ArrowUpRight } from "lucide-react";
+import { useMemo, useState } from "react";
+import { applications, scholarships } from "@/lib/mock-data";
 
-const urgencyStyles: Record<string, string> = {
-  High: "bg-rose-100/80 text-rose-700 border-rose-200/60",
-  Medium: "bg-amber-100/80 text-amber-700 border-amber-200/60",
-  Low: "bg-emerald-100/80 text-emerald-700 border-emerald-200/60",
-};
+const docTypes = ["All Documents", "Aadhaar", "Income Cert.", "Marksheets", "Bank"];
 
 export function QueueTable() {
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<string>("All");
-  const [data, setData] = useState<ReviewApplicationRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [scholarship, setScholarship] = useState(scholarships[0]);
+  const [docType, setDocType] = useState(docTypes[0]);
+  const [q, setQ] = useState("");
 
-  useEffect(() => {
-    verificationApi.getPendingDocs().then((res) => {
-      setData(res.data || []);
-    }).finally(() => setLoading(false));
-  }, []);
-
-  const rows = useMemo(() => {
-    return data.map((r) => {
-      const dateStr = r.submissionDate || new Date().toISOString();
-      const daysOld = (new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 3600 * 24);
-      const urgency = daysOld > 3 ? 'High' : daysOld < 1 ? 'Low' : 'Medium';
-      return { ...r, urgency };
-    }).filter((r) => {
-      const matchesQ =
-        !query ||
-        (r.studentName || "").toLowerCase().includes(query.toLowerCase()) ||
-        String(r.applicationId).includes(query) ||
-        (r.scholarshipName || "").toLowerCase().includes(query.toLowerCase());
-      const matchesF = filter === "All" || r.urgency === filter;
-      return matchesQ && matchesF;
-    });
-  }, [query, filter, data]);
+  const rows = useMemo(() => applications.filter((a) => {
+    if (scholarship !== "All Scholarships" && a.scholarship !== scholarship) return false;
+    if (q && !(`${a.id} ${a.student.fullName}`.toLowerCase().includes(q.toLowerCase()))) return false;
+    return true;
+  }), [scholarship, q]);
 
   return (
-    <section className="glass rounded-2xl p-5 sm:p-6 bg-white/50 shadow-sm border-white">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="glass overflow-hidden">
+      <div className="p-5 border-b border-border flex flex-wrap items-center gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Review Queue</h2>
-          <p className="text-sm text-muted-foreground">
-            Applications awaiting document verification
-          </p>
+          <h3 className="font-display font-semibold text-lg">Audit Queue</h3>
+          <p className="text-xs text-fg-subtle mt-0.5">Applications with status <span className="text-primary font-mono">DocAuditInProgress</span></p>
         </div>
-        <div className="flex flex-1 items-center gap-2 sm:max-w-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, ID, scholarship…"
-              className="h-10 rounded-xl border-white/60 bg-white/70 pl-9 shadow-sm"
-            />
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search ID or name…"
+              className="w-56 rounded-lg bg-surface border border-border pl-9 pr-3 py-2 text-sm placeholder:text-fg-subtle focus:outline-none focus:border-primary/60" />
           </div>
-          <div className="flex items-center gap-1 rounded-xl bg-white/60 p-1 shadow-sm">
-            <SlidersHorizontal className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-            {(["All", "High", "Medium", "Low"]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                  filter === f
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-white/80"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+          <SelectPill icon={Filter} value={scholarship} onChange={setScholarship} options={scholarships} />
+          <SelectPill icon={Filter} value={docType} onChange={setDocType} options={docTypes} />
         </div>
       </div>
+      <div className="overflow-x-auto content-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[11px] font-mono uppercase tracking-wider text-fg-subtle border-b border-border">
+              <th className="py-3 px-5 font-medium">Application ID</th>
+              <th className="py-3 px-5 font-medium">Student</th>
+              <th className="py-3 px-5 font-medium">Scholarship</th>
+              <th className="py-3 px-5 font-medium">Submitted</th>
+              <th className="py-3 px-5 font-medium text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.id} className={`border-b border-border last:border-0 hover:bg-surface/40 transition ${i % 2 ? "bg-surface/20" : ""}`}>
+                <td className="py-3.5 px-5 font-mono text-primary">{r.id}</td>
+                <td className="py-3.5 px-5">
+                  <div className="font-medium">{r.student.fullName}</div>
+                  <div className="text-xs text-fg-subtle">{r.student.id} · {r.student.category}</div>
+                </td>
+                <td className="py-3.5 px-5 text-fg-muted">{r.scholarship}</td>
+                <td className="py-3.5 px-5 text-fg-muted font-mono text-xs">{r.submitted}</td>
+                <td className="py-3.5 px-5 text-right">
+                  <Link href={`/reviewer/applications/${r.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary/15 border border-primary/40 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/25 transition">
+                    Review <ArrowUpRight className="w-3 h-3" />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
-      <div className="mt-5 overflow-hidden rounded-xl border border-white/60 bg-white/60 shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-b-white/50">
-              <TableHead className="py-3">Application</TableHead>
-              <TableHead>Student</TableHead>
-              <TableHead>Scholarship</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead>Urgency</TableHead>
-              <TableHead className="text-right pr-6">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Loading applications...
-                </TableCell>
-              </TableRow>
-            )}
-            {!loading && rows.map((r) => (
-              <TableRow key={r.applicationId} className="border-b-white/40 transition-colors hover:bg-white/80">
-                <TableCell className="py-4 font-mono text-xs text-muted-foreground">#{r.applicationId}</TableCell>
-                <TableCell className="font-medium text-slate-800">{r.studentName}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{r.scholarshipName}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {r.submissionDate ? new Date(r.submissionDate).toLocaleDateString() : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={`rounded-full font-medium ${urgencyStyles[r.urgency]}`}>
-                    {r.urgency}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right pr-4">
-                  <Button asChild size="sm" className="rounded-full shadow-sm transition-all hover:scale-[1.04]">
-                    <Link href={`/reviewer/audit/${r.applicationId}`}>
-                      Audit Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {!loading && rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground bg-white/20">
-                  No applications match your filters.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </section>
+function SelectPill({ icon: Icon, value, onChange, options }: { icon: React.ComponentType<{ className?: string }>; value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <div className="relative">
+      <Icon className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle pointer-events-none" />
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="appearance-none rounded-lg bg-surface border border-border pl-9 pr-8 py-2 text-sm focus:outline-none focus:border-primary/60 cursor-pointer">
+        {options.map((o) => <option key={o} className="bg-bg-elev">{o}</option>)}
+      </select>
+    </div>
   );
 }

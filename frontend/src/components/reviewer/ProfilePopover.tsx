@@ -1,3 +1,4 @@
+"use client";
 // src/components/reviewer/ProfilePopover.tsx
 'use client';
 
