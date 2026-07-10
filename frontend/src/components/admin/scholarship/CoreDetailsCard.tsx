@@ -21,6 +21,7 @@ type Props = {
 };
 
 const sponsors = [
+  "Stanley Black and Decker",
   "Tata CSR Foundation",
   "Infosys Foundation",
   "Reliance Foundation",
