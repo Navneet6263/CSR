@@ -1,116 +1,115 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { verificationApi } from '@/lib/api';
-import { ShieldCheck, Shield, ArrowRight } from 'lucide-react';
-import type { BGCheckApplicationRow } from '@/types/domain';
-import { TopNav } from '@/components/officer/TopNav';
-import { StatsCards } from '@/components/officer/StatsCards';
-import Link from 'next/link';
+import Link from "next/link";
+import { useState } from "react";
+import {
+  MapPin,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+  Flag,
+  ListChecks,
+} from "lucide-react";
+import { dailyStats, visits, type VisitStatus } from "@/lib/officer-data";
+import { StatCard } from "@/components/officer/StatsCards";
+import { TopNav } from "@/components/officer/TopNav";
 
-export default function OfficerQueue() {
-  const [applications, setApplications] = useState<BGCheckApplicationRow[]>([]);
-  const [loading, setLoading] = useState(true);
+type Filter = "all" | VisitStatus;
 
-  const fetchPending = async () => {
-    try {
-      const res = await verificationApi.getPendingBGChecks();
-      setApplications(res.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchPending(); }, []);
+export default function OfficerDashboard() {
+  const [filter, setFilter] = useState<Filter>("pending");
+  const list = filter === "all" ? visits : visits.filter((v) => v.status === filter);
 
   return (
-    <div className="min-h-[calc(100vh-100px)] pb-10">
+    <div className="flex flex-col min-h-screen">
       <TopNav />
-      
-      <div className="mx-auto max-w-6xl">
-        <StatsCards />
+      <main className="relative z-10 mx-auto w-full max-w-[1400px] px-4 py-6 lg:px-8">
+        <div className="space-y-6">
+          <section>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Good morning, Rohan</h1>
+            <p className="text-sm text-slate-500">You have {dailyStats.pending} verifications on the field today.</p>
+          </section>
 
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-800">Background Check Queue</h1>
-            <p className="mt-2 text-slate-500">
-              Applications awaiting physical verification (Identity, Address, Income).
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <div className="glass flex items-center gap-2 rounded-xl bg-white/50 px-4 py-2 shadow-sm border border-white">
-              <Shield className="h-5 w-5 text-blue-600" />
-              <span className="font-semibold text-slate-800">{applications.length} Pending</span>
+          <section className="grid grid-cols-3 gap-2.5">
+            <StatCard icon={ListChecks} label="Assigned" value={dailyStats.assigned} tone="cyan" />
+            <StatCard icon={CheckCircle2} label="Completed" value={dailyStats.completed} tone="emerald" />
+            <StatCard icon={Clock} label="Pending" value={dailyStats.pending} tone="amber" />
+          </section>
+
+          <section className="flex gap-2 overflow-x-auto pb-1">
+            {(["pending", "completed", "flagged", "all"] as Filter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition ${
+                  filter === f
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </section>
+
+          <section className="space-y-3" style={{ contentVisibility: "auto" }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-700">Visit Queue</h2>
+              <span className="text-xs text-slate-500">{list.length} visits</span>
             </div>
-          </div>
+            {list.map((v) => (
+              <VisitCard key={v.id} visit={v} />
+            ))}
+            {list.length === 0 && (
+              <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+                No visits in this bucket.
+              </p>
+            )}
+          </section>
         </div>
+      </main>
+    </div>
+  );
+}
 
-        <div className="glass overflow-hidden rounded-2xl bg-white/50 shadow-sm border border-white">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="border-b border-white/60 bg-white/40 text-xs uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Application</th>
-                  <th className="px-6 py-4 font-semibold">Student Name</th>
-                  <th className="px-6 py-4 font-semibold">Contact</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
-                  <th className="px-6 py-4 font-semibold text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/60">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
-                      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-                    </td>
-                  </tr>
-                ) : applications.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center">
-                      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
-                        <ShieldCheck className="h-8 w-8 text-blue-500" />
-                      </div>
-                      <p className="text-base font-semibold text-slate-800">Queue is empty</p>
-                      <p className="mt-1 text-slate-500">All verifications have been completed.</p>
-                    </td>
-                  </tr>
-                ) : (
-                  applications.map((app) => (
-                    <tr key={app.applicationId} className="transition-colors hover:bg-white/60">
-                      <td className="px-6 py-4">
-                        <span className="font-mono text-xs font-bold text-slate-800">
-                          APP-{app.applicationId.toString().padStart(4, '0')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-800">{app.studentName}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-slate-600">{app.studentEmail}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                          {app.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <Link 
-                          href={`/officer/verify/${app.applicationId}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow"
-                        >
-                          Verify <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+function VisitCard({ visit }: { visit: (typeof visits)[number] }) {
+  const urgency = {
+    high: "bg-rose-50 text-rose-600 ring-rose-200",
+    medium: "bg-amber-50 text-amber-700 ring-amber-200",
+    low: "bg-slate-100 text-slate-600 ring-slate-200",
+  }[visit.urgency];
+
+  const statusIcon = {
+    pending: <Clock size={12} />,
+    completed: <CheckCircle2 size={12} />,
+    flagged: <Flag size={12} />,
+  }[visit.status];
+
+  return (
+    <Link
+      href={`/officer/applications/${visit.id}`}
+      className="group block rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-cyan-400 hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-slate-400">{visit.id}</span>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${urgency}`}>
+              {visit.urgency}
+            </span>
           </div>
+          <p className="mt-1 truncate text-base font-semibold text-slate-900">{visit.studentName}</p>
+          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+            <MapPin size={12} /> {visit.address.city}, {visit.address.state}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium capitalize text-slate-600">
+            {statusIcon} {visit.status}
+          </span>
+          <ChevronRight size={18} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-cyan-500" />
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

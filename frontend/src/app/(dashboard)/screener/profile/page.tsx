@@ -1,152 +1,101 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { User, Mail, Shield, ShieldCheck, Activity, Key, CheckCircle, Clock } from 'lucide-react';
-import { authApi } from '@/lib/api';
-import { screeningApi } from '@/lib/api/screening';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { useState } from "react";
+import { Bell, Lock, Palette, User } from "lucide-react";
+import { ScreenerHeader } from "@/components/screener/ScreenerHeader";
 
-export default function ScreenerProfilePage() {
-  const [user, setUser] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button onClick={() => onChange(!on)}
+      className={`relative h-6 w-11 rounded-full transition ${on ? "bg-gradient-to-r from-brand to-brand-2" : "bg-brand/10"}`}>
+      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
+    </button>
+  );
+}
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const currentUser = authApi.getUser();
-        setUser(currentUser);
-        const statsRes = await screeningApi.getStats();
-        if (statsRes.success) {
-          setStats(statsRes.data);
-        }
-      } catch (err) {
-        console.error('Failed to load profile data', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
-  }, []);
-
-  if (loading || !user) {
-    return <div className="min-h-[80vh] flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
-  }
+export default function SettingsPage() {
+  const [notifs, setNotifs] = useState(true);
+  const [digest, setDigest] = useState(false);
+  const [twoFa, setTwoFa] = useState(true);
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700 mt-6">
-      
-      {/* Header Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-900 to-[#1a5276] p-10 text-white shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-[#5b2c6f]/30 rounded-full blur-3xl" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-          <div className="w-32 h-32 rounded-full bg-white/10 border-4 border-white/20 p-2 backdrop-blur-md shadow-xl flex items-center justify-center shrink-0">
-            <div className="w-full h-full rounded-full bg-gradient-to-tr from-blue-400 to-indigo-400 flex items-center justify-center text-4xl font-black text-white shadow-inner">
-              {user.fullName?.charAt(0).toUpperCase()}
-            </div>
-          </div>
-          
-          <div className="text-center md:text-left space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold uppercase tracking-wider backdrop-blur-sm mb-2">
-              <ShieldCheck size={14} /> {user.role} Account
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight">{user.fullName}</h1>
-            <p className="text-blue-200 text-lg flex items-center justify-center md:justify-start gap-2">
-              <Mail size={18} className="opacity-70" /> {user.email}
-            </p>
-          </div>
+    <div className="screener-theme flex flex-col min-h-screen" style={{ background: "radial-gradient(1200px 800px at 10% -10%, oklch(0.92 0.08 350 / 0.55), transparent 60%), radial-gradient(900px 700px at 100% 0%, oklch(0.9 0.1 340 / 0.35), transparent 55%), oklch(0.99 0.008 350)" }}>
+      <ScreenerHeader />
+      <main className="mx-auto w-full max-w-[1400px] px-6 py-8 space-y-8">
+        <div>
+          <h1 className="text-3xl font-semibold text-text">Settings</h1>
+          <p className="mt-1 text-sm text-text-muted">Manage your profile, security, and screening preferences.</p>
         </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card icon={User} title="Profile">
+            <Field label="Full Name" value="Meera Kapoor" />
+            <Field label="Officer ID" value="TB-SO-0284" />
+            <Field label="Role" value="Merit Officer · Level 2" />
+            <Field label="Region" value="North & West Zone" />
+          </Card>
+
+          <Card icon={Lock} title="Security">
+            <Row label="Two-factor authentication" desc="Required for approving high-value scholarships.">
+              <Toggle on={twoFa} onChange={setTwoFa} />
+            </Row>
+            <Row label="Session timeout" desc="Automatically sign out after 30 minutes of inactivity.">
+              <span className="text-xs font-mono text-text-muted">30 min</span>
+            </Row>
+          </Card>
+
+          <Card icon={Bell} title="Notifications">
+            <Row label="New applications in queue" desc="Get notified when 5+ new applications arrive.">
+              <Toggle on={notifs} onChange={setNotifs} />
+            </Row>
+            <Row label="Daily digest email" desc="Summary of pending & decided applications at 6 PM.">
+              <Toggle on={digest} onChange={setDigest} />
+            </Row>
+          </Card>
+
+          <Card icon={Palette} title="Screening Preferences">
+            <Row label="Default queue filter" desc="Applied whenever you open the dashboard.">
+              <span className="rounded-md bg-brand/5 px-2 py-1 text-xs text-text">All applications</span>
+            </Row>
+            <Row label="Auto-open next after decision" desc="Streamline your workflow between reviews.">
+              <Toggle on={true} onChange={() => {}} />
+            </Row>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Card({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+  return (
+    <div className="glass-card p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <div className="grid h-8 w-8 place-items-center rounded-md bg-brand/15 text-brand"><Icon className="h-4 w-4" /></div>
+        <h2 className="text-base font-semibold text-text">{title}</h2>
       </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        
-        {/* Stats Column */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="bg-white rounded-3xl p-6 shadow-[8px_8px_16px_rgba(0,0,0,0.04),-8px_-8px_16px_rgba(255,255,255,1)] border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <Activity className="text-blue-500" /> Screening Activity
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-                    <Clock size={20} />
-                  </div>
-                  <span className="font-bold text-amber-900">Pending Review</span>
-                </div>
-                <span className="text-xl font-black text-amber-700">{stats?.pendingCount || 0}</span>
-              </div>
-              
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                    <CheckCircle size={20} />
-                  </div>
-                  <span className="font-bold text-emerald-900">Total Screened</span>
-                </div>
-                <span className="text-xl font-black text-emerald-700">{stats?.completedCount || 0}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-brand/5 pb-2 last:border-0">
+      <span className="text-xs text-text-dim">{label}</span>
+      <span className="text-sm font-medium text-text">{value}</span>
+    </div>
+  );
+}
 
-        {/* Profile Settings Column */}
-        <div className="md:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl p-8 shadow-[8px_8px_16px_rgba(0,0,0,0.04),-8px_-8px_16px_rgba(255,255,255,1)] border border-slate-100">
-            <h2 className="text-2xl font-black text-slate-800 mb-6 flex items-center gap-3">
-              <User className="text-blue-500" /> Personal Details
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
-                <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-800 font-semibold cursor-not-allowed">
-                  {user.fullName}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
-                <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-800 font-semibold cursor-not-allowed">
-                  {user.email}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Account Role</label>
-                <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-800 font-semibold cursor-not-allowed">
-                  {user.role}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</label>
-                <div className="px-4 py-3 bg-emerald-50/50 border border-emerald-100 rounded-xl text-emerald-700 font-bold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Active
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-8 border-t border-slate-100">
-              <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <Key className="text-slate-500" size={18} /> Security Settings
-              </h3>
-              <p className="text-sm text-slate-500 mb-6">If you need to change your password or update your access permissions, please contact the System Administrator.</p>
-              
-              <button 
-                onClick={() => alert('Password reset link sent to your email.')}
-                className="px-6 py-3 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-lg shadow-slate-900/20 hover:scale-[1.02] hover:bg-slate-800 transition-all active:scale-[0.98]"
-              >
-                Request Password Reset
-              </button>
-            </div>
-
-          </div>
-        </div>
+function Row({ label, desc, children }: { label: string; desc: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-brand/5 pb-3 last:border-0">
+      <div>
+        <div className="text-sm font-medium text-text">{label}</div>
+        <div className="text-xs text-text-dim">{desc}</div>
       </div>
+      {children}
     </div>
   );
 }

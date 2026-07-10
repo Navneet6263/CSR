@@ -1,129 +1,79 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { screeningApi } from '@/lib/api/screening';
-import { ScreeningApplicationRow } from '@/types/domain';
-import { FileText, ArrowRight, Clock, ShieldCheck, Filter } from 'lucide-react';
-import LoadingSpinner from '@/components/shared/LoadingSpinner';
+import { useMemo, useState } from "react";
+import { ClipboardList, CheckCircle2, XCircle, Sparkles, Filter, TrendingUp } from "lucide-react";
+import { StatCard } from "@/components/screener/StatCard";
+import { QueueTable } from "@/components/screener/QueueTable";
+import { ScreenerHeader } from "@/components/screener/ScreenerHeader";
+import { APPLICATIONS } from "@/lib/screening-data";
+
+type FilterKey = "all" | "high" | "low";
 
 export default function ScreenerDashboard() {
-  const [applications, setApplications] = useState<ScreeningApplicationRow[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  const [filter, setFilter] = useState<FilterKey>("all");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const rows = useMemo(() => {
+    if (filter === "high") return APPLICATIONS.filter((a) => a.meritScore > 80);
+    if (filter === "low") return APPLICATIONS.filter((a) => a.income < 200000);
+    return APPLICATIONS;
+  }, [filter]);
 
-  const fetchData = async () => {
-    try {
-      const [appRes, statsRes] = await Promise.all([
-        screeningApi.getPendingScreening(),
-        screeningApi.getStats()
-      ]);
-      
-      if (appRes.success && appRes.data) {
-        setApplications(appRes.data);
-      }
-      if (statsRes.success && statsRes.data) {
-        setStats(statsRes.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <div className="h-[60vh] flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
+  const avg = Math.round(APPLICATIONS.reduce((s, a) => s + a.meritScore, 0) / APPLICATIONS.length);
 
   return (
-    <div className="w-full space-y-8 animate-fade-in">
-      {/* Header Section */}
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-800 mb-2">Screening Queue</h1>
-          <p className="text-slate-500 font-medium">Review fully verified applications and make final decisions for CSR funding.</p>
-        </div>
-        <div className="flex flex-wrap gap-4">
-          <div className="bg-white px-5 py-3 rounded-2xl shadow-[inset_2px_2px_5px_rgba(0,0,0,0.02)] border border-slate-100 flex items-center gap-3">
-            <div className="text-2xl font-black text-slate-400">{stats?.totalReviewed || 0}</div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">Total<br/>Reviewed</div>
+    <div className="screener-theme flex flex-col min-h-screen" style={{ background: "radial-gradient(1200px 800px at 10% -10%, oklch(0.92 0.08 350 / 0.55), transparent 60%), radial-gradient(900px 700px at 100% 0%, oklch(0.9 0.1 340 / 0.35), transparent 55%), var(--screener-bg, oklch(0.99 0.008 350))" }}>
+      <ScreenerHeader />
+      <main className="mx-auto w-full max-w-[1400px] px-6 py-8 space-y-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gold">
+              <Sparkles className="h-3.5 w-3.5" /> Merit Command Center
+            </div>
+            <h1 className="mt-2 text-4xl font-semibold tracking-tight text-text">Good afternoon, Meera.</h1>
+            <p className="mt-1.5 text-sm text-text-muted">
+              You have <span className="font-semibold text-text">{APPLICATIONS.length} applications</span> awaiting merit screening.
+            </p>
           </div>
-          <div className="bg-white px-5 py-3 rounded-2xl shadow-[inset_2px_2px_5px_rgba(0,0,0,0.02)] border border-slate-100 flex items-center gap-3">
-            <div className="text-2xl font-black text-emerald-500">{stats?.approved || 0}</div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">Total<br/>Approved</div>
-          </div>
-          <div className="bg-white px-5 py-3 rounded-2xl shadow-[inset_2px_2px_5px_rgba(0,0,0,0.02)] border border-slate-100 flex items-center gap-3">
-            <div className="text-2xl font-black text-rose-500">{stats?.rejected || 0}</div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight">Total<br/>Rejected</div>
-          </div>
-          <div className="bg-white px-6 py-3 rounded-2xl shadow-[8px_8px_16px_rgba(0,0,0,0.05),-8px_-8px_16px_rgba(255,255,255,0.8)] border border-amber-100 flex items-center gap-4">
-            <div className="text-3xl font-black text-amber-500">{stats?.pending || applications.length}</div>
-            <div className="text-xs text-amber-600 font-bold uppercase tracking-wider leading-tight">Pending<br/>Review</div>
+          <div className="flex items-center gap-3 rounded-full border border-brand/8 bg-brand/5 px-4 py-2 text-xs">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
+            <span className="text-text-muted">Live sync active · Field & Doc Audit teams online</span>
           </div>
         </div>
-      </div>
 
-      {/* Action Bar */}
-      <div className="flex items-center justify-between p-2 bg-white/50 backdrop-blur-md border border-white/50 rounded-2xl shadow-sm">
-        <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white text-[#2e86c1] rounded-xl text-sm font-bold shadow-[inset_2px_2px_5px_rgba(0,0,0,0.05),inset_-2px_-2px_5px_rgba(255,255,255,1)]">
-            <Filter size={16} /> All Pending
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:text-[#2e86c1] hover:bg-white rounded-xl text-sm font-bold transition-all">
-            High Priority
-          </button>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Pending Screening" value={APPLICATIONS.length} icon={ClipboardList} tone="brand" delta="+6 today" />
+          <StatCard label="Approved Today" value={12} icon={CheckCircle2} tone="success" delta="↑ 18%" />
+          <StatCard label="Rejected Today" value={3} icon={XCircle} tone="danger" delta="↓ 5%" />
+          <StatCard label="Avg. Merit Score" value={`${avg}/100`} icon={TrendingUp} tone="gold" delta="This week" />
         </div>
-      </div>
 
-      {/* Queue List */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {applications.length === 0 ? (
-          <div className="text-center py-16">
-            <ShieldCheck size={32} className="mx-auto text-slate-300 mb-3" />
-            <h3 className="text-base font-bold text-slate-700 mb-1">Queue is empty</h3>
-            <p className="text-slate-500 text-sm font-medium">There are no pending applications to screen right now.</p>
+        <section>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-text">Actionable Queue</h2>
+              <p className="text-xs text-text-dim">Applications in status <span className="rounded bg-gold/15 px-1.5 py-0.5 font-mono text-[10px] text-gold">ScreeningPending</span></p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-3.5 w-3.5 text-text-dim" />
+              {([
+                ["all", "All"],
+                ["high", "High Merit ( > 80% )"],
+                ["low", "Low Income"],
+              ] as [FilterKey, string][]).map(([k, l]) => (
+                <button key={k} onClick={() => setFilter(k)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+                    filter === k
+                      ? "border-gold/50 bg-gold/15 text-gold"
+                      : "border-brand/8 bg-brand/5 text-text-muted hover:text-text"
+                  }`}>
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          <div className="divide-y divide-slate-100">
-            {applications.map((app) => (
-              <div key={app.applicationId} 
-                className="group flex flex-col md:flex-row items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                onClick={() => router.push(`/screener/evaluate/${app.applicationId}`)}
-              >
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <FileText size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">{app.studentName}</h3>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                      <span className="text-slate-500 font-medium flex items-center gap-1"><Clock size={12}/> {new Date(app.submissionDate).toLocaleDateString()}</span>
-                      <span className="text-slate-600 font-medium">{app.scholarshipName}</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 border border-emerald-200">
-                        BG Verified
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 md:mt-0 ml-auto md:ml-0 flex items-center gap-6">
-                  <div className="text-right hidden sm:block">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Requested Amount</div>
-                    <div className="text-sm font-bold text-slate-800">₹{app.scholarshipAmount?.toLocaleString() || 'N/A'}</div>
-                  </div>
-                  <div className="text-slate-300 group-hover:text-blue-500 transition-colors">
-                    <ArrowRight size={20} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+          <QueueTable rows={rows} />
+        </section>
+      </main>
     </div>
   );
 }
