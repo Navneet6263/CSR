@@ -1,7 +1,8 @@
+"use client";
 import Link from "next/link";
-import { Bell, ChevronDown, Search } from "lucide-react";
+import { Bell, ChevronDown, Search, LogOut } from "lucide-react";
 import type { StudentProfile } from "@/lib/mockData";
-
+import { authApi } from "@/lib/api";
 interface TopNavProps {
   profile: StudentProfile;
 }
@@ -74,6 +75,18 @@ export function TopNav({ profile }: TopNavProps) {
             </span>
             <span className="hidden sm:inline">{profile.name.split(" ")[0]}</span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              authApi.logout();
+              window.location.href = '/login';
+            }}
+            className="relative grid h-9 w-9 place-items-center rounded-full bg-destructive/10 text-destructive transition hover:bg-destructive hover:text-destructive-foreground ml-2"
+            aria-label="Sign Out"
+            title="Sign Out"
+          >
+            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </div>

@@ -165,6 +165,18 @@
 
 /* APPENDED FROM LOVABLE CSS */
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-primary-glow: var(--primary-glow);
+}
+
 @layer base {
   .doc-reviewer-bg {
     --bg: oklch(0.985 0.008 150);
