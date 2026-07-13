@@ -1,5 +1,35 @@
-import { redirect } from 'next/navigation';
+import { Metadata } from "next";
+import { Header } from "@/components/landing/Header";
+import { AnnouncementBar } from "@/components/landing/AnnouncementBar";
+import { Hero } from "@/components/landing/Hero";
+import { Scholarships } from "@/components/landing/Scholarships";
+import { Stories } from "@/components/landing/Stories";
+import { Partners } from "@/components/landing/Partners";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { EligibilityChecker } from "@/components/landing/EligibilityChecker";
+import { Footer } from "@/components/landing/Footer";
+
+export const metadata: Metadata = {
+  title: "TalentBridge — CSR Scholarships for Every Deserving Student",
+  description: "TalentBridge connects deserving Indian students with CSR scholarships from top companies. Apply once, get matched to every scholarship you qualify for.",
+};
 
 export default function Home() {
-  redirect('/login');
+  return (
+    <div className="landing-theme min-h-screen">
+      <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
+        <Header />
+        <AnnouncementBar />
+        <main className="flex-1">
+          <Hero />
+          <Scholarships />
+          <Stories />
+          <Partners />
+          <HowItWorks />
+          <EligibilityChecker />
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
 }

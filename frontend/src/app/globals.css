@@ -451,3 +451,44 @@
   --ring: oklch(0.551 0.027 264.364);
 }
 
+
+/* Landing Theme (Scoped) */
+.landing-theme {
+  --radius: 0.75rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.18 0.02 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.02 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.02 250);
+  --primary: oklch(0.705 0.19 42); /* #F97316 */
+  --primary-foreground: oklch(1 0 0);
+  --primary-soft: oklch(0.97 0.03 60);
+  --secondary: oklch(0.98 0.005 250);
+  --secondary-foreground: oklch(0.18 0.02 250);
+  --muted: oklch(0.97 0.005 250);
+  --muted-foreground: oklch(0.5 0.02 250);
+  --accent: oklch(0.97 0.03 60);
+  --accent-foreground: oklch(0.4 0.15 42);
+  --destructive: oklch(0.6 0.22 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.92 0.008 250);
+  --input: oklch(0.92 0.008 250);
+  --ring: oklch(0.705 0.19 42);
+}
+
+@utility ticker-track {
+  animation: ticker-scroll 40s linear infinite;
+}
+@utility ticker-track-reverse {
+  animation: ticker-scroll-reverse 40s linear infinite;
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes ticker-scroll-reverse {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
