@@ -49,8 +49,9 @@ export default function DashboardLayout({
   const isDocReviewer = role === 'DocReviewer';
   const isBGOfficer = role === 'BGCheckOfficer';
   const isScreener = role === 'ScreeningOfficer';
+  const isCSRPartner = role === 'CSRPartner' || pathname.startsWith('/csr');
   const isAdmin = role === 'Admin' || pathname.startsWith('/admin');
-  const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer && !isScreener;
+  const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer && !isScreener && !isCSRPartner;
 
   if (isAdmin) {
     return (
@@ -86,6 +87,10 @@ export default function DashboardLayout({
         {children}
       </div>
     );
+  }
+
+  if (isCSRPartner) {
+    return <div className="h-full">{children}</div>;
   }
 
   return (

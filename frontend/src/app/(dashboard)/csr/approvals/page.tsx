@@ -1,153 +1,108 @@
-'use client';
+"use client";
+import { Metadata } from "next";
+import { useState } from "react";
+import { CheckCircle2, Eye, Filter, Search, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
-import { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { screeningApi } from '@/lib/api';
+type Row = { id: string; name: string; score: number; amount: string; state: string; course: string };
 
-type Student = {
-  applicationId: number;
-  studentName: string;
-  college: string;
-  amount: number;
-  category: string;
-  eligibilitySummary: string;
-  docsStatus: string;
-};
+function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <button
+      onClick={onChange}
+      className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition ${
+        checked ? "border-emerald-600 bg-emerald-600" : "border-slate-300 bg-white hover:border-emerald-400"
+      }`}
+    >
+      {checked && <CheckCircle2 size={14} className="text-white" />}
+    </button>
+  );
+}
 
-export default function CSRApprovals() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    screeningApi.getPendingCSR()
-      .then(res => {
-        const mapped = (res.data as any || []).map((item: any) => ({
-          ...item,
-          amount: item.scholarshipAmount || item.amount || 0,
-          college: item.college || 'N/A',
-          category: item.category || 'General',
-        }));
-        setStudents(mapped);
-      })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const toggleSelect = (id: number) => {
-    const newSet = new Set(selected);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelected(newSet);
+export default function ApprovalsPage() {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelected(next);
   };
 
-  const selectAll = () => {
-    if (selected.size === students.length) setSelected(new Set());
-    else setSelected(new Set(students.map(s => s.applicationId)));
-  };
-
-  const handleBulkAction = async (action: 'approve' | 'decline', specificIds?: number[]) => {
-    const ids = specificIds || Array.from(selected);
-    if (ids.length === 0) return;
-    try {
-      // Execute decisions sequentially
-      for (const id of ids) {
-        await screeningApi.submitCSR(id, { decision: action === 'approve' ? 'Approve' : 'Decline', notes: `${action === 'approve' ? 'Approved' : 'Declined'} by CSR` });
-      }
-      setStudents(students.filter(s => !ids.includes(s.applicationId)));
-      const newSet = new Set(selected);
-      ids.forEach(id => newSet.delete(id));
-      setSelected(newSet);
-    } catch (err) {
-      alert(`Failed to ${action}`);
-    }
-  };
-
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5b2c6f]" /></div>;
-
-  const totalAmount = Array.from(selected).reduce((sum, id) => {
-    const student = students.find(s => s.applicationId === id);
-    return sum + (student?.amount || 0);
-  }, 0);
+  const rows: Row[] = [
+    { id: "APP-1001", name: "Ananya Sharma", score: 88, amount: "₹50,000", state: "Rajasthan", course: "B.Tech CSE" },
+    { id: "APP-1002", name: "Rohan Verma", score: 82, amount: "₹35,000", state: "Punjab", course: "B.Com (Hons)" },
+    { id: "APP-1003", name: "Priya Nair", score: 91, amount: "₹75,000", state: "Kerala", course: "MBBS" },
+    { id: "APP-1004", name: "Arjun Patel", score: 79, amount: "₹30,000", state: "Gujarat", course: "B.Sc Maths" },
+    { id: "APP-1005", name: "Meera Reddy", score: 85, amount: "₹55,000", state: "Telangana", course: "B.Tech ECE" },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 p-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Pending Approvals</h1>
-          <p className="text-sm text-gray-500 mt-1">{students.length} students awaiting decision</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Funding Approvals Queue</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Applications that cleared Document Audit, Background Check & Merit Screening.
+          </p>
         </div>
-        <div className="clay-card px-4 py-2">
-          <p className="text-xs text-gray-500">Selected Amount</p>
-          <p className="text-xl md:text-2xl font-bold text-[#5b2c6f]">₹{totalAmount.toLocaleString()}</p>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-xl border border-pink-100 bg-white px-3 py-2 shadow-sm">
+            <Search size={15} className="text-slate-400" />
+            <input placeholder="Search by name or ID" className="w-56 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+          </div>
+          <button className="flex items-center gap-1.5 rounded-xl border border-pink-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-pink-50">
+            <Filter size={15} /> Filter
+          </button>
         </div>
       </div>
 
-      {selected.size > 0 && (
-        <div className="clay-card p-4 flex flex-col md:flex-row items-center gap-3 bg-[#5b2c6f]/5">
-          <p className="text-sm font-medium text-gray-700">{selected.size} selected</p>
-          <div className="flex gap-2 flex-1 md:flex-initial">
-            <Button onClick={() => handleBulkAction('approve')} className="bg-[#0e6251] text-white hover:bg-[#0b4e41]">
-              <CheckCircle className="w-4 h-4 mr-2" /> Approve Selected
-            </Button>
-            <Button onClick={() => handleBulkAction('decline')} className="bg-[#c0392b] text-white hover:bg-[#a93226]">
-              <XCircle className="w-4 h-4 mr-2" /> Decline Selected
-            </Button>
+      <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-pink-100 bg-gradient-to-r from-pink-50/50 to-white px-6 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <ShieldCheck size={16} className="text-emerald-600" />
+            <span className="font-semibold text-emerald-800">12 Pending Approvals</span>
           </div>
+          <button className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow hover:bg-slate-800">
+            Bulk Approve Selected
+          </button>
         </div>
-      )}
-
-      <div className="clay-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="p-3 text-left">
-                  <input type="checkbox" checked={selected.size === students.length && students.length > 0} 
-                    onChange={selectAll} className="w-4 h-4 rounded" />
-                </th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">College</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                <th className="p-3 text-left text-xs font-semibold text-gray-600 uppercase hidden md:table-cell">Category</th>
-                <th className="p-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-500">
+            <tr>
+              <th className="py-3 pl-6 pr-4 font-medium"><Checkbox checked={selected.size === rows.length} onChange={() => {}} /></th>
+              <th className="py-3 px-4 font-medium">Applicant</th>
+              <th className="py-3 px-4 font-medium">Location</th>
+              <th className="py-3 px-4 font-medium">Merit Score</th>
+              <th className="py-3 px-4 font-medium">Amount</th>
+              <th className="py-3 pr-6 text-right font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-pink-50">
+            {rows.map((r) => (
+              <tr key={r.id} className="transition hover:bg-emerald-50/30">
+                <td className="py-4 pl-6 pr-4"><Checkbox checked={selected.has(r.id)} onChange={() => toggle(r.id)} /></td>
+                <td className="py-4 px-4">
+                  <div className="font-bold text-slate-900">{r.name}</div>
+                  <div className="text-xs text-slate-500">{r.id} · {r.course}</div>
+                </td>
+                <td className="py-4 px-4 text-slate-600">{r.state}</td>
+                <td className="py-4 px-4">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${r.score >= 90 ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                    {r.score}/100
+                  </span>
+                </td>
+                <td className="py-4 font-bold text-slate-900">{r.amount}</td>
+                <td className="py-4 pr-6 text-right">
+                  <Link
+                    href={`/csr/applications/${r.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                  >
+                    <Eye size={13} /> Review A-Z
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {students.map(s => (
-                <tr key={s.applicationId} className="hover:bg-gray-50">
-                  <td className="p-3">
-                    <input type="checkbox" checked={selected.has(s.applicationId)} 
-                      onChange={() => toggleSelect(s.applicationId)} className="w-4 h-4 rounded" />
-                  </td>
-                  <td className="p-3">
-                    <p className="font-medium text-gray-800 text-sm">{s.studentName}</p>
-                    <p className="text-xs text-gray-500">#{s.applicationId}</p>
-                  </td>
-                  <td className="p-3 text-sm text-gray-700 hidden md:table-cell">{s.college}</td>
-                  <td className="p-3 text-sm font-semibold text-gray-800">₹{s.amount.toLocaleString()}</td>
-                  <td className="p-3 hidden md:table-cell">
-                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">{s.category}</span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex justify-center gap-2">
-                      <button onClick={() => handleBulkAction('approve', [s.applicationId])} 
-                        className="p-2 text-[#0e6251] hover:bg-green-50 rounded-lg">
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleBulkAction('decline', [s.applicationId])} 
-                        className="p-2 text-[#c0392b] hover:bg-red-50 rounded-lg">
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
