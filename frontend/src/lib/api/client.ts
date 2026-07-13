@@ -25,7 +25,12 @@ export async function apiClient<T>(
             userId: 99,
             fullName: email.split('@')[0],
             email,
-            role: email.includes('student') ? 'Student' : email.includes('reviewer') ? 'DocReviewer' : email.includes('officer') ? 'BGCheckOfficer' : 'Admin'
+            role: email.includes('student') ? 'Student' : 
+                  email.includes('reviewer') ? 'DocReviewer' : 
+                  email.includes('officer') ? 'BGCheckOfficer' : 
+                  email.includes('screener') ? 'ScreeningOfficer' : 
+                  email.includes('csr') ? 'CSRPartner' :
+                  email.includes('finance') ? 'Finance' : 'Admin'
           }
         }
       } as any;
