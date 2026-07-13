@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { financeApi } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/finance/ui/card";
+import { Button } from "@/components/finance/ui/button";
+import { Input } from "@/components/finance/ui/input";
+import { Textarea } from "@/components/finance/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/finance/ui/select";
 import { IndianRupee, Loader2, CheckCircle, XCircle, Shield, AlertTriangle } from "lucide-react";
 import type { PendingPaymentRow, PaymentVerifyStatus } from "@/types/domain";
 
@@ -204,3 +204,4 @@ export default function CheckerView() {
     </div>
   );
 }
+
