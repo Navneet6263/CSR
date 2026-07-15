@@ -12,6 +12,8 @@ import {
   GaugeCircle,
   Wallet,
   Layers,
+  Megaphone,
+  KeyRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -43,6 +45,8 @@ const operations: Item[] = [
 
 const management: Item[] = [
   { label: "Scholarships", href: "/admin/scholarships", icon: GraduationCap },
+  { label: "User & Access", href: "/admin/users", icon: KeyRound },
+  { label: "Communications", href: "/admin/communications", icon: Megaphone },
   { label: "System Settings", href: "/admin/settings", icon: Settings },
 ];
 
