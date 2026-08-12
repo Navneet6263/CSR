@@ -4,7 +4,7 @@ import { Check, ChevronRight, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import type { DocItem, DocStatus } from "./mockData";
+import type { ReviewerDocument as DocItem, DocStatus } from "@/types/reviewer";
 
 interface Props {
   docs: DocItem[];
@@ -23,12 +23,14 @@ interface Props {
 
 const statusBadge: Record<DocStatus, string> = {
   Pending: "bg-slate-100 text-slate-600 border-slate-200",
-  Approved: "bg-emerald-100/80 text-emerald-700 border-emerald-200/60",
+  Uploaded: "bg-slate-100 text-slate-600 border-slate-200",
+  Verified: "bg-emerald-100/80 text-emerald-700 border-emerald-200/60",
+  ReUploadRequested: "bg-amber-100/80 text-amber-700 border-amber-200/60",
   Rejected: "bg-rose-100/80 text-rose-700 border-rose-200/60",
 };
 
 export function AuditPanel(p: Props) {
-  const approved = p.docs.filter((d) => d.status === "Approved").length;
+  const approved = p.docs.filter((d) => d.status === "Verified").length;
   const total = p.docs.length;
   const reviewed = p.docs.filter((d) => d.status !== "Pending").length;
 
@@ -52,23 +54,23 @@ export function AuditPanel(p: Props) {
 
       <div className="flex-1 space-y-2 overflow-y-auto p-4">
         {p.docs.map((d) => {
-          const isSel = p.selectedId === d.id;
-          const isRejecting = p.rejectingId === d.id;
+          const isSel = p.selectedId === d.key;
+          const isRejecting = p.rejectingId === d.key;
           return (
             <div
-              key={d.id}
+              key={d.key}
               className={`rounded-xl border transition-all ${
                 isSel ? "border-primary/30 bg-white/80 shadow-sm" : "border-white/60 bg-white/40 hover:bg-white/70"
               }`}
             >
               <button
-                onClick={() => p.onSelect(d.id)}
+                onClick={() => p.onSelect(d.key)}
                 className="flex w-full items-center justify-between px-4 py-3 text-left"
               >
                 <div className="flex items-center gap-3">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">{d.type}</div>
+                    <div className="text-sm font-medium">{d.label}</div>
                     <Badge variant="outline" className={`mt-1 rounded-full text-[10px] ${statusBadge[d.status]}`}>
                       {d.status}
                     </Badge>
@@ -78,14 +80,14 @@ export function AuditPanel(p: Props) {
               </button>
               {isSel && (
                 <div className="space-y-3 border-t border-white/60 px-4 py-3">
-                  {d.rejectionReason && !isRejecting && (
+                  {d.reason && !isRejecting && (
                     <div className="rounded-lg bg-rose-50/80 p-2.5 text-xs text-rose-700">
-                      <span className="font-semibold">Reason:</span> {d.rejectionReason}
+                      <span className="font-semibold">Reason:</span> {d.reason}
                     </div>
                   )}
-                  {d.status !== "Pending" ? (
+                  {!['Pending', 'Uploaded'].includes(d.status) ? (
                     <div className="rounded-xl border border-slate-100 bg-slate-50/50 py-3 text-center text-xs text-slate-500">
-                      Document has been marked as <span className={`font-semibold ${d.status === "Approved" ? "text-emerald-600" : "text-rose-600"}`}>{d.status}</span>
+                      Document has been marked as <span className={`font-semibold ${d.status === "Verified" ? "text-emerald-600" : "text-rose-600"}`}>{d.status}</span>
                     </div>
                   ) : (
                     <>
@@ -100,7 +102,7 @@ export function AuditPanel(p: Props) {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          onClick={() => p.onApprove(d.id)}
+                          onClick={() => p.onApprove(d.key)}
                           className="flex-1 rounded-lg bg-emerald-500/90 text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-emerald-500"
                         >
                           <Check className="mr-1 h-3.5 w-3.5" /> Approve
@@ -113,7 +115,7 @@ export function AuditPanel(p: Props) {
                             <Button
                               size="sm"
                               disabled={p.rejectionDraft.trim().length < 5}
-                              onClick={() => p.onReject(d.id, p.rejectionDraft)}
+                              onClick={() => p.onReject(d.key, p.rejectionDraft)}
                               className="rounded-lg bg-rose-500/90 text-white shadow-sm hover:bg-rose-500"
                             >
                               Confirm Reject
@@ -123,7 +125,7 @@ export function AuditPanel(p: Props) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => { p.setRejectingId(d.id); p.setRejectionDraft(d.rejectionReason ?? ""); }}
+                            onClick={() => { p.setRejectingId(d.key); p.setRejectionDraft(d.reason ?? ""); }}
                             className="flex-1 rounded-lg border-rose-200/60 bg-rose-50/60 text-rose-600 hover:bg-rose-100/60 hover:text-rose-700"
                           >
                             <X className="mr-1 h-3.5 w-3.5" /> Reject

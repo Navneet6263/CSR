@@ -23,10 +23,10 @@ export default function AdminFunnel() {
         
         const counts = {
           registered: apps.length,
-          docAudit: apps.filter(a => ['DocAuditInProgress', 'DocAuditComplete', 'BGCheckInProgress', 'BGCheckComplete', 'ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.Status)).length,
-          screening: apps.filter(a => ['ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.Status)).length,
-          csr: apps.filter(a => ['CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.Status)).length,
-          funded: apps.filter(a => a.Status === 'PaymentCompleted').length,
+          docAudit: apps.filter(a => ['DocAuditInProgress', 'DocAuditComplete', 'BGCheckInProgress', 'BGCheckComplete', 'ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.status)).length,
+          screening: apps.filter(a => ['ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.status)).length,
+          csr: apps.filter(a => ['CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.status)).length,
+          funded: apps.filter(a => a.status === 'PaymentCompleted').length,
         };
 
         setStages([

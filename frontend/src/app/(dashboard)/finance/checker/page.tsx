@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { ShieldCheck, Search, Clock } from "lucide-react";
 import { CheckerModal } from "@/components/finance/CheckerModal";
-import { inr, type Payout } from "@/lib/finance-mock";
+import { inr, type Payout } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
+import { formatFinanceDateTime } from "@/lib/financeFormat";
 
 
 
@@ -53,7 +54,7 @@ export default function () {
                 <Field label="Amount" value={inr(r.amount)} bold />
                 <Field label="Bank" value={r.bankName} />
                 <Field label="Maker" value={r.makerName ?? "—"} />
-                <Field label="Recorded" value={r.makerAt ? new Date(r.makerAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "—"} />
+                <Field label="Recorded" value={r.makerAt ? formatFinanceDateTime(r.makerAt) : "—"} />
               </div>
               <div className="mt-4 rounded-lg border border-dashed border-navy-100 bg-navy-50/50 p-3 text-center text-[11px] font-semibold text-navy-500">
                 Maker's UTR is hidden — enter from bank statement independently.

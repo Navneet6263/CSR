@@ -29,13 +29,7 @@ export default function ForgotPasswordForm() {
     setLoading(true);
     setApiError('');
     try {
-      // Assuming you have a forgotPassword method in authApi. 
-      // If not, we will mock it for UI purposes for now.
-      if (authApi.forgotPassword) {
-        await authApi.forgotPassword({ email });
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
+      await authApi.forgotPassword({ email });
       setSuccess(true);
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Failed to send reset link');
@@ -53,9 +47,9 @@ export default function ForgotPasswordForm() {
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Check your email</h2>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Request received</h2>
           <p className="text-slate-500 text-sm max-w-[280px] mx-auto leading-relaxed">
-            We've sent a password reset link to <span className="font-semibold text-slate-700">{email}</span>.
+            If an active account exists for <span className="font-semibold text-slate-700">{email}</span>, reset instructions will be sent.
           </p>
         </div>
         <Link href="/login" className="inline-block mt-8 text-sm font-semibold text-slate-700 hover:text-[#2e86c1] transition-colors border border-slate-200 px-6 py-2.5 rounded-xl shadow-sm hover:shadow">

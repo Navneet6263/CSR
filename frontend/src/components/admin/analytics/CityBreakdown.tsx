@@ -5,7 +5,7 @@ export type CityRow = {
   state: string;
   applicants: number;
   approved: number;
-  trend: number; // +/- pct vs last period
+  trend: number;
 };
 
 export default function CityBreakdown({ rows }: { rows: CityRow[] }) {
@@ -23,8 +23,8 @@ export default function CityBreakdown({ rows }: { rows: CityRow[] }) {
       </div>
       <ul className="divide-y divide-slate-100">
         {sorted.map((c, i) => {
-          const share = (c.applicants / total) * 100;
-          const conv = Math.round((c.approved / c.applicants) * 100);
+          const share = total ? (c.applicants / total) * 100 : 0;
+          const conv = c.applicants ? Math.round((c.approved / c.applicants) * 100) : 0;
           const up = c.trend >= 0;
           return (
             <li key={c.city} className="px-5 py-3">

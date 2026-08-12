@@ -7,79 +7,27 @@ import {
   ArrowLeft,
   Building2,
   Calendar,
-  CheckCircle2,
   CircleDashed,
   IndianRupee,
   UserCheck,
-  XCircle,
 } from "lucide-react";
 import { ApplicationTimeline } from "@/components/student/applications_new/ApplicationTimeline";
+import { DocBadge, mapStudentApplicationDetail, MetaTile, type StudentApplicationDetail } from '@/components/student/applications/ApplicationDetailPresentation';
 import { applicationApi } from "@/lib/api";
 
 export default function ApplicationDetailPage() {
   const { id } = useParams();
-  const [appData, setAppData] = useState<any>(null);
+  const [appData, setAppData] = useState<StudentApplicationDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadApp() {
       try {
         const res = await applicationApi.getById(Number(id));
-        const data = res.data;
+        const data = res.data as Record<string, any>;
         if (!data) return;
 
-        // Map status
-        const st = data.Status || data.status;
-        let mappedStatus = 'Pending';
-        if (st === 'Approved' || st === 'Disbursed') mappedStatus = 'Funded';
-        else if (st === 'Rejected') mappedStatus = 'Rejected';
-        else if (st === 'DocVerification' || st === 'BGCheck' || st === 'CommitteeReview') mappedStatus = 'Under Review';
-        
-        let progressPct = 20;
-        let activeIdx = 0;
-        if (st === 'DocVerification') { activeIdx = 1; progressPct = 40; }
-        else if (st === 'BGCheck') { activeIdx = 2; progressPct = 60; }
-        else if (st === 'CommitteeReview') { activeIdx = 3; progressPct = 80; }
-        else if (st === 'Approved' || st === 'Disbursed') { activeIdx = 4; progressPct = 100; }
-        else if (st === 'Rejected') { activeIdx = 1; progressPct = 40; }
-
-        const baseSteps = [
-          { key: "submitted", label: "Submitted", note: "Application received" },
-          { key: "review", label: "Doc Review", note: "Verifying attached proofs" },
-          { key: "bg", label: "Background Check", note: "Home or tele-verification" },
-          { key: "committee", label: "Committee", note: "Final CSR decision" },
-          { key: "funded", label: "Funded", note: "Grant disbursed" },
-        ];
-
-        const timeline = baseSteps.map((s, idx) => ({
-          ...s,
-          status: st === 'Rejected' && idx === activeIdx ? 'rejected' 
-                : idx < activeIdx ? "complete" 
-                : (idx === activeIdx ? "current" : "pending")
-        }));
-
-        const amt = data.ScholarshipAmount || data.scholarshipAmount;
-        setAppData({
-          id: data.ApplicationID || data.id,
-          scholarship: data.ScholarshipName || data.scholarshipName || "Scholarship Grant",
-          provider: "TalentBridge Partner",
-          category: "Merit / Need-based",
-          status: mappedStatus,
-          amount: amt ? `₹${amt}` : "Variable",
-          appliedOn: new Date(data.CreatedAt || data.createdAt).toLocaleDateString(),
-          currentStage: st,
-          reviewer: "CSR Officer",
-          progressPct,
-          nextAction: mappedStatus === 'Funded' ? "Check your bank account for disbursement." : mappedStatus === 'Rejected' ? "Application was declined." : "Wait for the review committee to process your documents.",
-          disbursedOn: st === 'Disbursed' ? new Date().toLocaleDateString() : null,
-          timeline,
-          submittedDocs: [
-            { name: "Aadhaar Card", status: "verified" },
-            { name: "10th Marksheet", status: "verified" },
-            { name: "12th Marksheet", status: "verified" },
-            { name: "Income Certificate", status: st === 'DocVerification' ? 'pending' : 'verified' },
-          ]
-        });
+        setAppData(mapStudentApplicationDetail(data));
       } catch (err) {
         console.error(err);
       } finally {
@@ -193,7 +141,7 @@ export default function ApplicationDetailPage() {
               Files attached to this application.
             </p>
             <ul className="divide-y divide-border">
-              {appData.submittedDocs.map((d: any) => (
+              {appData.submittedDocs.map((d) => (
                 <li key={d.name} className="flex items-start justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{d.name}</p>
@@ -218,45 +166,9 @@ export default function ApplicationDetailPage() {
               </p>
             )}
           </div>
-          <div className="rounded-2xl border border-border bg-muted/40 p-5 text-xs text-muted-foreground shadow-sm">
-            Need help? Reach out at{" "}
-            <a href="mailto:support@talentbridge.in" className="text-primary font-medium hover:underline">
-              support@talentbridge.in
-            </a>
-          </div>
+          <div className="rounded-2xl border border-border bg-muted/40 p-5 text-xs text-muted-foreground shadow-sm">Need help? Contact the portal administrator through your registered support channel.</div>
         </aside>
       </div>
     </main>
-  );
-}
-
-function MetaTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-white/10 p-3 backdrop-blur shadow-sm">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-white/80">
-        {icon} {label}
-      </div>
-      <p className="mt-1 truncate text-sm font-semibold text-white">{value}</p>
-    </div>
-  );
-}
-
-function DocBadge({ status }: { status: "verified" | "pending" | "rejected" }) {
-  if (status === "verified")
-    return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-medium text-success">
-        <CheckCircle2 className="h-3 w-3" /> Verified
-      </span>
-    );
-  if (status === "rejected")
-    return (
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive-soft px-2 py-0.5 text-[11px] font-medium text-destructive">
-        <XCircle className="h-3 w-3" /> Rejected
-      </span>
-    );
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
-      <CircleDashed className="h-3 w-3" /> Pending
-    </span>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 import { CheckCircle2, RotateCcw, XCircle, Send } from "lucide-react";
 import { useState } from "react";
-import type { DocItem, DocStatus } from "@/lib/mock-data";
+import type { ReviewerDocument as DocItem, DocStatus } from "@/types/reviewer";
 
 export function ActionBar({ doc, onAction, allDone, onComplete }: {
   doc: DocItem;

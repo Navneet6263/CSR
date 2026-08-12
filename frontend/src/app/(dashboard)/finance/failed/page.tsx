@@ -1,13 +1,17 @@
 "use client";
 
-import { AlertOctagon, RefreshCw, MailCheck, Mail } from "lucide-react";
-import { inr } from "@/lib/finance-mock";
+import { AlertOctagon, RefreshCw, MailCheck } from "lucide-react";
+import Link from 'next/link';
+import { authApi } from '@/lib/api';
+import { inr } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
+import { formatFinanceDate } from "@/lib/financeFormat";
 
 
 
-export default function () {
-  const { failed, reprocessFailed, markStudentNotified } = useFinance();
+export default function FailedPaymentsPage() {
+  const { failed } = useFinance();
+  const user = authApi.getUser();
   const total = failed.reduce((s, f) => s + f.amount, 0);
 
   return (
@@ -53,7 +57,7 @@ export default function () {
                       FAILED
                     </span>
                     <span className="font-mono text-[11px] font-bold text-navy-500">{f.id}</span>
-                    <span className="text-[11px] text-navy-500">{f.failedAt}</span>
+                    <span className="text-[11px] text-navy-500">{formatFinanceDate(f.failedAt)}</span>
                   </div>
                   <div className="mt-2 font-display text-lg font-bold text-navy-900">{f.fullName}</div>
                   <div className="text-xs text-navy-500">{f.applicationId} · {f.sponsor} · {f.bankName}</div>
@@ -62,8 +66,8 @@ export default function () {
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${f.studentNotified ? "bg-success-50 text-success-700" : "bg-amber-100 text-amber-800"}`}>
-                      {f.studentNotified ? <MailCheck size={12} /> : <Mail size={12} />}
-                      {f.studentNotified ? "Student notified" : "Not notified"}
+                      <MailCheck size={12} />
+                      {f.studentNotified ? "In-app update queued" : "Update not queued"}
                     </span>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${f.detailsUpdated ? "bg-success-50 text-success-700" : "bg-navy-50 text-navy-700"}`}>
                       {f.detailsUpdated ? "Bank details updated" : "Awaiting student update"}
@@ -73,22 +77,15 @@ export default function () {
                 <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
                   <div className="font-display text-2xl font-bold text-navy-900">{inr(f.amount)}</div>
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    {!f.studentNotified ? (
-                      <button
-                        onClick={() => markStudentNotified(f.id)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-navy-100 bg-white px-3 py-2 text-xs font-bold text-navy-700 hover:bg-navy-50"
-                      >
-                        <Mail size={14} /> Notify student
-                      </button>
-                    ) : null}
-                    <button
-                      disabled={!f.detailsUpdated}
-                      onClick={() => reprocessFailed(f.id)}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-success-500 px-3 py-2 text-xs font-bold text-white hover:bg-success-700 disabled:cursor-not-allowed disabled:opacity-40"
-                      title={!f.detailsUpdated ? "Waiting for student to update bank details" : ""}
-                    >
-                      <RefreshCw size={14} /> Re-process
-                    </button>
+                    {user?.financeFunction === 'Maker' ? (f.detailsUpdated ? (
+                      <Link href="/finance/pending" className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-success-500 px-3 py-2 text-xs font-bold text-white hover:bg-success-700">
+                        <RefreshCw size={14} /> Re-process
+                      </Link>
+                    ) : (
+                      <span className="cursor-not-allowed rounded-lg bg-navy-50 px-3 py-2 text-[10px] font-bold text-navy-500" title="Waiting for student to update bank details">
+                        Awaiting bank update
+                      </span>
+                    )) : <span className="rounded-lg bg-navy-50 px-3 py-2 text-[10px] font-bold text-navy-600">Maker re-process required</span>}
                   </div>
                 </div>
               </div>

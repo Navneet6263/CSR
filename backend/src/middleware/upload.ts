@@ -1,29 +1,26 @@
-import multer from 'multer';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { Request } from 'express';
+import multer from 'multer';
+import { config } from '../config/env';
 
+const incomingRoot = path.join(config.privateUploadRoot, '.incoming');
+fs.mkdirSync(incomingRoot, { recursive: true });
+
+const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb) => {
-    // Save to /uploads/students/<userId>/
-    const userId = req.user?.userId;
-    if (!userId) return cb(new Error('Unauthorized'), '');
-
-    const dest = path.join(process.cwd(), 'uploads', 'students', String(userId));
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-    cb(null, dest);
-  },
-  filename: (req: Request, file: Express.Multer.File, cb) => {
-    // Naming: <docType>.<ext>
-    const docType = req.body.docType || 'unknown';
-    const ext = path.extname(file.originalname) || '.pdf';
-    cb(null, `${docType}${ext}`);
-  }
+  destination: (_req, _file, callback) => callback(null, incomingRoot),
+  filename: (_req, _file, callback) => callback(null, crypto.randomUUID()),
 });
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 5 },
+  fileFilter: (_req, file, callback) => {
+    if (!allowedMimeTypes.has(file.mimetype)) {
+      callback(new Error('Only PDF, JPEG, and PNG documents are allowed.'));
+      return;
+    }
+    callback(null, true);
+  },
 });

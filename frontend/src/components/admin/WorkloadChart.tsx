@@ -7,10 +7,10 @@ const colors = ["#0f172a", "#334155", "#64748b", "#94a3b8"];
 
 export default function WorkloadChart({ data: apiData }: { data?: any }) {
   const data = [
-    { role: "Doc Check", pending: apiData?.docCheckers || 184 },
-    { role: "BG Check", pending: apiData?.bgCheckers || 156 },
-    { role: "Screening", pending: apiData?.screeners || 92 },
-    { role: "CSR", pending: apiData?.csrPartners || 48 },
+    { role: "Doc Check", pending: Number(apiData?.docCheckers ?? 0) },
+    { role: "BG Check", pending: Number(apiData?.bgCheckers ?? 0) },
+    { role: "Screening", pending: Number(apiData?.screeners ?? 0) },
+    { role: "CSR", pending: Number(apiData?.csrPartners ?? 0) },
   ];
   
   const total = data.reduce((s, d) => s + d.pending, 0);

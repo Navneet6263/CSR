@@ -2,6 +2,9 @@ import bcrypt from 'bcrypt';
 import db from '../src/config/database';
 
 async function seed() {
+  if (process.env.NODE_ENV === 'production') throw new Error('Seeding is disabled in production.');
+  const seedPassword = process.env.SEED_PASSWORD;
+  if (!seedPassword || seedPassword.length < 12) throw new Error('SEED_PASSWORD (minimum 12 characters) is required.');
   // Top 10 Institutions (IITs, NITs, etc.)
   const topInstitutions = [
     { Name: 'IIT Bombay', Type: 'University', District: 'Mumbai', State: 'Maharashtra', Address: 'Powai, Mumbai', BankAccountNo: '1234567890', BankIFSC: 'SBIN0001234', IsVerified: true },
@@ -38,7 +41,7 @@ async function seed() {
     'CSRPartner',
   ];
 
-  const passwordHash = await bcrypt.hash('12345678', 12);
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
 
   for (const role of roles) {
     const email = `${role.toLowerCase()}@test.com`;
@@ -55,8 +58,10 @@ async function seed() {
       Email: email,
       PasswordHash: passwordHash,
       Role: role,
+      FinanceFunction: role === 'Finance' ? 'Maker' : null,
       AgentCode: role === 'Student' ? null : `${role.substring(0,3)}_${Math.floor(Math.random() * 10000)}`,
       IsActive: true,
+      MustChangePassword: true,
     }).returning('*');
 
     console.log(`Created user: ${email} (Role: ${role})`);

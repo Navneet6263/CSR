@@ -10,7 +10,9 @@ import { EducationSection } from "@/components/student/profile/sections/Educatio
 import { BankSection } from "@/components/student/profile/sections/BankSection";
 import { SopSection } from "@/components/student/profile/sections/SopSection";
 import { DocumentsSection } from "@/components/student/profile/sections/DocumentsSection";
-import { studentApi, authApi } from "@/lib/api";
+import { studentApi, authApi, institutionApi } from "@/lib/api";
+import type { Institution } from '@/types';
+import { profileUpdatePayload, studentToForm } from '@/lib/profilePayload';
 import {
   INITIAL_FORM,
   SECTIONS,
@@ -25,75 +27,18 @@ export default function ProfilePage() {
   const [userName, setUserName] = useState("Student");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     const u = authApi.getUser();
     if (u) setUserName(u.fullName);
 
-    studentApi.getProfile().then(res => {
-      const data = res.data;
-      if (data) {
-        setForm(prev => ({
-          ...prev,
-          phone: data.phone || "",
-          altPhone: data.alternatePhone || "",
-          aadhaar: data.aadharNumber || "",
-          dob: data.dob ? new Date(data.dob).toISOString().split('T')[0] : "",
-          gender: data.gender?.toLowerCase() || "",
-          category: data.category || "",
-          curHouse: data.address || "",
-          curCity: data.city || "",
-          curState: data.state || "",
-          curPincode: data.pincode || "",
-          curMonths: String(data.currentAddressDurationMonths || ""),
-          sameAddress: data.isPermanentSameAsCurrent || false,
-          permHouse: data.permanentAddress || "",
-          permCity: data.permanentCity || "",
-          permState: data.permanentState || "",
-          permPincode: data.permanentPincode || "",
-          
-          fatherName: data.fatherName || "",
-          fatherOccupation: data.fatherOccupation || "",
-          motherName: data.motherName || "",
-          motherOccupation: data.motherOccupation || "",
-          siblings: String(data.numberOfSiblings || "0"),
-          familySize: String(data.familySize || ""),
-          annualIncome: String(data.annualFamilyIncome || ""),
-          religion: data.religion || "",
-          disability: data.isDisabled ? "yes" : "no",
-          disabilityPercent: String(data.disabilityPercentage || ""),
-          domicileState: data.domicileState || "",
-          domicileDistrict: data.domicileDistrict || "",
-          casteCertNo: data.casteCertificateNumber || "",
-          casteCertDate: data.casteCertificateIssueDate ? new Date(data.casteCertificateIssueDate).toISOString().split('T')[0] : "",
-          domicileCertNo: data.domicileCertificateNumber || "",
-
-          board10: data.tenthBoardName || "",
-          year10: String(data.tenthPassingYear || ""),
-          marks10: String(data.tenthMarks || ""),
-          board12: data.twelfthBoardName || "",
-          year12: String(data.twelfthPassingYear || ""),
-          marks12: String(data.twelfthMarks || ""),
-          college: String(data.institutionId || ""),
-          course: data.course || "",
-          semester: data.currentSemesterOrYear || "",
-          regNo: data.admissionRegistrationNo || "",
-          prevMarks: String(data.previousYearMarks || ""),
-          accommodation: data.isHosteller ? "hostel" : "day_scholar",
-          distanceKm: String(data.distanceFromHome || ""),
-          gapYear: data.hasGapYear ? "yes" : "no",
-          gapReason: data.gapYearExplanation || "",
-          prevScholarship: data.receivedPreviousScholarship ? "yes" : "no",
-          
-          bankAccount: data.bankAccountNo || "",
-          ifsc: data.bankIFSC || "",
-          bankName: data.bankName || "",
-          
-          sop: data.statementOfPurpose || "",
-        }));
-      }
-      setLoading(false);
-    });
+    Promise.all([studentApi.getProfile(), institutionApi.getAll()]).then(([profile, institutionList]) => {
+      if (profile.data) setForm(studentToForm(profile.data));
+      setInstitutions(institutionList.data ?? []);
+    }).catch((error) => setNotice(error instanceof Error ? error.message : 'Unable to load profile.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const set = <K extends keyof ProfileFormState>(k: K, v: ProfileFormState[K]) =>
@@ -105,68 +50,12 @@ export default function ProfilePage() {
   const next = SECTIONS[idx + 1];
 
   const handleSave = async () => {
-    setSaving(true);
+    setSaving(true); setNotice('');
     try {
-      await studentApi.updateProfile({
-        phone: form.phone,
-        alternatePhone: form.altPhone,
-        aadharNumber: form.aadhaar,
-        dob: form.dob ? new Date(form.dob).toISOString() : undefined,
-        gender: form.gender,
-        category: form.category,
-        address: form.curHouse,
-        city: form.curCity,
-        state: form.curState,
-        pincode: form.curPincode,
-        currentAddressDurationMonths: form.curMonths ? parseInt(form.curMonths) : undefined,
-        isPermanentSameAsCurrent: form.sameAddress,
-        permanentAddress: form.permHouse,
-        permanentCity: form.permCity,
-        permanentState: form.permState,
-        permanentPincode: form.permPincode,
-        
-        fatherName: form.fatherName,
-        fatherOccupation: form.fatherOccupation,
-        motherName: form.motherName,
-        motherOccupation: form.motherOccupation,
-        numberOfSiblings: parseInt(form.siblings) || 0,
-        familySize: parseInt(form.familySize) || undefined,
-        annualFamilyIncome: parseInt(form.annualIncome) || undefined,
-        religion: form.religion,
-        isDisabled: form.disability === "yes",
-        disabilityPercentage: form.disabilityPercent ? parseInt(form.disabilityPercent) : undefined,
-        domicileState: form.domicileState,
-        domicileDistrict: form.domicileDistrict,
-        casteCertificateNumber: form.casteCertNo,
-        casteCertificateIssueDate: form.casteCertDate ? new Date(form.casteCertDate).toISOString() : undefined,
-        domicileCertificateNumber: form.domicileCertNo,
-        
-        tenthBoardName: form.board10,
-        tenthPassingYear: parseInt(form.year10) || undefined,
-        tenthMarks: parseFloat(form.marks10) || undefined,
-        twelfthBoardName: form.board12,
-        twelfthPassingYear: parseInt(form.year12) || undefined,
-        twelfthMarks: parseFloat(form.marks12) || undefined,
-        institutionId: parseInt(form.college) || undefined,
-        course: form.course,
-        currentSemesterOrYear: form.semester,
-        admissionRegistrationNo: form.regNo,
-        previousYearMarks: parseFloat(form.prevMarks) || undefined,
-        isHosteller: form.accommodation === "hostel",
-        distanceFromHome: parseFloat(form.distanceKm) || undefined,
-        hasGapYear: form.gapYear === "yes",
-        gapYearExplanation: form.gapReason,
-        receivedPreviousScholarship: form.prevScholarship === "yes",
-        
-        bankAccountNo: form.bankAccount,
-        bankIFSC: form.ifsc,
-        bankName: form.bankName,
-        
-        statementOfPurpose: form.sop,
-      });
-      alert("Draft saved successfully!");
-    } catch (e) {
-      alert("Error saving draft.");
+      await studentApi.updateProfile(profileUpdatePayload(form));
+      setNotice('Draft saved securely.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to save profile.');
     } finally {
       setSaving(false);
     }
@@ -193,11 +82,13 @@ export default function ProfilePage() {
           <Suspense fallback={<div className="h-40 rounded-2xl bg-muted animate-pulse" />}>
             {active === "personal" && <PersonalSection form={form} set={set} />}
             {active === "family" && <FamilySection form={form} set={set} />}
-            {active === "education" && <EducationSection form={form} set={set} />}
+            {active === "education" && <EducationSection form={form} set={set} institutions={institutions} />}
             {active === "bank" && <BankSection form={form} set={set} />}
             {active === "sop" && <SopSection form={form} set={set} />}
             {active === "documents" && <DocumentsSection form={form} set={set} />}
           </Suspense>
+
+          {notice && <p role="status" className="rounded-xl border border-border bg-card p-3 text-sm text-foreground">{notice}</p>}
 
           <nav className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button

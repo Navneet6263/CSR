@@ -1,21 +1,14 @@
 'use client';
 
-import { Check, FileCheck2, Filter, Search, Send, X, Loader2, ArrowRight } from "lucide-react";
+import { Check, FileCheck2, Filter, Search, Send, X, Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { TopNav } from "@/components/reviewer/TopNav";
 import { verificationApi } from "@/lib/api/verification";
+import { mapReviewerLog } from '@/lib/reviewerActivity';
+import type { ReviewerActivityLog as ActivityLog } from '@/types/reviewer';
 
-type ActivityLog = {
-  id: string;
-  action: "Approved" | "Rejected" | "Submitted";
-  docType: string;
-  studentName: string;
-  appId: string;
-  reason?: string;
-  timestamp: string;
-};
 
 const meta: Record<ActivityLog["action"], { icon: typeof Check; tone: string; verb: string }> = {
   Approved: { icon: Check, tone: "bg-emerald-100 text-emerald-600 border-emerald-200/70", verb: "Approved" },
@@ -31,27 +24,7 @@ export default function LogsPage() {
 
   useEffect(() => {
     verificationApi.getReviewerLogs().then((res) => {
-      const formatted = (res.data || []).map((l: Record<string, unknown>) => {
-        let actionStr = 'Submitted';
-        if (l.action === 'Verified') actionStr = 'Approved';
-        else if (l.action === 'ReUploadRequested' || l.action === 'Rejected') actionStr = 'Rejected';
-        
-        const formatDocType = (str: string) => {
-          if (!str) return 'Document';
-          const s = str.replace(/([A-Z])/g, ' $1').trim();
-          return s.charAt(0).toUpperCase() + s.slice(1);
-        };
-        
-        return {
-          id: l.id.toString(),
-          action: actionStr,
-          docType: formatDocType(l.docType as string),
-          studentName: l.studentName,
-          appId: l.appId.toString(),
-          reason: l.reason,
-          timestamp: new Date(l.timestamp).toLocaleString()
-        };
-      });
+      const formatted = (res.data || []).map(mapReviewerLog);
       setLive(formatted);
     }).finally(() => setLoading(false));
   }, []);

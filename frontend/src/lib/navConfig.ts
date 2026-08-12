@@ -7,7 +7,6 @@ export const navByRole: Record<string, NavItem[]> = {
   ],
   Agent: [
     { label: 'Dashboard', href: '/agent', icon: 'LayoutDashboard' },
-    { label: 'My Students', href: '/agent/students', icon: 'Users' },
   ],
   DocReviewer: [
     { label: 'Audit Queue', href: '/reviewer', icon: 'FileText' },
@@ -30,6 +29,9 @@ export const navByRole: Record<string, NavItem[]> = {
   CSRPartner: [
     { label: 'Dashboard', href: '/csr', icon: 'LayoutDashboard' },
   ],
+  SupportAgent: [
+    { label: 'Support Hub', href: '/support', icon: 'LifeBuoy' },
+  ],
 };
 
 export const roleHomePath: Record<string, string> = {
@@ -41,4 +43,5 @@ export const roleHomePath: Record<string, string> = {
   Admin: '/admin',
   Finance: '/finance',
   CSRPartner: '/csr',
+  SupportAgent: '/support',
 };

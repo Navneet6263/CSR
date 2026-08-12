@@ -16,7 +16,7 @@ export default function GeoMap({ rows }: { rows: GeoRow[] }) {
       <div className="divide-y divide-slate-100">
         {rows.map((r) => {
           const w = (r.applicants / max) * 100;
-          const conv = Math.round((r.approved / r.applicants) * 100);
+          const conv = r.applicants ? Math.round((r.approved / r.applicants) * 100) : 0;
           const intensity = Math.max(0.18, r.applicants / max);
           return (
             <div key={r.state} className="px-5 py-3">

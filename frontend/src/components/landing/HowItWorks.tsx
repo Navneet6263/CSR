@@ -1,4 +1,3 @@
-"use client";
 import { UserPlus, Sparkles, FileCheck, Wallet } from "lucide-react";
 import { steps } from "./data";
 
@@ -6,7 +5,7 @@ const icons = [UserPlus, Sparkles, FileCheck, Wallet];
 
 export function HowItWorks() {
   return (
-    <section id="apply" className="py-16 sm:py-24">
+    <section id="process" className="content-auto py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">Simple Process</p>
@@ -43,7 +42,7 @@ export function HowItWorks() {
             <p className="text-sm text-muted-foreground">It takes less than 5 minutes to get matched.</p>
           </div>
           <a
-            href="#apply"
+            href="/register"
             className="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:opacity-95 hover:shadow-md"
           >
             Start Application

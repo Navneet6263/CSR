@@ -4,3 +4,9 @@ export { studentApi, scholarshipApi, applicationApi, institutionApi } from './ap
 export { verificationApi } from './api/verification';
 export { screeningApi } from './api/screening';
 export { financeApi } from './api/finance';
+export { notificationApi } from './api/notifications';
+export type { NotificationRow } from './api/notifications';
+export { publicApi } from './api/public';
+export type { PublicPortal, PublicScholarship } from './api/public';
+export { adminApi } from './api/admin';
+export { supportApi } from './api/support';

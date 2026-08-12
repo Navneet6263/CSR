@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
-import type { NotificationItem } from "@/lib/mockData";
+import type { DashboardNotification as NotificationItem } from "@/types/dashboard";
 
 const iconFor = {
   info: { Icon: Info, cls: "bg-info-soft text-info" },
@@ -9,14 +9,15 @@ const iconFor = {
 
 interface Props {
   items: NotificationItem[];
+  onMarkAllRead?: () => void;
 }
 
-export function NotificationsFeed({ items }: Props) {
+export function NotificationsFeed({ items, onMarkAllRead }: Props) {
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Recent Notifications</h2>
-        <button className="text-xs font-medium text-accent-foreground hover:underline">
+        <button disabled={!items.length} onClick={onMarkAllRead} className="text-xs font-medium text-accent-foreground hover:underline disabled:opacity-40">
           Mark all read
         </button>
       </div>
@@ -44,6 +45,7 @@ export function NotificationsFeed({ items }: Props) {
           );
         })}
       </ul>
+      {!items.length && <p className="py-6 text-center text-sm text-muted-foreground">No recent notifications.</p>}
     </section>
   );
 }

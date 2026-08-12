@@ -8,6 +8,7 @@ import {
 import {
   addEligibilityRule,
   getEligibilityRules,
+  updateEligibilityRule,
   deleteEligibilityRule,
 } from '../services/eligibilityRule.service';
 import { sendSuccess } from '../utils/response';
@@ -15,8 +16,11 @@ import {
   createScholarshipSchema,
   updateScholarshipSchema,
   eligibilityRuleSchema,
+  updateEligibilityRuleSchema,
 } from '../validators/scholarship.validator';
-import { ValidationError, AuthError } from '../utils/errors';
+import { ValidationError } from '../utils/errors';
+import { parsePage } from '../utils/pagination';
+import { requestActor } from '../utils/requestActor';
 
 // ─── Helper: parse Zod and throw on failure ─────────────────────────────────
 
@@ -34,17 +38,18 @@ function parseOrThrow<T>(schema: import('zod/v4').ZodSchema<T>, body: unknown): 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = parseOrThrow(createScholarshipSchema, req.body);
-    const result = await createScholarship(data);
+    const result = await createScholarship(data, requestActor(req));
     sendSuccess(res, result, 'Scholarship created', 201);
   } catch (error) { next(error); }
 }
 
 export async function getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
     const filters = {
       status: req.query.status as string | undefined,
-      page: req.query.page ? Number(req.query.page) : undefined,
-      limit: req.query.limit ? Number(req.query.limit) : undefined,
+      page,
+      limit,
     };
     const result = await getAllScholarships(filters);
     sendSuccess(res, result, 'Scholarships retrieved');
@@ -63,7 +68,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
   try {
     const id = Number(req.params.id);
     const data = parseOrThrow(updateScholarshipSchema, req.body);
-    const result = await updateScholarship(id, data);
+    const result = await updateScholarship(id, data, requestActor(req));
     sendSuccess(res, result, 'Scholarship updated');
   } catch (error) { next(error); }
 }
@@ -74,7 +79,7 @@ export async function addRule(req: Request, res: Response, next: NextFunction): 
   try {
     const scholarshipId = Number(req.params.id);
     const data = parseOrThrow(eligibilityRuleSchema, { ...req.body, scholarshipId });
-    const result = await addEligibilityRule(data);
+    const result = await addEligibilityRule(data, requestActor(req));
     sendSuccess(res, result, 'Eligibility rule added', 201);
   } catch (error) { next(error); }
 }
@@ -90,7 +95,15 @@ export async function getRules(req: Request, res: Response, next: NextFunction):
 export async function deleteRule(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const ruleId = Number(req.params.ruleId);
-    await deleteEligibilityRule(ruleId);
+    await deleteEligibilityRule(ruleId, requestActor(req));
     sendSuccess(res, null, 'Eligibility rule deleted');
+  } catch (error) { next(error); }
+}
+
+export async function updateRule(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const ruleId = Number(req.params.ruleId);
+    const data = parseOrThrow(updateEligibilityRuleSchema, req.body);
+    sendSuccess(res, await updateEligibilityRule(ruleId, data, requestActor(req)), 'Eligibility rule updated');
   } catch (error) { next(error); }
 }

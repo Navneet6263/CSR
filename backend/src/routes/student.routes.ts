@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProfile, updateProfile, uploadDocument, getDocuments } from '../controllers/student.controller';
+import { getProfile, updateProfile, uploadDocument, getDocuments, getMatches } from '../controllers/student.controller';
 import { authenticate, requireRole } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 
@@ -16,5 +16,6 @@ router.post('/me/documents', authenticate, requireRole('Student'), upload.single
 
 // GET  /api/v1/students/me/documents
 router.get('/me/documents', authenticate, requireRole('Student'), getDocuments);
+router.get('/me/matches', authenticate, requireRole('Student'), getMatches);
 
 export default router;

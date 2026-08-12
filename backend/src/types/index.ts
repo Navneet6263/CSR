@@ -3,7 +3,7 @@ import { Request } from 'express';
 // ─── Role & Status Enums ────────────────────────────────────────────────────
 export type UserRole =
   | 'Student' | 'Agent' | 'DocReviewer' | 'BGCheckOfficer'
-  | 'ScreeningOfficer' | 'CSRPartner' | 'Admin' | 'Finance';
+  | 'ScreeningOfficer' | 'CSRPartner' | 'SupportAgent' | 'Admin' | 'Finance';
 
 export type ApplicationStatus =
   | 'Draft' | 'Submitted' | 'AutoMatched' | 'EligibilityFailed'
@@ -11,7 +11,8 @@ export type ApplicationStatus =
   | 'BGCheckInProgress' | 'BGCheckComplete'
   | 'ScreeningPending' | 'ScreeningApproved' | 'ScreeningRejected'
   | 'CSRPending' | 'CSRApproved' | 'CSRDeclined'
-  | 'PaymentPending' | 'PaymentInitiated' | 'PaymentCompleted' | 'Cancelled';
+  | 'PaymentPending' | 'PaymentInitiated' | 'PaymentCompleted' | 'PaymentFailed'
+  | 'Cancelled';
 
 export type DocumentStatus =
   | 'Pending' | 'Uploaded' | 'Verified' | 'Rejected' | 'ReUploadRequested';
@@ -28,9 +29,11 @@ export interface IUser {
   Phone: string;
   PasswordHash: string;
   Role: UserRole;
+  FinanceFunction?: 'Maker' | 'Checker' | null;
   AgentCode: string | null;
   SponsorID: number | null;
   IsActive: boolean;
+  MustChangePassword?: boolean;
   CreatedAt: Date;
   UpdatedAt: Date;
 }
@@ -130,6 +133,9 @@ export interface IApiResponse<T = unknown> {
 export interface AuthPayload {
   userId: number;
   role: UserRole;
+  sponsorId: number | null;
+  financeFunction: 'Maker' | 'Checker' | null;
+  sessionId: string;
 }
 
 declare global {

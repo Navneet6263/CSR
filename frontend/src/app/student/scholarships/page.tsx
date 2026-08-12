@@ -7,11 +7,13 @@ import {
   type FilterState,
 } from "@/components/student/scholarships/ScholarshipFilters";
 import { studentApi, scholarshipApi } from "@/lib/api";
-import { evaluateMatch, type Scholarship } from "@/lib/scholarships";
+import type { MatchResult, Scholarship } from "@/lib/scholarships";
+import { useSearchParams } from 'next/navigation';
 
 export default function ScholarshipsPage() {
+  const searchParams = useSearchParams();
   const [filters, setFilters] = useState<FilterState>({
-    query: "",
+    query: searchParams.get('query') ?? "",
     category: "All",
     onlyMatched: true,
     sort: "match",
@@ -19,49 +21,38 @@ export default function ScholarshipsPage() {
 
   const [loading, setLoading] = useState(true);
   const [scholarshipsData, setScholarshipsData] = useState<Scholarship[]>([]);
-  const [studentProfile, setStudentProfile] = useState<any>(null);
+  const [matches, setMatches] = useState<Map<string, MatchResult>>(new Map());
 
   useEffect(() => {
     async function load() {
       try {
-        const [profRes, scholRes] = await Promise.all([
-          studentApi.getProfile().catch(() => ({ data: null })),
-          scholarshipApi.getAll().catch(() => ({ data: [] }))
+        const [matchRes, scholRes] = await Promise.all([
+          studentApi.getMatches(),
+          scholarshipApi.getAll('status=Active&limit=100'),
         ]);
-        
-        const p = profRes.data;
-        // Build mock student profile for the evaluator
-        const mappedProfile = {
-          name: p?.fullName || "Student",
-          classLevel: p?.currentSemesterOrYear?.includes("Sem") ? "UG" : "12",
-          stream: p?.course === "B.Tech" ? "Engineering" : (p?.course || "Other"),
-          category: p?.category || "General",
-          annualIncome: p?.annualFamilyIncome || 500000,
-          gender: p?.gender?.toLowerCase() || "male",
-        };
-        setStudentProfile(mappedProfile);
+
+        const evaluationMap = new Map<string, MatchResult>();
+        for (const item of matchRes.data?.matched ?? []) evaluationMap.set(String(item.scholarshipId), {
+          matched: true, score: 100, reasons: ['All configured eligibility rules passed'], blockers: [],
+        });
+        for (const item of matchRes.data?.failed ?? []) evaluationMap.set(String(item.scholarshipId), {
+          matched: false, score: 0, reasons: [], blockers: item.reasons,
+        });
+        setMatches(evaluationMap);
 
         // Map backend scholarships to the UI interface
         const rawSchols = scholRes.data?.scholarships || scholRes.data || [];
         const mappedSchols: Scholarship[] = Array.isArray(rawSchols) ? rawSchols.map((s: any) => ({
           id: (s.ScholarshipID || s.id || '').toString(),
-          title: s.Name || s.name || "Unknown Scholarship",
-          provider: s.SponsorName || s.provider || "TalentBridge Partner",
+          title: s.Name || s.name || "",
+          provider: s.SponsorName || s.provider || "",
           amount: Number(s.PerStudentAmount || s.perStudentAmount) || 0,
-          deadline: s.ApplicationCloseDate || s.applicationCloseDate || "2027-01-01",
-          category: "Merit", // Default fallback
-          classLevels: ["UG", "PG", "12", "10"],
-          tags: ["Open"],
-          description: s.Description || s.description || "A great scholarship opportunity.",
+          deadline: s.ApplicationCloseDate || s.applicationCloseDate,
+          category: "General",
+          tags: [s.Status || s.status].filter(Boolean),
+          description: s.Description || s.description || "",
         })) : [];
-
-        // fallback to zip mock data if API is empty
-        if (mappedSchols.length > 0) {
-          setScholarshipsData(mappedSchols);
-        } else {
-          // Import dynamic to avoid static require errors if not found
-          import("@/lib/scholarships").then(m => setScholarshipsData(m.scholarships));
-        }
+        setScholarshipsData(mappedSchols);
 
       } catch (e) {
         console.error(e);
@@ -74,10 +65,11 @@ export default function ScholarshipsPage() {
 
   const evaluated = useMemo(
     () => {
-      if (!studentProfile) return [];
-      return scholarshipsData.map((s) => ({ s, match: evaluateMatch(s, studentProfile) }));
+      return scholarshipsData.map((s) => ({ s, match: matches.get(s.id) ?? {
+        matched: false, score: 0, reasons: [], blockers: ['Complete your profile to evaluate eligibility'],
+      } }));
     },
-    [scholarshipsData, studentProfile],
+    [scholarshipsData, matches],
   );
 
   const matchedCount = evaluated.filter((e) => e.match.matched).length;

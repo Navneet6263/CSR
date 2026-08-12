@@ -1,11 +1,10 @@
 "use client";
 import { useState } from "react";
-import { X, ShieldCheck, CheckCircle2, AlertTriangle, XOctagon } from "lucide-react";
-import { inr, type Payout } from "@/lib/finance-mock";
+import { CheckCircle2, AlertTriangle, XOctagon } from "lucide-react";
+import { inr, type Payout } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
-
+import { FinanceModalShell } from "./FinanceModalShell";
 const UTR_RE = /^[A-Z0-9]{22}$/;
-
 export function CheckerModal({ row, onClose }: { row: Payout; onClose: () => void }) {
   const { checkerVerify, checkerCancel } = useFinance();
   const [utr, setUtr] = useState("");
@@ -14,35 +13,23 @@ export function CheckerModal({ row, onClose }: { row: Payout; onClose: () => voi
   const [done, setDone] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
-
+  const [error, setError] = useState("");
   const valid = UTR_RE.test(utr);
-
-  const verify = () => {
-    const res = checkerVerify(row.id, utr, notes);
-    if (res.ok) setDone(true);
-    else setMismatch(true);
+  const verify = async () => {
+    setError(''); setMismatch(false);
+    try { await checkerVerify(row.id, utr, notes); setDone(true); }
+    catch (reason) { setMismatch(true); setError(reason instanceof Error ? reason.message : 'Verification failed.'); }
   };
-
-  const doCancel = () => {
-    checkerCancel(row.id, reason || "Cancelled by Checker");
-    onClose();
+  const doCancel = async () => {
+    setError('');
+    try { await checkerCancel(row.id, reason || "Cancelled by Checker"); onClose(); }
+    catch (failure) { setError(failure instanceof Error ? failure.message : 'Payment could not be cancelled.'); }
   };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-navy-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="w-full max-w-lg overflow-hidden rounded-t-2xl border border-navy-100 bg-white shadow-2xl sm:rounded-2xl">
-        <div className="flex items-center justify-between bg-navy-900 px-5 py-3 text-white sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={18} />
-            <span className="text-xs font-semibold uppercase tracking-widest sm:text-sm">
-              {done ? "Verified" : cancelling ? "Cancel Payment" : "Independent Verification — Checker"}
-            </span>
-          </div>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-white/10" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
-
+    <FinanceModalShell
+      onClose={onClose}
+      title={done ? "Verified" : cancelling ? "Cancel Payment" : "Independent Verification — Checker"}
+    >
         {done ? (
           <div className="p-6 text-center sm:p-8">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-50 text-success-700">
@@ -113,7 +100,6 @@ export function CheckerModal({ row, onClose }: { row: Payout; onClose: () => voi
               <Info label="Account" value={`•••• ${row.accountNumber.slice(-4)}`} mono />
               <Info label="Maker" value={row.makerName ?? "—"} />
             </div>
-
             <div className="mt-5 rounded-xl border border-navy-100 bg-navy-50/60 p-3">
               <div className="text-[10px] font-bold uppercase tracking-widest text-navy-500">
                 Verify against bank statement
@@ -154,8 +140,7 @@ export function CheckerModal({ row, onClose }: { row: Payout; onClose: () => voi
                 <div>
                   <div className="font-bold">UTR mismatch</div>
                   <div className="text-xs">
-                    Your entry does not match the Maker's UTR. An alert has been sent to Admin and logged in
-                    the audit trail.
+                    {error || "Your entry does not match the Maker's independently recorded UTR."}
                   </div>
                 </div>
               </div>
@@ -190,8 +175,7 @@ export function CheckerModal({ row, onClose }: { row: Payout; onClose: () => voi
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </FinanceModalShell>
   );
 }
 
@@ -205,5 +189,3 @@ function Info({ label, value, mono, bold }: { label: string; value: string; mono
     </div>
   );
 }
-
-

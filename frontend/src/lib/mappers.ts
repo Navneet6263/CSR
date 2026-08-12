@@ -4,54 +4,12 @@ import type {
   DocumentChecklistItem, ReviewApplicationRow, ScreeningApplicationRow,
   CSRApplicationRow, BGCheckApplicationRow, PaymentQueueRow, PendingPaymentRow,
 } from '@/types/domain';
-import type { Scholarship, StudentProfile } from '@/types';
+import type { Scholarship } from '@/types';
+import type { EligibilityRule } from '@/types';
+
+export { mapStudentProfile, mapInstitution } from './studentProfile.mapper';
 
 type Raw = Record<string, unknown>;
-
-export function mapStudentProfile(raw: Raw): StudentProfile {
-  return {
-    studentId: Number(raw.StudentID ?? raw.studentId),
-    userId: Number(raw.UserID ?? raw.userId),
-    fullName: String(raw.FullName ?? raw.fullName ?? ''),
-    firstName: String(raw.FullName ?? raw.fullName ?? '').split(' ')[0] || '',
-    lastName: String(raw.FullName ?? raw.fullName ?? '').split(' ').slice(1).join(' ') || '',
-    email: String(raw.Email ?? raw.email ?? ''),
-    phone: String(raw.Phone ?? raw.phone ?? ''),
-    aadharNumber: (raw.AadharNumber ?? raw.aadharNumber) as string | undefined,
-    dob: (raw.DOB ?? raw.dob) as string | undefined,
-    gender: (raw.Gender ?? raw.gender) as string | undefined,
-    category: (raw.Category ?? raw.category) as string | undefined,
-    address: (raw.Address ?? raw.address) as string | undefined,
-    city: (raw.City ?? raw.city) as string | undefined,
-    state: (raw.State ?? raw.state) as string | undefined,
-    pincode: (raw.Pincode ?? raw.pincode) as string | undefined,
-    annualFamilyIncome: Number(raw.AnnualFamilyIncome ?? raw.annualFamilyIncome ?? 0) || undefined,
-    familySize: Number(raw.FamilySize ?? raw.familySize ?? 0) || undefined,
-    course: (raw.Course ?? raw.course) as string | undefined,
-    currentDegree: (raw.Course ?? raw.course) as string | undefined,
-    institutionId: Number(raw.InstitutionID ?? raw.institutionId) || undefined,
-    otherInstitutionName: (raw.OtherInstitutionName ?? raw.otherInstitutionName) as string | undefined,
-    institutionName: (raw.InstitutionName ?? raw.institutionName) as string | undefined,
-    enrollmentYear: Number(raw.EnrollmentYear ?? raw.enrollmentYear) || undefined,
-    yearOfStudy: Number(raw.EnrollmentYear ?? raw.enrollmentYear) || undefined,
-    bankAccountNo: (raw.BankAccountNo ?? raw.bankAccountNo) as string | undefined,
-    bankAccountNumber: (raw.BankAccountNo ?? raw.bankAccountNo) as string | undefined,
-    bankIFSC: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
-    ifscCode: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
-    bankName: (raw.BankName ?? raw.bankName) as string | undefined,
-    // Extended fields
-    fatherName: (raw.FatherName ?? raw.fatherName) as string | undefined,
-    motherName: (raw.MotherName ?? raw.motherName) as string | undefined,
-    religion: (raw.Religion ?? raw.religion) as string | undefined,
-    tenthMarks: Number(raw.TenthMarks ?? raw.tenthMarks ?? 0) || undefined,
-    twelfthMarks: Number(raw.TwelfthMarks ?? raw.twelfthMarks ?? 0) || undefined,
-    statementOfPurpose: (raw.StatementOfPurpose ?? raw.statementOfPurpose) as string | undefined,
-    extracurricularActivities: (raw.ExtracurricularActivities ?? raw.extracurricularActivities) as string | undefined,
-    isHosteller: Boolean(raw.IsHosteller ?? raw.isHosteller),
-    hasGapYear: Boolean(raw.HasGapYear ?? raw.hasGapYear),
-    receivedPreviousScholarship: Boolean(raw.ReceivedPreviousScholarship ?? raw.receivedPreviousScholarship),
-  };
-}
 
 export function mapDocument(raw: Raw): DocumentChecklistItem {
   return {
@@ -71,10 +29,13 @@ export function mapReviewApp(raw: Raw): ReviewApplicationRow {
     applicationId: Number(raw.ApplicationID ?? raw.applicationId ?? raw.id),
     status: String(raw.Status ?? raw.status ?? ''),
     submissionDate: (raw.SubmissionDate ?? raw.submissionDate) as string | undefined,
+    stageEnteredAt: (raw.StageEnteredAt ?? raw.stageEnteredAt) as string | undefined,
     studentName: String(raw.StudentName ?? raw.studentName ?? 'N/A'),
     studentEmail: (raw.StudentEmail ?? raw.studentEmail) as string | undefined,
     scholarshipName: String(raw.ScholarshipName ?? raw.scholarshipName ?? 'N/A'),
     pendingDocCount: Number(raw.PendingDocCount ?? raw.pendingDocCount ?? 0) || undefined,
+    returnReason: (raw.ReturnReason ?? raw.returnReason) as string | undefined,
+    returnedAt: (raw.ReturnedAt ?? raw.returnedAt) as string | undefined,
   };
 }
 
@@ -88,11 +49,33 @@ export function mapScreeningApp(raw: Raw): ScreeningApplicationRow {
     studentName: String(raw.StudentName ?? raw.studentName ?? 'Unknown'),
     studentEmail: (raw.StudentEmail ?? raw.studentEmail) as string | undefined,
     notes: (raw.Notes ?? raw.notes) as string | undefined,
+    stageEnteredAt: (raw.StageEnteredAt ?? raw.stageEnteredAt) as string | undefined,
+    updatedAt: (raw.UpdatedAt ?? raw.updatedAt) as string | undefined,
+    sponsorName: (raw.SponsorName ?? raw.sponsorName) as string | undefined,
+    institutionName: (raw.InstitutionName ?? raw.institutionName) as string | undefined,
+    studentCity: (raw.StudentCity ?? raw.studentCity) as string | undefined,
+    studentState: (raw.StudentState ?? raw.studentState) as string | undefined,
+    course: (raw.Course ?? raw.course) as string | undefined,
+    category: (raw.Category ?? raw.category) as string | undefined,
+    previousYearMarks: Number(raw.PreviousYearMarks ?? raw.previousYearMarks ?? 0) || undefined,
+    assignedScreenerId: Number(raw.AssignedScreenerId ?? raw.assignedScreenerId ?? 0) || undefined,
+    isHeld: Boolean(raw.IsHeldByAdmin ?? raw.isHeldByAdmin),
+    holdReason: (raw.AdminHoldReason ?? raw.adminHoldReason) as string | undefined,
+    requiredDocCount: Number(raw.RequiredDocCount ?? raw.requiredDocCount ?? 0),
+    verifiedDocCount: Number(raw.VerifiedDocCount ?? raw.verifiedDocCount ?? 0),
+    passedBGCount: Number(raw.PassedBGCount ?? raw.passedBGCount ?? 0),
+    flaggedBGCount: Number(raw.FlaggedBGCount ?? raw.flaggedBGCount ?? 0),
+    decision: (raw.Decision ?? raw.decision) as ScreeningApplicationRow['decision'],
+    decisionNotes: (raw.DecisionNotes ?? raw.decisionNotes) as string | undefined,
+    decisionAt: (raw.DecisionAt ?? raw.decisionAt) as string | undefined,
   };
 }
 
 export function mapCSRApp(raw: Raw): CSRApplicationRow {
-  return { ...mapScreeningApp(raw), institutionName: raw.InstitutionName as string | undefined };
+  return { ...mapScreeningApp(raw), institutionName: (raw.institutionName ?? raw.InstitutionName) as string | undefined,
+    studentState: (raw.studentState ?? raw.StudentState) as string | undefined,
+    course: raw.course as string | undefined, category: raw.category as string | undefined,
+    previousYearMarks: Number(raw.previousYearMarks ?? 0) || undefined };
 }
 
 export function mapBGApp(raw: Raw): BGCheckApplicationRow {
@@ -102,6 +85,17 @@ export function mapBGApp(raw: Raw): BGCheckApplicationRow {
     studentName: String(raw.StudentName ?? raw.studentName ?? 'N/A'),
     studentEmail: (raw.StudentEmail ?? raw.studentEmail) as string | undefined,
     submissionDate: (raw.SubmissionDate ?? raw.submissionDate) as string | undefined,
+    stageEnteredAt: (raw.StageEnteredAt ?? raw.stageEnteredAt) as string | undefined,
+    scholarshipName: (raw.ScholarshipName ?? raw.scholarshipName) as string | undefined,
+    city: (raw.City ?? raw.city) as string | undefined,
+    state: (raw.State ?? raw.state) as string | undefined,
+    assignedOfficerId: Number(raw.AssignedBGOfficer ?? raw.assignedOfficerId ?? 0) || undefined,
+    completedChecks: Number(raw.CompletedChecks ?? raw.completedChecks ?? 0),
+    inconclusiveChecks: Number(raw.InconclusiveChecks ?? raw.inconclusiveChecks ?? 0),
+    isHeld: Boolean(raw.IsHeldByAdmin ?? raw.isHeld),
+    holdReason: (raw.AdminHoldReason ?? raw.holdReason) as string | undefined,
+    returnReason: (raw.ReturnReason ?? raw.returnReason) as string | undefined,
+    returnedAt: (raw.ReturnedAt ?? raw.returnedAt) as string | undefined,
   };
 }
 
@@ -114,6 +108,10 @@ export function mapPaymentQueue(raw: Raw): PaymentQueueRow {
     sponsorName: (raw.SponsorName ?? raw.sponsorName) as string | undefined,
     bankAccountNo: (raw.BankAccountNo ?? raw.bankAccountNo) as string | undefined,
     bankIFSC: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
+    bankName: (raw.BankName ?? raw.bankName) as string | undefined,
+    studentName: (raw.StudentName ?? raw.studentName) as string | undefined,
+    aadhaarLinked: Boolean(raw.IsAadhaarLinkedToBank ?? raw.aadhaarLinked),
+    approvedAt: (raw.ApprovedAt ?? raw.approvedAt) as string | undefined,
   };
 }
 
@@ -126,6 +124,11 @@ export function mapPendingPayment(raw: Raw): PendingPaymentRow {
     paymentStatus: String(raw.PaymentStatus ?? raw.paymentStatus ?? raw.status ?? ''),
     bankAccountNo: (raw.BankAccountNo ?? raw.bankAccountNo) as string | undefined,
     bankIFSC: (raw.BankIFSC ?? raw.bankIFSC) as string | undefined,
+    bankName: (raw.BankName ?? raw.bankName) as string | undefined,
+    studentName: (raw.StudentName ?? raw.studentName) as string | undefined,
+    sponsorName: (raw.SponsorName ?? raw.sponsorName) as string | undefined,
+    makerId: Number(raw.MakerID ?? raw.makerId ?? 0) || undefined,
+    createdAt: (raw.CreatedAt ?? raw.createdAt) as string | undefined,
   };
 }
 
@@ -142,6 +145,15 @@ export function mapScholarship(raw: Raw): Scholarship {
     maxApplicants: Number(raw.MaxApplicants ?? raw.maxApplicants ?? 0) || undefined,
     status: String(raw.Status ?? raw.status ?? ''),
   };
+}
+
+export function mapEligibilityRule(raw: Raw): EligibilityRule {
+  return { ruleId: Number(raw.RuleID ?? raw.ruleId), scholarshipId: Number(raw.ScholarshipID ?? raw.scholarshipId),
+    ruleType: String(raw.RuleType ?? raw.ruleType ?? ''), operator: String(raw.Operator ?? raw.operator ?? ''),
+    valueMin: (raw.ValueMin ?? raw.valueMin) as string | undefined,
+    valueMax: (raw.ValueMax ?? raw.valueMax) as string | undefined,
+    valueList: (raw.ValueList ?? raw.valueList) as string | undefined,
+    isRequired: Boolean(raw.IsRequired ?? raw.isRequired) };
 }
 
 export function mapApplication(raw: Raw): import('@/types').Application {

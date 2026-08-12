@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Inter:wght@100..900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "../styles/shadcn-tailwind.css";
 @import "./globals-effects.css";
 
 @custom-variant dark (&:is(.dark *));
+
+.content-auto { content-visibility: auto; contain-intrinsic-size: auto 720px; }
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -53,8 +54,8 @@
   --color-success-500: oklch(0.65 0.18 152);
   --color-success-700: oklch(0.48 0.16 152);
 
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: var(--font-geist-sans), system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
 }
 
 :root {
@@ -369,6 +370,8 @@
 .screener-theme .text-gold { color: var(--gold); }
 .screener-theme .text-success { color: var(--success); }
 .screener-theme .text-danger { color: var(--danger); }
+.screener-theme .bg-brand { background-color: var(--brand); }
+.screener-theme .bg-brand\/10 { background-color: oklch(0.72 0.19 350 / 0.1); }
 .screener-theme .bg-brand\/5 { background-color: oklch(0.72 0.19 350 / 0.05); }
 .screener-theme .bg-brand\/8 { background-color: oklch(0.72 0.19 350 / 0.08); }
 .screener-theme .bg-brand\/15 { background-color: oklch(0.72 0.19 350 / 0.15); }
@@ -385,9 +388,15 @@
 .screener-theme .border-brand\/6 { border-color: oklch(0.72 0.19 350 / 0.06); }
 .screener-theme .border-brand\/8 { border-color: oklch(0.72 0.19 350 / 0.08); }
 .screener-theme .border-brand\/10 { border-color: oklch(0.72 0.19 350 / 0.1); }
+.screener-theme .border-brand\/30 { border-color: oklch(0.72 0.19 350 / 0.3); }
+.screener-theme .border-brand\/40 { border-color: oklch(0.72 0.19 350 / 0.4); }
+.screener-theme .border-gold\/30 { border-color: oklch(0.72 0.2 350 / 0.3); }
+.screener-theme .border-success { border-color: var(--success); }
+.screener-theme .border-danger { border-color: var(--danger); }
 .screener-theme .border-gold\/40 { border-color: oklch(0.72 0.2 350 / 0.4); }
 .screener-theme .border-gold\/50 { border-color: oklch(0.72 0.2 350 / 0.5); }
 .screener-theme .border-success\/30 { border-color: oklch(0.62 0.16 155 / 0.3); }
+.screener-theme .border-danger\/30 { border-color: oklch(0.6 0.22 25 / 0.3); }
 .screener-theme .border-danger\/40 { border-color: oklch(0.6 0.22 25 / 0.4); }
 .screener-theme .hover\:bg-brand\/\[0\.03\]:hover { background-color: oklch(0.72 0.19 350 / 0.03); }
 .screener-theme .bg-brand\/\[0\.02\] { background-color: oklch(0.72 0.19 350 / 0.02); }
@@ -407,6 +416,14 @@
 .screener-theme .bg-success { background-color: oklch(0.62 0.16 155); }
 .screener-theme .bg-gold { background-color: oklch(0.72 0.2 350); }
 .screener-theme .bg-danger { background-color: oklch(0.6 0.22 25); }
+.screener-theme .hover\:bg-brand\/10:hover { background-color: oklch(0.72 0.19 350 / 0.1); }
+.screener-theme .focus\:border-brand\/40:focus { border-color: oklch(0.72 0.19 350 / 0.4); }
+.screener-theme .screener-primary-action {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: white;
+  box-shadow: var(--shadow-glow);
+}
+.screener-theme .screener-primary-action:hover { filter: brightness(0.96); }
 
 
 /* Finance Theme (Scoped) */

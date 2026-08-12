@@ -26,10 +26,13 @@ export interface ReviewApplicationRow {
   applicationId: number;
   status: string;
   submissionDate?: string;
+  stageEnteredAt?: string;
   studentName: string;
   studentEmail?: string;
   scholarshipName: string;
   pendingDocCount?: number;
+  returnReason?: string;
+  returnedAt?: string;
 }
 
 export interface ScreeningApplicationRow {
@@ -41,11 +44,34 @@ export interface ScreeningApplicationRow {
   studentName: string;
   studentEmail?: string;
   notes?: string;
+  stageEnteredAt?: string;
+  updatedAt?: string;
+  sponsorName?: string;
+  institutionName?: string;
+  studentCity?: string;
+  studentState?: string;
+  course?: string;
+  category?: string;
+  previousYearMarks?: number;
+  assignedScreenerId?: number;
+  isHeld: boolean;
+  holdReason?: string;
+  requiredDocCount: number;
+  verifiedDocCount: number;
+  passedBGCount: number;
+  flaggedBGCount: number;
+  decision?: 'Approve' | 'Reject' | 'ReturnDocument' | 'ReturnBackground';
+  decisionNotes?: string;
+  decisionAt?: string;
 }
 
 export interface CSRApplicationRow extends ScreeningApplicationRow {
   institutionName?: string;
   docStatusSummary?: string;
+  studentState?: string;
+  course?: string;
+  category?: string;
+  previousYearMarks?: number;
 }
 
 export interface BGCheckApplicationRow {
@@ -54,6 +80,17 @@ export interface BGCheckApplicationRow {
   studentName: string;
   studentEmail?: string;
   submissionDate?: string;
+  stageEnteredAt?: string;
+  scholarshipName?: string;
+  city?: string;
+  state?: string;
+  assignedOfficerId?: number;
+  completedChecks: number;
+  inconclusiveChecks: number;
+  isHeld: boolean;
+  holdReason?: string;
+  returnReason?: string;
+  returnedAt?: string;
 }
 
 export interface PaymentQueueRow {
@@ -64,6 +101,10 @@ export interface PaymentQueueRow {
   sponsorName?: string;
   bankAccountNo?: string;
   bankIFSC?: string;
+  bankName?: string;
+  studentName?: string;
+  aadhaarLinked?: boolean;
+  approvedAt?: string;
 }
 
 export interface PendingPaymentRow {
@@ -71,9 +112,15 @@ export interface PendingPaymentRow {
   applicationId: number;
   amount: number;
   paymentType: string;
+  referenceNo?: string;
   paymentStatus: string;
   bankAccountNo?: string;
   bankIFSC?: string;
+  bankName?: string;
+  studentName?: string;
+  sponsorName?: string;
+  makerId?: number;
+  createdAt?: string;
 }
 
 export interface ScholarshipListResponse {
@@ -102,6 +149,8 @@ export interface BGCheckPayload {
 export interface ScreeningPayload {
   decision: ScreeningDecision;
   notes?: string;
+  returnTo?: 'DocumentReviewer' | 'BGCheckOfficer' | 'CloseApplication';
+  affectedItems?: string[];
 }
 
 export interface CSRPayload {
@@ -113,11 +162,12 @@ export interface InitiatePaymentPayload {
   appId: number;
   amount: number;
   paymentType: string;
+  referenceNo: string;
   makerNotes?: string;
 }
 
 export interface VerifyPaymentPayload {
   status: PaymentVerifyStatus;
-  referenceNo: string;
+  referenceNo?: string;
   checkerNotes?: string;
 }

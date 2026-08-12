@@ -1,207 +1,149 @@
-"use client";
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
-import {
-  initialPending,
-  initialMakerEntered,
-  completedHistory,
-  initialFailed,
-  initialAudit,
-  CURRENT_MAKER,
-  CURRENT_CHECKER,
-  type Payout,
-  type Completed,
-  type FailedPayment,
-  type AuditEvent,
-} from "@/lib/finance-mock";
+'use client';
 
-type Ctx = {
-  pending: Payout[];             // status = CSRApproved
-  awaitingChecker: Payout[];     // status = MakerEntered
-  completed: Completed[];
-  failed: FailedPayment[];
-  audit: AuditEvent[];
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { financeApi } from '@/lib/api/finance';
+import { authApi } from '@/lib/api/auth';
+import type { AuditEvent, CompletedPayment, FailedPayment, FinanceOverview, Payout } from '@/types/finance';
+import type { PaymentQueueRow, PendingPaymentRow } from '@/types/domain';
 
-  // Maker records UTR → moves to awaitingChecker
-  makerSubmit: (ids: string[], utr: string) => void;
-
-  // Checker verifies. If UTR matches → complete. If not → audit alert.
-  checkerVerify: (id: string, utr: string, notes: string) => { ok: boolean; expected: string };
-  checkerCancel: (id: string, reason: string) => void;
-
-  // Reprocess a failed payment (moves back to pending)
-  reprocessFailed: (id: string) => void;
-  markStudentNotified: (id: string) => void;
+type FinanceContext = {
+  pending: Payout[]; awaitingChecker: Payout[]; completed: CompletedPayment[];
+  failed: FailedPayment[]; audit: AuditEvent[]; loading: boolean; error: string;
+  overview: FinanceOverview;
+  refresh: () => Promise<void>;
+  makerSubmit: (ids: string[], utr: string) => Promise<void>;
+  checkerVerify: (id: string, utr: string, notes: string) => Promise<{ ok: boolean }>;
+  checkerCancel: (id: string, reason: string) => Promise<void>;
 };
 
-const FinanceCtx = createContext<Ctx | null>(null);
+const Context = createContext<FinanceContext | null>(null);
+const emptyOverview: FinanceOverview = {
+  maker: { count: 0, amount: 0 }, checker: { count: 0, amount: 0 },
+  settledToday: { count: 0, amount: 0 }, exceptions: { count: 0, amount: 0 }, generatedAt: '',
+};
+const text = (value: unknown, fallback = '—') => value == null || value === '' ? fallback : String(value);
+const number = (value: unknown) => Number(value ?? 0);
 
-let audSeq = 9100;
-const nextAud = () => "AUD-" + audSeq++;
+function mapInitiation(row: PaymentQueueRow): Payout {
+  return {
+    id: `APP-${row.applicationId}`, applicationId: `APP-${row.applicationId}`,
+    fullName: row.studentName ?? 'Applicant', amount: row.scholarshipAmount ?? 0,
+    bankName: row.bankName ?? '—', accountNumber: row.bankAccountNo ?? '—', ifsc: row.bankIFSC ?? '—',
+    aadhaarLinked: row.aadhaarLinked ? 'Yes' : 'No', sponsor: row.sponsorName ?? '—',
+    approvedAt: row.approvedAt ?? new Date(0).toISOString(), status: 'CSRApproved',
+  };
+}
+
+function mapVerification(row: PendingPaymentRow): Payout {
+  return {
+    id: `PAY-${row.paymentId}`, paymentId: row.paymentId, applicationId: `APP-${row.applicationId}`,
+    fullName: row.studentName ?? 'Applicant', amount: row.amount, bankName: row.bankName ?? '—',
+    accountNumber: row.bankAccountNo ?? '—', ifsc: row.bankIFSC ?? '—', aadhaarLinked: 'Yes',
+    sponsor: row.sponsorName ?? '—', approvedAt: row.createdAt ?? new Date(0).toISOString(),
+    status: 'MakerEntered', makerName: row.makerId ? `User #${row.makerId}` : 'Maker', makerAt: row.createdAt,
+  };
+}
+
+function mapCompleted(row: Record<string, unknown>): CompletedPayment {
+  return {
+    txnId: text(row.ReferenceNo), applicationId: `APP-${text(row.ApplicationID)}`,
+    fullName: text(row.StudentName, 'Applicant'), bankName: text(row.BankName), amount: number(row.Amount),
+    sponsor: text(row.SponsorName), date: text(row.UpdatedAt).slice(0, 10),
+    maker: text(row.MakerName, 'Maker'), checker: text(row.CheckerName, 'Checker'),
+  };
+}
+
+function mapFailed(row: Record<string, unknown>): FailedPayment {
+  return {
+    id: `PAY-${text(row.PaymentID)}`, paymentId: number(row.PaymentID),
+    applicationId: `APP-${text(row.ApplicationID)}`, fullName: text(row.StudentName, 'Applicant'),
+    amount: number(row.Amount), bankName: text(row.BankName), sponsor: text(row.SponsorName),
+    reason: text(row.CheckerNotes, 'Payment failed'), failedAt: text(row.UpdatedAt).slice(0, 10),
+    studentNotified: true,
+    detailsUpdated: Boolean(row.StudentUpdatedAt && new Date(text(row.StudentUpdatedAt)).getTime() > new Date(text(row.UpdatedAt)).getTime()),
+  };
+}
+
+function mapAudit(row: Record<string, unknown>): AuditEvent {
+  return { id: text(row.id), ts: text(row.timestamp), actor: text(row.actor, 'System'),
+    role: text(row.role, 'System') as AuditEvent['role'], action: text(row.action),
+    target: text(row.target), paymentId: number(row.paymentId) || undefined,
+    amount: row.amount == null ? undefined : number(row.amount),
+    referenceNo: row.referenceNo ? text(row.referenceNo) : undefined,
+    meta: row.requestId ? `Request ${text(row.requestId)}` : undefined };
+}
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
-  const [pending, setPending] = useState<Payout[]>(initialPending);
-  const [awaitingChecker, setAwaitingChecker] = useState<Payout[]>(initialMakerEntered);
-  const [completed, setCompleted] = useState<Completed[]>(completedHistory);
-  const [failed, setFailed] = useState<FailedPayment[]>(initialFailed);
-  const [audit, setAudit] = useState<AuditEvent[]>(initialAudit);
+  const [pending, setPending] = useState<Payout[]>([]);
+  const [awaitingChecker, setAwaitingChecker] = useState<Payout[]>([]);
+  const [completed, setCompleted] = useState<CompletedPayment[]>([]);
+  const [failed, setFailed] = useState<FailedPayment[]>([]);
+  const [audit, setAudit] = useState<AuditEvent[]>([]);
+  const [overview, setOverview] = useState<FinanceOverview>(emptyOverview);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const pushAudit = (e: Omit<AuditEvent, "id" | "ts"> & { ts?: string }) =>
-    setAudit((prev) => [{ id: nextAud(), ts: e.ts ?? new Date().toISOString(), ...e }, ...prev]);
-
-  const makerSubmit: Ctx["makerSubmit"] = (ids, utr) => {
-    const now = new Date().toISOString();
-    setPending((prev) => {
-      const moving = prev.filter((p) => ids.includes(p.id));
-      const rest = prev.filter((p) => !ids.includes(p.id));
-      setAwaitingChecker((cur) => [
-        ...moving.map((m) => ({
-          ...m,
-          status: "MakerEntered" as const,
-          makerUtr: utr,
-          makerName: CURRENT_MAKER,
-          makerAt: now,
-        })),
-        ...cur,
+  const refresh = useCallback(async () => {
+    setError('');
+    try {
+      const financeFunction = authApi.getUser()?.financeFunction;
+      const makerQueue = financeFunction === 'Maker'
+        ? financeApi.getPendingInitiation() : Promise.resolve({ data: [] as PaymentQueueRow[] });
+      const checkerQueue = financeFunction === 'Checker'
+        ? financeApi.getPendingVerifications() : Promise.resolve({ data: [] as PendingPaymentRow[] });
+      const [summary, initiation, verification, done, failedRows, auditRows] = await Promise.all([
+        financeApi.getOverview(),
+        makerQueue, checkerQueue,
+        financeApi.getHistory('completed'), financeApi.getHistory('failed'), financeApi.getAudit(),
       ]);
-      moving.forEach((m) =>
-        pushAudit({
-          actor: CURRENT_MAKER,
-          role: "Maker",
-          action: "UTR recorded",
-          target: m.id,
-          meta: `₹${m.amount.toLocaleString("en-IN")} · ${utr}`,
-        }),
-      );
-      return rest;
-    });
-  };
+      setOverview(summary.data ?? emptyOverview);
+      setPending((initiation.data ?? []).map(mapInitiation));
+      setAwaitingChecker((verification.data ?? []).map(mapVerification));
+      setCompleted((done.data ?? []).map(mapCompleted));
+      setFailed((failedRows.data ?? []).map(mapFailed));
+      setAudit((auditRows.data ?? []).map(mapAudit));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Finance data could not be loaded.'); }
+    finally { setLoading(false); }
+  }, []);
 
-  const checkerVerify: Ctx["checkerVerify"] = (id, utr, notes) => {
-    const row = awaitingChecker.find((p) => p.id === id);
-    if (!row) return { ok: false, expected: "" };
-    if (row.makerUtr !== utr) {
-      pushAudit({
-        actor: CURRENT_CHECKER,
-        role: "Checker",
-        action: "UTR mismatch — Admin alerted",
-        target: id,
-        meta: `Maker: ${row.makerUtr} · Checker: ${utr}`,
-      });
-      return { ok: false, expected: row.makerUtr ?? "" };
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const makerSubmit = useCallback(async (ids: string[], utr: string) => {
+    if (ids.length !== 1) throw new Error('Each bank UTR can be recorded against exactly one payment.');
+    const row = pending.find((item) => item.id === ids[0]);
+    if (!row) throw new Error('Payment is no longer pending. Refresh and retry.');
+    if (!Number.isFinite(row.amount) || row.amount <= 0) {
+      throw new Error('Approved scholarship amount is missing. Ask an administrator to repair this application.');
     }
-    const now = new Date();
-    setAwaitingChecker((prev) => prev.filter((p) => p.id !== id));
-    setCompleted((prev) => [
-      {
-        txnId: utr,
-        applicationId: row.applicationId,
-        fullName: row.fullName,
-        bankName: row.bankName,
-        amount: row.amount,
-        sponsor: row.sponsor,
-        date: now.toISOString().slice(0, 10),
-        maker: row.makerName ?? CURRENT_MAKER,
-        checker: CURRENT_CHECKER,
-      },
-      ...prev,
-    ]);
-    pushAudit({
-      actor: CURRENT_CHECKER,
-      role: "Checker",
-      action: "Payment verified & completed",
-      target: row.applicationId,
-      meta: `${utr}${notes ? ` · Note: ${notes}` : ""}`,
-    });
-    return { ok: true, expected: utr };
-  };
+    await financeApi.initiatePayment({ appId: Number(row.applicationId.replace('APP-', '')),
+      amount: row.amount, paymentType: 'Direct', referenceNo: utr });
+    await refresh();
+  }, [pending, refresh]);
 
-  const checkerCancel: Ctx["checkerCancel"] = (id, reason) => {
-    const row = awaitingChecker.find((p) => p.id === id);
-    if (!row) return;
-    setAwaitingChecker((prev) => prev.filter((p) => p.id !== id));
-    setFailed((prev) => [
-      {
-        id: "FAIL-" + Math.floor(2100 + Math.random() * 900),
-        applicationId: row.applicationId,
-        fullName: row.fullName,
-        amount: row.amount,
-        bankName: row.bankName,
-        sponsor: row.sponsor,
-        reason: reason || "Cancelled by Checker",
-        failedAt: new Date().toISOString().slice(0, 10),
-        studentNotified: false,
-        detailsUpdated: false,
-      },
-      ...prev,
-    ]);
-    pushAudit({
-      actor: CURRENT_CHECKER,
-      role: "Checker",
-      action: "Payment cancelled by Checker",
-      target: row.applicationId,
-      meta: reason,
-    });
-  };
+  const checkerVerify = useCallback(async (id: string, utr: string, notes: string) => {
+    const row = awaitingChecker.find((item) => item.id === id);
+    if (!row?.paymentId) throw new Error('Payment is no longer pending verification.');
+    await financeApi.verifyPayment(row.paymentId, { status: 'Completed', referenceNo: utr,
+      checkerNotes: notes || undefined });
+    await refresh(); return { ok: true };
+  }, [awaitingChecker, refresh]);
 
-  const reprocessFailed: Ctx["reprocessFailed"] = (id) => {
-    const row = failed.find((f) => f.id === id);
-    if (!row) return;
-    setFailed((prev) => prev.filter((f) => f.id !== id));
-    setPending((prev) => [
-      {
-        id: "PYT-" + Math.floor(1100 + Math.random() * 900),
-        applicationId: row.applicationId,
-        fullName: row.fullName,
-        amount: row.amount,
-        bankName: row.bankName,
-        accountNumber: "XXXXXXXXX (updated)",
-        ifsc: "UPDATED",
-        aadhaarLinked: "Yes",
-        sponsor: row.sponsor,
-        approvedAt: new Date().toISOString().slice(0, 10),
-        status: "CSRApproved",
-      },
-      ...prev,
-    ]);
-    pushAudit({
-      actor: CURRENT_MAKER,
-      role: "Maker",
-      action: "Failed payment re-queued for re-processing",
-      target: row.applicationId,
-    });
-  };
+  const checkerCancel = useCallback(async (id: string, reason: string) => {
+    const row = awaitingChecker.find((item) => item.id === id);
+    if (!row?.paymentId) throw new Error('Payment is no longer pending verification.');
+    await financeApi.verifyPayment(row.paymentId, { status: 'Failed', checkerNotes: reason });
+    await refresh();
+  }, [awaitingChecker, refresh]);
 
-  const markStudentNotified: Ctx["markStudentNotified"] = (id) => {
-    setFailed((prev) => prev.map((f) => (f.id === id ? { ...f, studentNotified: true } : f)));
-    pushAudit({
-      actor: "System",
-      role: "System",
-      action: "Student notified to update bank details",
-      target: id,
-    });
-  };
-
-  const value = useMemo<Ctx>(
-    () => ({
-      pending,
-      awaitingChecker,
-      completed,
-      failed,
-      audit,
-      makerSubmit,
-      checkerVerify,
-      checkerCancel,
-      reprocessFailed,
-      markStudentNotified,
-    }),
-    [pending, awaitingChecker, completed, failed, audit],
-  );
-
-  return <FinanceCtx.Provider value={value}>{children}</FinanceCtx.Provider>;
+  const value = useMemo<FinanceContext>(() => ({ pending, awaitingChecker, completed, failed,
+    audit, overview, loading, error, refresh, makerSubmit, checkerVerify, checkerCancel,
+  }), [pending, awaitingChecker, completed, failed, audit, overview, loading, error, refresh,
+    makerSubmit, checkerVerify, checkerCancel]);
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 
 export function useFinance() {
-  const ctx = useContext(FinanceCtx);
-  if (!ctx) throw new Error("useFinance must be used within FinanceProvider");
-  return ctx;
+  const context = useContext(Context);
+  if (!context) throw new Error('useFinance must be used within FinanceProvider');
+  return context;
 }

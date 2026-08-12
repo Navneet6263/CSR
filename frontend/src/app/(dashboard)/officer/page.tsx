@@ -1,115 +1,58 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState } from "react";
-import {
-  MapPin,
-  ChevronRight,
-  CheckCircle2,
-  Clock,
-  Flag,
-  ListChecks,
-} from "lucide-react";
-import { dailyStats, visits, type VisitStatus } from "@/lib/officer-data";
-import { StatCard } from "@/components/officer/StatsCards";
-import { TopNav } from "@/components/officer/TopNav";
+import { CheckCircle2, Clock3, ListChecks, RefreshCw, ShieldCheck, UserCheck } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { OfficerActivity, VerificationProtocol } from '@/components/officer/OfficerActivity';
+import { OfficerQueue } from '@/components/officer/OfficerQueue';
+import { StatCard } from '@/components/officer/StatsCards';
+import { TopNav } from '@/components/officer/TopNav';
+import { authApi, verificationApi } from '@/lib/api';
+import type { BGCheckApplicationRow } from '@/types/domain';
+import type { OfficerLog, OfficerStats } from '@/types/officer';
 
-type Filter = "all" | VisitStatus;
+const emptyStats: OfficerStats = { pending: 0, assigned: 0, available: 0, completed: 0, today: 0, overdue: 0 };
 
 export default function OfficerDashboard() {
-  const [filter, setFilter] = useState<Filter>("pending");
-  const list = filter === "all" ? visits : visits.filter((v) => v.status === filter);
+  const [rows, setRows] = useState<BGCheckApplicationRow[]>([]);
+  const [stats, setStats] = useState<OfficerStats>(emptyStats);
+  const [logs, setLogs] = useState<OfficerLog[]>([]);
+  const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const user = authApi.getUser();
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const [queue, summary, activity] = await Promise.all([
+        verificationApi.getPendingBGChecks(), verificationApi.getOfficerStats(), verificationApi.getOfficerLogs(),
+      ]);
+      setRows(queue.data ?? []); setStats(summary.data ?? emptyStats); setLogs(activity.data ?? []);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Field workload could not be loaded.'); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
 
-  return (
-    <div className="flex flex-col min-h-screen">
-      <TopNav />
-      <main className="relative z-10 mx-auto w-full max-w-[1400px] px-4 py-6 lg:px-8">
-        <div className="space-y-6">
-          <section>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Good morning, Rohan</h1>
-            <p className="text-sm text-slate-500">You have {dailyStats.pending} verifications on the field today.</p>
-          </section>
+  return <div className="flex min-h-screen flex-col bg-slate-50/50"><TopNav />
+    <main className="mx-auto w-full max-w-[1400px] space-y-5 px-4 py-6 lg:px-8 lg:py-8">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-600 via-sky-600 to-slate-900 p-5 text-white shadow-lg shadow-cyan-900/10 sm:p-7">
+        <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-100"><ShieldCheck size={14} />Field verification desk</div>
+          <h1 className="mt-3 text-2xl font-bold sm:text-3xl">Good day{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}</h1>
+          <p className="mt-2 max-w-xl text-xs leading-relaxed text-cyan-50/80 sm:text-sm">Review assigned student records, validate evidence and complete the three independent field checks.</p></div>
+          <button type="button" onClick={() => void load()} disabled={loading} className="inline-flex w-fit items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold ring-1 ring-white/20 backdrop-blur hover:bg-white/20 disabled:opacity-60"><RefreshCw size={14} className={loading ? 'animate-spin' : ''} />Refresh workload</button></div>
+      </section>
 
-          <section className="grid grid-cols-3 gap-2.5">
-            <StatCard icon={ListChecks} label="Assigned" value={dailyStats.assigned} tone="cyan" />
-            <StatCard icon={CheckCircle2} label="Completed" value={dailyStats.completed} tone="emerald" />
-            <StatCard icon={Clock} label="Pending" value={dailyStats.pending} tone="amber" />
-          </section>
+      {error ? <div role="alert" className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"><span>{error}</span><button onClick={() => void load()} className="text-xs font-bold underline">Retry</button></div> : null}
 
-          <section className="flex gap-2 overflow-x-auto pb-1">
-            {(["pending", "completed", "flagged", "all"] as Filter[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold capitalize transition ${
-                  filter === f
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </section>
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={ListChecks} label="Actionable cases" value={stats.pending} help={`${stats.available} available to claim`} tone="cyan" />
+        <StatCard icon={UserCheck} label="Assigned to you" value={stats.assigned} help="Continue open visits" tone="emerald" />
+        <StatCard icon={CheckCircle2} label="Cases handled" value={stats.completed} help={`${stats.today} touched today`} tone="amber" />
+        <StatCard icon={Clock3} label="Past 48h SLA" value={stats.overdue} help="Oldest cases first" tone="rose" />
+      </section>
 
-          <section className="space-y-3" style={{ contentVisibility: "auto" }}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-700">Visit Queue</h2>
-              <span className="text-xs text-slate-500">{list.length} visits</span>
-            </div>
-            {list.map((v) => (
-              <VisitCard key={v.id} visit={v} />
-            ))}
-            {list.length === 0 && (
-              <p className="rounded-2xl bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-slate-200">
-                No visits in this bucket.
-              </p>
-            )}
-          </section>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-function VisitCard({ visit }: { visit: (typeof visits)[number] }) {
-  const urgency = {
-    high: "bg-rose-50 text-rose-600 ring-rose-200",
-    medium: "bg-amber-50 text-amber-700 ring-amber-200",
-    low: "bg-slate-100 text-slate-600 ring-slate-200",
-  }[visit.urgency];
-
-  const statusIcon = {
-    pending: <Clock size={12} />,
-    completed: <CheckCircle2 size={12} />,
-    flagged: <Flag size={12} />,
-  }[visit.status];
-
-  return (
-    <Link
-      href={`/officer/applications/${visit.id}`}
-      className="group block rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:ring-cyan-400 hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono text-slate-400">{visit.id}</span>
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${urgency}`}>
-              {visit.urgency}
-            </span>
-          </div>
-          <p className="mt-1 truncate text-base font-semibold text-slate-900">{visit.studentName}</p>
-          <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-            <MapPin size={12} /> {visit.address.city}, {visit.address.state}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium capitalize text-slate-600">
-            {statusIcon} {visit.status}
-          </span>
-          <ChevronRight size={18} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-cyan-500" />
-        </div>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
+        <OfficerQueue rows={rows} userId={user?.userId} loading={loading} />
+        <aside className="space-y-5"><OfficerActivity rows={logs} /><VerificationProtocol /></aside>
       </div>
-    </Link>
-  );
+    </main>
+  </div>;
 }

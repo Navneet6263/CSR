@@ -6,9 +6,9 @@ import { GraduationCap, Menu, X } from "lucide-react";
 const nav = [
   { label: "Home", href: "#home" },
   { label: "Scholarships", href: "#scholarships" },
-  { label: "Success Stories", href: "#stories" },
-  { label: "Partners", href: "#partners" },
-  { label: "Apply Now", href: "#apply" },
+  { label: "How It Works", href: "#process" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Eligibility", href: "#apply" },
 ];
 
 export function Header() {
@@ -30,13 +30,14 @@ export function Header() {
 
         <nav className="hidden items-center gap-7 lg:flex">
           {nav.slice(0, 4).map((n) => (
-            <a
+            <Link
               key={n.href}
               href={n.href}
+              target={n.href.startsWith('/') ? '_blank' : undefined}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {n.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -67,14 +68,15 @@ export function Header() {
         <div className="border-t border-border bg-background lg:hidden">
           <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
             {nav.map((n) => (
-              <a
+              <Link
                 key={n.href}
                 href={n.href}
+                target={n.href.startsWith('/') ? '_blank' : undefined}
                 onClick={() => setOpen(false)}
                 className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
               >
                 {n.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>

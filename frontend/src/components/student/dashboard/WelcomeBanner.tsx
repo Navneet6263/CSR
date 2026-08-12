@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
-import type { StudentProfile } from "@/lib/mockData";
+import type { DashboardStudentProfile as StudentProfile } from "@/types/dashboard";
+import Link from 'next/link';
 
 interface Props {
   profile: StudentProfile;
@@ -45,10 +46,10 @@ export function WelcomeBanner({ profile }: Props) {
               </div>
             </div>
           )}
-          <button className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-white/90">
+          <Link href={incomplete ? '/student/profile' : '/student/scholarships'} className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-white/90">
             {incomplete ? "Complete profile" : "Browse scholarships"}
             <ArrowRight className="h-4 w-4" />
-          </button>
+          </Link>
         </div>
       </div>
     </section>

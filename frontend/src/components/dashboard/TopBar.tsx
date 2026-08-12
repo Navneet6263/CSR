@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, Info, CheckCircle2, AlertCircle, LogOut, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { authApi } from '@/lib/api';
+import { authApi, notificationApi, type NotificationRow } from '@/lib/api';
 import Logo from '@/components/shared/Logo';
 
 interface TopBarProps {
@@ -35,10 +35,12 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
   // Hydration safe user fetching
   const [user, setUser] = useState<{ fullName?: string, role?: string } | null>(null);
   const [profileCompletion, setProfileCompletion] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
 
   useEffect(() => {
     const currentUser = authApi.getUser();
     setUser(currentUser);
+    notificationApi.list().then((response) => setNotifications(response.data ?? [])).catch(() => setNotifications([]));
     
     if (currentUser?.role === 'Student') {
       import('@/lib/api').then(({ studentApi }) => {
@@ -60,14 +62,9 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (profileCompletion / 100) * circumference;
 
-  // Mock Notifications (Status updates + Admin Announcements)
-  const notifications = [
-    { id: 1, type: 'announcement', title: 'New Scholarship Program', message: 'The Tata STEM Grant 2026 is now open for applications.', time: '2 hours ago', unread: true },
-    { id: 2, type: 'status', title: 'Application Approved', message: 'Your application for Reliance Foundation has been approved!', time: '5 hours ago', unread: true },
-    { id: 3, type: 'action', title: 'Action Required', message: 'Please upload your latest income certificate.', time: '1 day ago', unread: false },
-  ];
-
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter((item) => !item.IsRead).length;
+  const markRead = async (id: number) => { await notificationApi.markRead(id);
+    setNotifications((items) => items.map((item) => item.NotificationID === id ? { ...item, IsRead: true } : item)); };
 
   return (
     <header className="h-[80px] bg-white/80 backdrop-blur-xl border-b border-white/50 shadow-[0_4px_30px_rgba(0,0,0,0.03)] flex items-center justify-between z-50 sticky -mt-4 sm:-mt-6 lg:-mt-8 top-0 -mx-4 sm:-mx-6 lg:-mx-8 mb-6 px-4 sm:px-6 lg:px-10 print:hidden">
@@ -108,25 +105,25 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
             <div className="absolute right-0 mt-4 w-[340px] sm:w-[400px] bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-[0_30px_80px_rgba(0,0,0,0.15)] border border-white/80 overflow-hidden transform origin-top-right transition-all animate-in fade-in zoom-in-95 duration-200">
               <div className="px-6 py-5 border-b border-slate-100/50 flex justify-between items-center bg-slate-50/50">
                 <h3 className="font-bold text-slate-800 text-lg">Notifications</h3>
-                <button className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full transition-colors">Mark all read</button>
+                <button onClick={() => void Promise.all(notifications.filter((item) => !item.IsRead).map((item) => markRead(item.NotificationID)))} disabled={!unreadCount} className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full transition-colors disabled:opacity-40">Mark all read</button>
               </div>
               <div className="max-h-[420px] overflow-y-auto p-3 custom-scrollbar">
                 {notifications.map((notif) => (
-                  <div key={notif.id} className={`p-4 rounded-[1.5rem] mb-2 cursor-pointer transition-all flex gap-4 ${notif.unread ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'hover:bg-slate-50'}`}>
+                  <button onClick={() => void markRead(notif.NotificationID)} key={notif.NotificationID} className={`w-full text-left p-4 rounded-[1.5rem] mb-2 cursor-pointer transition-all flex gap-4 ${!notif.IsRead ? 'bg-emerald-50/60 hover:bg-emerald-50' : 'hover:bg-slate-50'}`}>
                     <div className={`mt-1 h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
-                      notif.type === 'announcement' ? 'bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 border border-blue-200' :
-                      notif.type === 'status' ? 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 border border-amber-200'
+                      /APPROVED|COMPLETE|FUNDED/i.test(notif.Type) ? 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 border border-emerald-200' :
+                      /REQUIRED|FAILED|REJECT/i.test(notif.Type) ? 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 border border-amber-200' : 'bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 border border-blue-200'
                     }`}>
-                      {notif.type === 'announcement' ? <Info size={18} /> :
-                       notif.type === 'status' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                      {/APPROVED|COMPLETE|FUNDED/i.test(notif.Type) ? <CheckCircle2 size={18} /> : /REQUIRED|FAILED|REJECT/i.test(notif.Type) ? <AlertCircle size={18} /> : <Info size={18} />}
                     </div>
                     <div>
-                      <h4 className={`text-sm ${notif.unread ? 'font-bold text-slate-800' : 'font-semibold text-slate-600'}`}>{notif.title}</h4>
-                      <p className="text-xs font-medium text-slate-500 mt-1 leading-relaxed">{notif.message}</p>
-                      <span className="text-[10px] font-bold text-slate-400 mt-2 block uppercase tracking-wider">{notif.time}</span>
+                      <h4 className={`text-sm ${!notif.IsRead ? 'font-bold text-slate-800' : 'font-semibold text-slate-600'}`}>{notif.Type.replace(/_/g, ' ')}</h4>
+                      <p className="text-xs font-medium text-slate-500 mt-1 leading-relaxed">{notif.Message}</p>
+                      <span className="text-[10px] font-bold text-slate-400 mt-2 block uppercase tracking-wider">{new Date(notif.CreatedAt).toLocaleString('en-IN')}</span>
                     </div>
-                  </div>
+                  </button>
                 ))}
+                {!notifications.length && <p className="p-8 text-center text-sm text-slate-500">No notifications.</p>}
               </div>
             </div>
           )}

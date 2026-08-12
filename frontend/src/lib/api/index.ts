@@ -1,6 +1,12 @@
-export { apiClient, API_BASE_URL } from './client';
+export { apiClient, downloadApiFile, API_BASE_URL } from './client';
 export { authApi } from './auth';
 export { studentApi, scholarshipApi, applicationApi, institutionApi } from './resources';
 export { verificationApi } from './verification';
 export { screeningApi } from './screening';
 export { financeApi } from './finance';
+export { notificationApi } from './notifications';
+export type { NotificationRow } from './notifications';
+export { supportApi } from './support';
+export { publicApi } from './public';
+export type { PublicPortal, PublicScholarship } from './public';
+export { adminApi } from './admin';

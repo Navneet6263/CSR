@@ -19,7 +19,7 @@ export function SopSection({ form, set }: Props) {
     <SectionCard
       icon={<FileText className="h-5 w-5" />}
       title="Statement of Purpose"
-      description="Sponsors like Tata & Reliance CSR teams personally read this. Be honest, be specific."
+      description="The scholarship review team may read this personally. Be honest and specific."
     >
       <div className="mb-4 flex items-start gap-2 rounded-xl border border-primary/30 bg-primary-soft p-3 text-xs text-accent-foreground">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />

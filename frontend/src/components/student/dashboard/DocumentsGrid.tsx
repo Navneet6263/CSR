@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Clock, Upload } from "lucide-react";
-import type { RequiredDoc } from "@/lib/mockData";
+import type { RequiredDocument as RequiredDoc } from "@/types/dashboard";
 
 interface Props {
   docs: RequiredDoc[];

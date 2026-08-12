@@ -43,5 +43,6 @@ export function validateRegisterForm(data: RegisterData): ValidationErrors {
   if (passErr) errors.password = passErr;
   if (data.password !== data.confirmPassword) errors.confirmPassword = 'Passwords do not match';
   if (!data.role) errors.role = 'Please select a role';
+  if (!data.termsAccepted) errors.termsAccepted = 'Accept the Terms & Conditions to continue';
   return errors;
 }

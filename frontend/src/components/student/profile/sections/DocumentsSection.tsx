@@ -1,92 +1,68 @@
-import { CheckCircle2, FolderUp, Upload } from "lucide-react";
-import { SectionCard } from "../SectionCard";
-import { DOC_LIST, type ProfileFormState, type DocKey } from "@/lib/profileForm";
-import { cn } from "@/lib/utils";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { CheckCircle2, FolderUp, Loader2, Upload } from 'lucide-react';
+import { SectionCard } from '../SectionCard';
+import { DOC_LIST, type DocKey, type ProfileFormState } from '@/lib/profileForm';
+import { studentApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 interface Props {
   form: ProfileFormState;
-  set: <K extends keyof ProfileFormState>(k: K, v: ProfileFormState[K]) => void;
+  set: <K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) => void;
 }
 
 export function DocumentsSection({ form, set }: Props) {
-  const toggle = (id: DocKey) => {
-    set("documents", { ...form.documents, [id]: !form.documents[id] });
-  };
+  const [busy, setBusy] = useState<DocKey | null>(null); const [error, setError] = useState('');
+  useEffect(() => {
+    studentApi.getDocuments().then((response) => {
+      const uploaded = { ...form.documents };
+      for (const row of response.data ?? []) {
+        const key = String(row.DocumentType ?? row.documentType) as DocKey;
+        if (key in uploaded) uploaded[key] = true;
+      }
+      set('documents', uploaded);
+    }).catch((reason) => setError(reason instanceof Error ? reason.message : 'Unable to load documents.'));
+    // The profile section is mounted once per visit; current form state is the merge base.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return (
-    <SectionCard
-      icon={<FolderUp className="h-5 w-5" />}
-      title="Documents"
-      description="Upload clear scans (PDF or JPG). Each file under 5 MB."
-    >
-      <div className="grid gap-3 sm:grid-cols-2">
-        {DOC_LIST.map((d) => {
-          const uploaded = form.documents[d.id];
-          return (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => toggle(d.id)}
-              aria-pressed={uploaded}
-              className={cn(
-                "group flex items-start gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md",
-                uploaded
-                  ? "border-success/50 bg-success-soft/60"
-                  : "border-border bg-card hover:border-primary/40",
-              )}
-            >
-              <div
-                className={cn(
-                  "grid h-10 w-10 shrink-0 place-items-center rounded-lg transition",
-                  uploaded ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground",
-                )}
-              >
-                {uploaded ? <CheckCircle2 className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-semibold">{d.name}</p>
-                  {d.required ? (
-                    <span className="rounded-full bg-destructive-soft px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
-                      Required
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      Optional
-                    </span>
-                  )}
-                </div>
-                <p className="truncate text-[11px] text-muted-foreground">{d.hint}</p>
-                <span
-                  className={cn(
-                    "mt-2 inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold transition",
-                    uploaded
-                      ? "bg-card text-foreground group-hover:bg-muted"
-                      : "bg-primary text-primary-foreground group-hover:opacity-90",
-                  )}
-                >
-                  {uploaded ? "Uploaded — tap to replace" : "Tap to upload"}
-                </span>
-              </div>
-              {/* Toggle switch (visual state) */}
-              <span
-                className={cn(
-                  "relative mt-1 h-5 w-9 shrink-0 rounded-full transition",
-                  uploaded ? "bg-success" : "bg-muted-foreground/30",
-                )}
-                aria-hidden="true"
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all",
-                    uploaded ? "left-[18px]" : "left-0.5",
-                  )}
-                />
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </SectionCard>
-  );
+  async function upload(key: DocKey, file?: File) {
+    if (!file) return;
+    setBusy(key); setError('');
+    try {
+      await studentApi.uploadDocument(key, file);
+      set('documents', { ...form.documents, [key]: true });
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Upload failed.'); }
+    finally { setBusy(null); }
+  }
+
+  return <SectionCard icon={<FolderUp className="h-5 w-5"/>} title="Documents"
+    description="Upload clear scans (PDF, JPEG or PNG). Each file must be under 5 MB.">
+    {error && <p role="alert" className="mb-3 rounded-lg bg-destructive-soft p-3 text-xs text-destructive">{error}</p>}
+    <div className="grid gap-3 sm:grid-cols-2">{DOC_LIST.map((document) => {
+      const uploaded = form.documents[document.id]; const uploading = busy === document.id;
+      return <label key={document.id} className={cn(
+        'group flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md',
+        uploaded ? 'border-success/50 bg-success-soft/60' : 'border-border bg-card hover:border-primary/40',
+        busy && !uploading && 'pointer-events-none opacity-50',
+      )}>
+        <input type="file" accept="application/pdf,image/jpeg,image/png" className="sr-only" disabled={busy !== null}
+          onChange={(event) => { void upload(document.id, event.target.files?.[0]); event.target.value = ''; }}/>
+        <div className={cn('grid h-10 w-10 shrink-0 place-items-center rounded-lg',
+          uploaded ? 'bg-success text-success-foreground' : 'bg-muted text-muted-foreground')}>
+          {uploading ? <Loader2 className="h-5 w-5 animate-spin"/> : uploaded ? <CheckCircle2 className="h-5 w-5"/> : <Upload className="h-5 w-5"/>}
+        </div>
+        <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><p className="truncate text-sm font-semibold">{document.name}</p>
+          <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+            document.required ? 'bg-destructive-soft text-destructive' : 'bg-muted text-muted-foreground')}>
+            {document.required ? 'Required' : 'Optional'}</span></div>
+          <p className="truncate text-[11px] text-muted-foreground">{document.hint}</p>
+          <span className={cn('mt-2 inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[11px] font-semibold',
+            uploaded ? 'bg-card text-foreground' : 'bg-primary text-primary-foreground')}>
+            {uploading ? 'Scanning securely…' : uploaded ? 'Uploaded — choose to replace' : 'Choose file'}</span>
+        </div>
+      </label>;
+    })}</div>
+  </SectionCard>;
 }

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { LogOut, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+import type { AuthUser } from '@/types';
 
 export function ProfilePopover() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export function ProfilePopover() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Hydration safe user fetching
-  const [user, setUser] = useState<{ fullName?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   useEffect(() => {
     setUser(authApi.getUser());
   }, []);

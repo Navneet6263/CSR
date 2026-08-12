@@ -1,16 +1,17 @@
 import { Check } from "lucide-react";
-import type { ProgressStep } from "@/lib/mockData";
+import type { ProgressStep } from "@/types/dashboard";
 
 interface Props {
   steps: ProgressStep[];
+  applicationName?: string;
 }
 
-export function ProgressStepper({ steps }: Props) {
+export function ProgressStepper({ steps, applicationName }: Props) {
   return (
     <section className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Application Progress</h2>
+          <h2 className="text-lg font-semibold">{applicationName || 'Application'} Progress</h2>
           <p className="text-sm text-muted-foreground">
             Track where your active application stands.
           </p>

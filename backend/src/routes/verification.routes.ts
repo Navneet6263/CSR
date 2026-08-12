@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireRole } from '../middleware/auth';
-import { validate, docReviewSchema, bgCheckSchema } from '../validators/verification.validator';
+import { validate, docReviewSchema, bgCheckSchema, reuploadLinkSchema } from '../validators/verification.validator';
 import {
   getDocsPending,
   reviewDoc,
@@ -30,7 +30,7 @@ router.get('/stats', requireRole('DocReviewer'), getStatsHandler);
 
 // Student Docs
 router.get('/docs/reuploads', requireRole('Student'), getReUploads);
-router.post('/docs/upload', requireRole('Student'), uploadDoc); // No complex validation schema added but can be if needed.
+router.post('/docs/upload', requireRole('Student'), validate(reuploadLinkSchema), uploadDoc);
 
 // ─── Background Check Routes ────────────────────────────────────────────────
 router.get('/bg-checks/stats', requireRole('BGCheckOfficer'), getBGOfficerStatsHandler);

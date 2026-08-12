@@ -1,4 +1,4 @@
-import { GraduationCap } from 'lucide-react';
+import Image from 'next/image';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -17,7 +17,7 @@ export default function Logo({ size = 'md', showSubtitle = true }: LogoProps) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-3">
-        <img src="/logo.png" alt="Talent Foundation" className="h-12 w-auto object-contain rounded-xl shadow-sm" />
+        <Image src="/logo.png" alt="Talent Foundation" width={6306} height={3277} className="h-12 w-auto rounded-xl object-contain shadow-sm" priority />
       </div>
       {showSubtitle && (
         <p className={`${s.sub} text-slate-400 tracking-widest uppercase font-medium`}>

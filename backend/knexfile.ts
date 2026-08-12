@@ -1,24 +1,14 @@
 import type { Knex } from 'knex';
-import { config } from './src/config/env';
+import path from 'path';
+import { knexConfig } from './src/config/database';
 
-const knexConfig: Knex.Config = {
-  client: 'mssql',
-  connection: {
-    host: config.db.host,
-    port: config.db.port,
-    user: config.db.user,
-    password: config.db.password,
-    database: config.db.name,
-    options: {
-      encrypt: false,
-      trustServerCertificate: true,
-    },
-  },
+const config: Knex.Config = {
+  ...knexConfig,
   migrations: {
-    directory: './src/migrations',
-    tableName: 'knex_migrations',
+    directory: path.join(__dirname, 'src', 'database', 'migrations'),
+    tableName: 'app_schema_migrations',
     extension: 'ts',
   },
 };
 
-export default knexConfig;
+export default config;

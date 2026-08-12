@@ -1,80 +1,36 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { CheckCircle2, Flag, XCircle, MapPin } from "lucide-react";
-import { visits } from "@/lib/officer-data";
-import { TopNav } from "@/components/officer/TopNav";
-
-const rows = [
-  ...visits.map((v) => ({
-    id: v.id,
-    student: v.studentName,
-    city: v.address.city,
-    outcome: v.status === "completed" ? "pass" : v.status === "flagged" ? "flag" : "pending",
-    when: v.assignedOn,
-  })),
-  { id: "VIS-1032", student: "Meera Iyer", city: "Solapur", outcome: "pass", when: "2 days ago" },
-  { id: "VIS-1028", student: "Karan Joshi", city: "Pune", outcome: "flag", when: "3 days ago" },
-  { id: "VIS-1024", student: "Deepa Naik", city: "Satara", outcome: "fail", when: "4 days ago" },
-  { id: "VIS-1019", student: "Amit Rane", city: "Pune", outcome: "pass", when: "5 days ago" },
-];
+import { ArrowUpRight, History, Search } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { TopNav } from '@/components/officer/TopNav';
+import { verificationApi } from '@/lib/api';
+import type { OfficerLog } from '@/types/officer';
 
 export default function OfficerHistory() {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <TopNav />
-      <main className="relative z-10 mx-auto w-full max-w-[1400px] px-4 py-6 lg:px-8">
-        <div className="space-y-6">
-          <header>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">History</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">Visit History</h1>
-            <p className="mt-1 text-sm text-slate-500">All verifications you have submitted, most recent first.</p>
-          </header>
+  const [rows, setRows] = useState<OfficerLog[]>([]); const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('All'); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  useEffect(() => { verificationApi.getOfficerLogs().then((response) => setRows(response.data ?? []))
+    .catch((reason: Error) => setError(reason.message)).finally(() => setLoading(false)); }, []);
+  const visible = useMemo(() => rows.filter((row) => {
+    const needle = query.trim().toLowerCase();
+    return (status === 'All' || row.status === status) && (!needle
+      || [row.appId, row.studentName, row.scholarshipName, row.actionType].some((value) => String(value ?? '').toLowerCase().includes(needle)));
+  }), [query, rows, status]);
 
-          <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-            <div className="grid grid-cols-12 gap-3 border-b border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              <div className="col-span-2">Visit ID</div>
-              <div className="col-span-4">Student</div>
-              <div className="col-span-3">Location</div>
-              <div className="col-span-2">Outcome</div>
-              <div className="col-span-1 text-right">When</div>
-            </div>
-            <ul style={{ contentVisibility: "auto" }} className="divide-y divide-slate-100">
-              {rows.map((r) => (
-                <li key={r.id}>
-                  <Link
-                    href={`/officer/applications/${r.id}`}
-                    className="grid grid-cols-12 items-center gap-3 px-5 py-3 text-sm transition hover:bg-cyan-50/50"
-                  >
-                    <span className="col-span-2 font-mono text-xs text-slate-500">{r.id}</span>
-                    <span className="col-span-4 truncate font-semibold text-slate-800">{r.student}</span>
-                    <span className="col-span-3 flex items-center gap-1 text-xs text-slate-500">
-                      <MapPin size={12} /> {r.city}
-                    </span>
-                    <span className="col-span-2"><Outcome outcome={r.outcome} /></span>
-                    <span className="col-span-1 text-right text-[11px] text-slate-400">{r.when}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-      </main>
-    </div>
-  );
+  return <div className="min-h-screen bg-slate-50/50"><TopNav /><main className="mx-auto max-w-[1400px] space-y-5 px-4 py-6 lg:px-8 lg:py-8">
+    <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-700">Audit record</p><h1 className="mt-1 text-2xl font-bold text-slate-900">Verification history</h1><p className="mt-1 text-xs text-slate-500">Every result recorded under your secure officer ID.</p></div><div className="text-left sm:text-right"><p className="text-2xl font-bold text-slate-900">{rows.length}</p><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Recorded checks</p></div></section>
+    {error ? <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
+    <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="relative w-full sm:max-w-sm"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search student, APP ID or check" className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-cyan-400" /></div>
+        <div className="flex gap-1">{['All', 'Pass', 'Fail', 'Inconclusive'].map((value) => <button key={value} onClick={() => setStatus(value)} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold ${status === value ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>{value}</button>)}</div></div>
+      <div className="divide-y divide-slate-100">{loading ? <div className="animate-pulse p-8"><div className="h-4 w-1/3 rounded bg-slate-100" /></div> : visible.map((row) => <Link key={row.logId} href={`/officer/applications/${row.appId}`} className="group grid gap-3 p-4 transition hover:bg-cyan-50/30 sm:grid-cols-[120px_minmax(0,1fr)_170px_110px_160px_20px] sm:items-center">
+        <span className="font-mono text-[10px] font-bold text-cyan-700">APP-{row.appId}</span><span className="min-w-0"><b className="block truncate text-xs text-slate-800">{row.studentName}</b><span className="block truncate text-[10px] text-slate-400">{row.scholarshipName ?? 'Scholarship application'}</span></span><span className="text-xs font-medium text-slate-600">{label(row.actionType)}</span><span><Status value={row.status} /></span><span className="text-[10px] text-slate-500">{dateTime(row.timestamp)}</span><ArrowUpRight size={13} className="text-slate-300 group-hover:text-cyan-600" /></Link>)}
+        {!loading && !visible.length ? <div className="py-14 text-center"><History className="mx-auto text-slate-300" size={22} /><p className="mt-2 text-xs text-slate-400">No matching checks recorded.</p></div> : null}</div>
+    </section>
+  </main></div>;
 }
 
-function Outcome({ outcome }: { outcome: string }) {
-  const map: Record<string, { icon: React.ReactNode; cls: string; label: string }> = {
-    pass: { icon: <CheckCircle2 size={12} />, cls: "bg-emerald-50 text-emerald-700 ring-emerald-200", label: "Passed" },
-    flag: { icon: <Flag size={12} />, cls: "bg-amber-50 text-amber-700 ring-amber-200", label: "Flagged" },
-    fail: { icon: <XCircle size={12} />, cls: "bg-rose-50 text-rose-700 ring-rose-200", label: "Failed" },
-    pending: { icon: <Flag size={12} />, cls: "bg-slate-100 text-slate-600 ring-slate-200", label: "Pending" },
-  };
-  const s = map[outcome] ?? map.pending;
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${s.cls}`}>
-      {s.icon} {s.label}
-    </span>
-  );
-}
+function Status({ value }: { value: OfficerLog['status'] }) { const tone = value === 'Pass' ? 'bg-emerald-50 text-emerald-700' : value === 'Fail' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'; return <span className={`rounded-full px-2 py-1 text-[9px] font-bold ${tone}`}>{value}</span>; }
+function label(value: string) { return value === 'IncomeVerification' ? 'Income verification' : value; }
+function dateTime(value: string) { return new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }

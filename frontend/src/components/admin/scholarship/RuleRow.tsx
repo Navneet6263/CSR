@@ -11,7 +11,7 @@ import {
 export type RuleField =
   | "category"
   | "income"
-  | "gpa"
+  | "marks"
   | "course"
   | "state"
   | "gender"
@@ -29,7 +29,7 @@ export type Rule = {
 export const FIELD_OPTIONS: { value: RuleField; label: string; kind: "num" | "list" | "text" }[] = [
   { value: "category", label: "Caste / Category", kind: "list" },
   { value: "income", label: "Annual Family Income", kind: "num" },
-  { value: "gpa", label: "Minimum GPA", kind: "num" },
+  { value: "marks", label: "Previous Year Marks", kind: "num" },
   { value: "course", label: "Course Enrolled", kind: "list" },
   { value: "state", label: "State / Zone", kind: "list" },
   { value: "gender", label: "Gender", kind: "list" },

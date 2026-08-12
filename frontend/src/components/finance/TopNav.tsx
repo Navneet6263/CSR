@@ -4,12 +4,13 @@ import { authApi } from "@/lib/api";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ShieldCheck, LayoutDashboard, Wallet, History, UserCircle2, LogOut, CheckSquare, AlertOctagon, ScrollText, Menu, X } from "lucide-react";
+import { NotificationCenter } from '@/components/shared/NotificationCenter';
 
-type NavLink = { to: string; label: string; icon: typeof Wallet; exact?: boolean };
-const links: NavLink[] = [
+type NavLink = { to: string; label: string; icon: typeof Wallet; exact?: boolean; access?: 'Maker' | 'Checker' };
+const allLinks: NavLink[] = [
   { to: "/finance", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/finance/pending", label: "Maker Queue", icon: Wallet },
-  { to: "/finance/checker", label: "Checker Queue", icon: CheckSquare },
+  { to: "/finance/pending", label: "Maker Queue", icon: Wallet, access: 'Maker' },
+  { to: "/finance/checker", label: "Checker Queue", icon: CheckSquare, access: 'Checker' },
   { to: "/finance/failed", label: "Failed", icon: AlertOctagon },
   { to: "/finance/history", label: "History", icon: History },
   { to: "/finance/audit", label: "Audit", icon: ScrollText },
@@ -19,6 +20,9 @@ const links: NavLink[] = [
 export function TopNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const user = authApi.getUser();
+  const links = allLinks.filter((item) => !item.access || item.access === user?.financeFunction);
+  const initials = user?.fullName?.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'FA';
 
   return (
     <header className="sticky top-0 z-40 border-b border-navy-100 bg-white/95 backdrop-blur">
@@ -54,12 +58,13 @@ export function TopNav() {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          <NotificationCenter />
           <div className="hidden text-right lg:block">
-            <div className="text-sm font-bold text-navy-900">Vikram S.</div>
-            <div className="text-[11px] font-semibold text-navy-500">Finance Maker</div>
+            <div className="text-sm font-bold text-navy-900">{user?.fullName ?? 'Finance User'}</div>
+            <div className="text-[11px] font-semibold text-navy-500">Finance {user?.financeFunction ?? 'Access'}</div>
           </div>
           <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-navy-100 text-xs font-bold text-navy-700 sm:flex">
-            VS
+            {initials}
           </div>
           <button
             type="button"

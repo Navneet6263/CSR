@@ -8,6 +8,7 @@ import {
   getConsolidatedHandler,
   getScreenerStatsHandler,
   getScreeningHistoryHandler,
+  getCsrStatsHandler, getCsrHistoryHandler, getCsrApplicationHandler,
 } from '../controllers/screening.controller';
 import {
   validateScreeningDecision,
@@ -58,6 +59,9 @@ router.get(
   requireRole('CSRPartner'),
   getPendingCSRHandler
 );
+router.get('/csr/stats', requireRole('CSRPartner'), getCsrStatsHandler);
+router.get('/csr/history', requireRole('CSRPartner'), getCsrHistoryHandler);
+router.get('/csr/:id', requireRole('CSRPartner'), getCsrApplicationHandler);
 
 router.post(
   '/csr/:id/decision',

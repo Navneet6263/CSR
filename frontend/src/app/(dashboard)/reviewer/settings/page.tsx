@@ -1,79 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Bell, Keyboard, Shield, Palette } from "lucide-react";
-import { TopNav } from "@/components/reviewer/TopNav";
-import { authApi } from "@/lib/api";
-
-function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button onClick={() => onChange(!on)} className={`relative w-11 h-6 rounded-full transition ${on ? "bg-primary" : "bg-surface border border-border"}`}>
-      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-bg transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
-    </button>
-  );
-}
+import { Bell, KeyRound, LockKeyhole, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { TopNav } from '@/components/reviewer/TopNav';
 
 export default function SettingsPage() {
-  const [notif, setNotif] = useState(true);
-  const [sound, setSound] = useState(false);
-  const [autoAdvance, setAutoAdvance] = useState(true);
-  const [dense, setDense] = useState(false);
-
-  const sections = [
-    { icon: Bell, title: "Notifications", items: [
-      { label: "New application in my queue", desc: "Alert when an app enters DocAuditInProgress", state: notif, set: setNotif },
-      { label: "Sound alerts", desc: "Play a subtle chime on new assignments", state: sound, set: setSound },
-    ] },
-    { icon: Keyboard, title: "Workflow", items: [
-      { label: "Auto-advance to next document", desc: "After a verify/reject action, jump to the next pending item", state: autoAdvance, set: setAutoAdvance },
-    ] },
-    { icon: Palette, title: "Appearance", items: [
-      { label: "Compact tables", desc: "Reduce row padding to see more per screen", state: dense, set: setDense },
-    ] },
+  const controls = [
+    { icon: Bell, title: 'Action notifications', description: 'New assignments, returned cases and corrections appear in the notification centre.', status: 'Active' },
+    { icon: ShieldCheck, title: 'Independent review control', description: 'Your document decisions are stored with your user ID, request ID and timestamp.', status: 'Enforced' },
+    { icon: LockKeyhole, title: 'Sensitive data minimisation', description: 'Bank, Aadhaar and unrelated profile fields stay hidden from document review.', status: 'Enforced' },
   ];
-
-  return (
-    <div className="min-h-screen bg-bg text-fg pb-16">
-      <TopNav />
-      <main className="mx-auto max-w-[1600px] px-6 mt-8">
-        <div className="space-y-6 max-w-3xl">
-          <div>
-            <div className="text-xs font-mono uppercase tracking-widest text-primary">Preferences</div>
-            <h1 className="mt-2 text-3xl font-display font-bold">Settings</h1>
-          </div>
-          {sections.map((s) => (
-            <div key={s.title} className="glass p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <s.icon className="w-4 h-4 text-primary" />
-                <h2 className="font-display font-semibold">{s.title}</h2>
-              </div>
-              <div className="divide-y divide-border">
-                {s.items.map((it) => (
-                  <div key={it.label} className="flex items-center justify-between py-3">
-                    <div>
-                      <div className="text-sm font-medium">{it.label}</div>
-                      <div className="text-xs text-fg-subtle mt-0.5">{it.desc}</div>
-                    </div>
-                    <Toggle on={it.state} onChange={it.set} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <div className="glass p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="w-4 h-4 text-primary" />
-              <h2 className="font-display font-semibold">Security</h2>
-            </div>
-            <p className="text-xs text-fg-subtle mb-4">All audit actions are cryptographically signed to your user ID. Contact IT to rotate keys.</p>
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded-lg bg-surface border border-border px-4 py-2 text-sm hover:border-border-strong transition">Change password</button>
-              <button className="rounded-lg bg-surface border border-border px-4 py-2 text-sm hover:border-border-strong transition">Enable 2FA</button>
-              <button onClick={() => authApi.logout()} className="rounded-lg bg-danger/10 border border-danger/40 text-danger px-4 py-2 text-sm hover:bg-danger/20 transition">Sign out everywhere</button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+  return <div className="min-h-screen bg-bg pb-16 text-fg"><TopNav /><main className="mx-auto mt-8 max-w-[1600px] px-6"><div className="max-w-3xl space-y-6">
+    <header><p className="text-xs font-mono uppercase tracking-widest text-primary">Account controls</p><h1 className="mt-2 text-3xl font-display font-bold">Settings & security</h1>
+      <p className="mt-1 text-sm text-fg-subtle">Only controls that are currently enforced are shown here.</p></header>
+    <section className="glass divide-y divide-border">{controls.map((item) => <div key={item.title} className="flex items-start gap-4 p-5"><span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary"><item.icon size={17} /></span>
+      <div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">{item.title}</h2><p className="mt-1 text-xs leading-relaxed text-fg-subtle">{item.description}</p></div>
+      <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[9px] font-semibold uppercase text-primary">{item.status}</span></div>)}</section>
+    <section className="glass p-6"><div className="flex items-start gap-3"><KeyRound className="mt-0.5 text-primary" size={18} /><div><h2 className="font-display font-semibold">Password</h2>
+      <p className="mt-1 text-xs text-fg-subtle">Changing your password revokes active sessions and requires a fresh sign-in.</p><Link href="/change-password" className="mt-4 inline-flex rounded-lg border border-border-strong bg-surface px-4 py-2 text-sm hover:border-primary/50">Change password</Link></div></div></section>
+  </div></main></div>;
 }

@@ -8,8 +8,8 @@ import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { scholarshipApi } from '@/lib/api';
 import type { EligibilityRule, Scholarship } from '@/types';
 
-const ruleTypes = ['Income', 'Category', 'Gender', 'State', 'Course', 'Age'];
-const operators = ['<=', '>=', '=', 'IN', 'BETWEEN', 'NOT_IN'];
+const ruleTypes = ['Income', 'Category', 'Gender', 'State', 'Course', 'Age', 'Marks', 'FamilySize'];
+const operators = ['LT', 'LTE', 'GT', 'GTE', 'EQ', 'NEQ', 'IN', 'NOT_IN', 'BETWEEN'];
 
 export default function RulesPage() {
   const params = useParams();
@@ -21,6 +21,7 @@ export default function RulesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ ruleType: '', operator: '', valueMin: '', valueMax: '', valueList: '', isRequired: true });
+  const [error, setError] = useState('');
 
   useEffect(() => {
     Promise.allSettled([
@@ -35,18 +36,24 @@ export default function RulesPage() {
 
   const handleAddRule = async () => {
     try {
-      const res = await scholarshipApi.addRule(id, form);
+      const isList = ['IN', 'NOT_IN'].includes(form.operator);
+      const values = form.valueList.split(',').map((item) => item.trim()).filter(Boolean);
+      const res = await scholarshipApi.addRule(id, { ...form,
+        valueList: isList ? JSON.stringify(values) : undefined,
+        valueMin: isList ? undefined : form.valueList.split(',')[0]?.trim(),
+        valueMax: form.operator === 'BETWEEN' ? form.valueList.split(',')[1]?.trim() : undefined });
       setRules((prev) => [...prev, res.data]);
       setShowForm(false);
       setForm({ ruleType: '', operator: '', valueMin: '', valueMax: '', valueList: '', isRequired: true });
-    } catch { /* ignore */ }
+      setError('');
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Rule could not be added.'); }
   };
 
   const handleDelete = async (ruleId: number) => {
     try {
       await scholarshipApi.deleteRule(id, ruleId);
       setRules((prev) => prev.filter((r) => r.ruleId !== ruleId));
-    } catch { /* ignore */ }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Rule could not be deleted.'); }
   };
 
   if (loading) {
@@ -56,6 +63,7 @@ export default function RulesPage() {
   return (
     <div className="space-y-6">
       <TopBar title={`Eligibility Rules`} subtitle={scholarship?.name || ''} />
+      {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
 
       <button onClick={() => router.back()}
         className="flex items-center gap-2 text-sm text-slate-500 hover:text-[#5b2c6f] transition-colors"

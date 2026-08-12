@@ -1,6 +1,5 @@
 import { z } from 'zod/v4';
-import { Request, Response, NextFunction } from 'express';
-import { ValidationError } from '../utils/errors';
+import { validateBody } from '../middleware/validate';
 
 export const docReviewSchema = z.object({
   status: z.enum(['Verified', 'Rejected']),
@@ -13,28 +12,21 @@ export const docReviewSchema = z.object({
 export type DocReviewInput = z.infer<typeof docReviewSchema>;
 
 export const bgCheckSchema = z.object({
-  checkType: z.string().min(1, 'Check type is required'),
+  checkType: z.enum(['Identity', 'Address', 'IncomeVerification']),
   result: z.enum(['Pass', 'Fail', 'Inconclusive']),
-  notes: z.string().optional(),
-  evidenceUrl: z.string().optional(),
+  notes: z.string().trim().max(2000).optional(),
+  evidenceUrl: z.union([z.url().max(500), z.literal('')]).optional(),
+}).superRefine((data, context) => {
+  if (data.result !== 'Pass' && !data.notes) {
+    context.addIssue({ code: 'custom', path: ['notes'], message: 'Notes are required for this result' });
+  }
 });
 
 export type BgCheckInput = z.infer<typeof bgCheckSchema>;
 
-export function validate<T>(schema: z.ZodSchema<T>) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    const result = schema.safeParse(req.body);
+export const reuploadLinkSchema = z.object({
+  applicationId: z.coerce.number().int().positive(),
+  documentType: z.string().trim().min(1).max(50),
+});
 
-    if (!result.success) {
-      const messages = result.error.issues
-        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
-        .join('; ');
-
-      next(new ValidationError(messages));
-      return;
-    }
-
-    req.body = result.data;
-    next();
-  };
-}
+export const validate = validateBody;

@@ -5,7 +5,6 @@ import {
   ClipboardList,
   HandHeart,
   GraduationCap,
-  Settings,
   Sparkles,
   Radio,
   Map,
@@ -35,11 +34,11 @@ const roles: Item[] = [
 
 const analytics: Item[] = [
   { label: "Geographic Map", href: "/admin/analytics/geo", icon: Map },
-  { label: "SLA Report", href: "/admin/analytics/sla", icon: GaugeCircle, badge: "3" },
+  { label: "SLA Report", href: "/admin/analytics/sla", icon: GaugeCircle },
 ];
 
 const operations: Item[] = [
-  { label: "Payment Queue", href: "/admin/operations/payments", icon: Wallet, badge: "42" },
+  { label: "Payment Queue", href: "/admin/operations/payments", icon: Wallet },
   { label: "Bulk Actions", href: "/admin/operations/bulk", icon: Layers },
 ];
 
@@ -47,7 +46,6 @@ const management: Item[] = [
   { label: "Scholarships", href: "/admin/scholarships", icon: GraduationCap },
   { label: "User & Access", href: "/admin/users", icon: KeyRound },
   { label: "Communications", href: "/admin/communications", icon: Megaphone },
-  { label: "System Settings", href: "/admin/settings", icon: Settings },
 ];
 
 const activity: Item[] = [

@@ -3,19 +3,15 @@
 import { useMemo, useState } from "react";
 import { Send, ArrowDownAZ, Filter } from "lucide-react";
 import { MakerModal } from "@/components/finance/MakerModal";
-import { inr, daysBetween, type Payout, type Sponsor } from "@/lib/finance-mock";
+import { inr, daysBetween, type Payout, type Sponsor } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
-
-
-
-const SPONSORS: (Sponsor | "All")[] = ["All", "ITC Foundation", "HDFC CSR", "Tata Trusts", "Infosys Foundation", "Wipro Cares"];
-
 export default function () {
-  const { pending } = useFinance();
+  const { pending, overview } = useFinance();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [modalRows, setModalRows] = useState<Payout[] | null>(null);
   const [sponsor, setSponsor] = useState<Sponsor | "All">("All");
   const [sortNewest, setSortNewest] = useState(false); // default = oldest first (priority)
+  const sponsors = useMemo<(Sponsor | 'All')[]>(() => ['All', ...Array.from(new Set(pending.map((row) => row.sponsor)))], [pending]);
 
   const rows = useMemo(() => {
     const filtered = sponsor === "All" ? pending : pending.filter((p) => p.sponsor === sponsor);
@@ -30,16 +26,11 @@ export default function () {
   const selectedRows = rows.filter((r) => selected.has(r.id));
   const selectedAmount = selectedRows.reduce((s, r) => s + r.amount, 0);
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
+  const emptyMessage = overview.checker.count > 0 ? `${inr(overview.checker.amount)} is awaiting independent Checker verification.` : "No payouts are waiting for UTR entry.";
 
-  const toggle = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  const toggle = (id: string) => setSelected((prev) => prev.has(id) ? new Set() : new Set([id]));
 
-  const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
+  const toggleAll = () => setSelected(allSelected || !rows[0] ? new Set() : new Set([rows[0].id]));
 
   return (
     <div className="space-y-6">
@@ -51,7 +42,6 @@ export default function () {
         </p>
       </div>
 
-      {/* Summary strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <SummaryCard label="Queued" value={String(rows.length)} />
         <SummaryCard label="Total amount" value={inr(totalAmount)} />
@@ -59,7 +49,6 @@ export default function () {
         <SummaryCard label="Batch amount" value={inr(selectedAmount)} highlight={selected.size > 0} />
       </div>
 
-      {/* Filter bar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-navy-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="flex items-center gap-2 text-xs font-semibold text-navy-700">
@@ -70,7 +59,7 @@ export default function () {
             onChange={(e) => setSponsor(e.target.value as Sponsor | "All")}
             className="rounded-lg border border-navy-100 bg-white px-3 py-2 text-sm font-semibold text-navy-900"
           >
-            {SPONSORS.map((s) => <option key={s} value={s}>{s}</option>)}
+            {sponsors.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <button
             onClick={() => setSortNewest((v) => !v)}
@@ -85,13 +74,12 @@ export default function () {
           onClick={() => setModalRows(selectedRows)}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-success-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-success-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Send size={14} /> Batch Record UTR ({selected.size})
+          <Send size={14} /> Record UTR ({selected.size})
         </button>
       </div>
 
-      {/* Table (desktop) + cards (mobile) */}
-      <div className="hidden overflow-hidden rounded-2xl border border-navy-100 bg-white shadow-sm md:block">
-        <table className="min-w-full text-left">
+      <div className="hidden overflow-x-auto rounded-2xl border border-navy-100 bg-white shadow-sm md:block">
+        <table className="min-w-[900px] text-left">
           <thead className="bg-navy-50/60 text-[10px] font-bold uppercase tracking-widest text-navy-500">
             <tr>
               <th className="px-4 py-3">
@@ -108,7 +96,7 @@ export default function () {
           </thead>
           <tbody className="text-sm">
             {rows.length === 0 ? (
-              <tr><td colSpan={8} className="px-6 py-12 text-center text-navy-500">🎉 Queue cleared.</td></tr>
+              <tr><td colSpan={8} className="px-6 py-12 text-center text-navy-500">Maker queue cleared. {emptyMessage}</td></tr>
             ) : rows.map((p) => {
               const days = daysBetween(p.approvedAt);
               const urgent = days >= 7;
@@ -148,7 +136,6 @@ export default function () {
         </table>
       </div>
 
-      {/* Mobile cards */}
       <div className="grid gap-3 md:hidden">
         {rows.map((p) => {
           const days = daysBetween(p.approvedAt);
@@ -182,7 +169,7 @@ export default function () {
           );
         })}
         {rows.length === 0 ? (
-          <div className="rounded-xl border border-navy-100 bg-white py-10 text-center text-sm text-navy-500">🎉 Queue cleared.</div>
+          <div className="rounded-xl border border-navy-100 bg-white py-10 text-center text-sm text-navy-500">Maker queue cleared. {emptyMessage}</div>
         ) : null}
       </div>
 
@@ -207,6 +194,4 @@ function SummaryCard({ label, value, highlight }: { label: string; value: string
     </div>
   );
 }
-
-
 

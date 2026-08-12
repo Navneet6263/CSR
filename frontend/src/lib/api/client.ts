@@ -1,73 +1,97 @@
 import { ApiResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const inFlightGets = new Map<string, Promise<ApiResponse<unknown>>>();
 
-const USE_DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-
-export async function apiClient<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
-  if (USE_DEMO_MODE) {
-    console.log(`[DEMO MODE] Intercepted request to ${endpoint}`);
-    // Fake artificial delay to simulate network
-    await new Promise((res) => setTimeout(res, 400));
-    
-    // Auth endpoints
-    if (endpoint.includes('/auth/login')) {
-      const email = typeof options.body === 'string' ? JSON.parse(options.body).email : 'admin@demo.com';
-      return {
-        success: true,
-        message: 'Mock login successful',
-        data: {
-          token: 'demo-token-123',
-          user: {
-            userId: 99,
-            fullName: email.split('@')[0],
-            email,
-            role: email.includes('student') ? 'Student' : 
-                  email.includes('reviewer') ? 'DocReviewer' : 
-                  email.includes('officer') ? 'BGCheckOfficer' : 
-                  email.includes('screener') ? 'ScreeningOfficer' : 
-                  email.includes('csr') ? 'CSRPartner' :
-                  email.includes('finance') ? 'Finance' : 'Admin'
-          }
-        }
-      } as any;
-    }
-
-    // Generic fallback for other endpoints returning arrays (like applications, scholarships)
-    if (endpoint.includes('/applications/my')) return { success: true, data: [] } as any;
-    if (endpoint.includes('/students/me')) return { success: true, data: {} } as any;
-    if (endpoint.includes('/scholarships')) return { success: true, data: { scholarships: [] } } as any;
-    
-    return { success: true, data: null } as any;
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number, public readonly requestId?: string) {
+    super(message);
   }
+}
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+function cookie(name: string) {
+  if (typeof document === 'undefined') return undefined;
+  return document.cookie.split('; ').find((item) => item.startsWith(`${name}=`))?.split('=').slice(1).join('=');
+}
 
-  const headers: HeadersInit = {
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  // Default to application/json only if not FormData
-  if (!(options.body instanceof FormData) && !('Content-Type' in headers)) {
-    (headers as any)['Content-Type'] = 'application/json';
+function requestHeaders(options: RequestInit) {
+  const headers = new Headers(options.headers);
+  if (options.body != null && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
   }
+  if (unsafeMethods.has((options.method ?? 'GET').toUpperCase())) {
+    const csrf = cookie('tb_csrf');
+    if (csrf) headers.set('X-CSRF-Token', decodeURIComponent(csrf));
+  }
+  return headers;
+}
 
+async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  const contentType = response.headers.get('content-type') ?? '';
+  const body = contentType.includes('application/json') ? await response.json() : null;
+  if (!response.ok) {
+    throw new ApiError(body?.message || 'Request failed', response.status, body?.requestId);
+  }
+  return body as ApiResponse<T>;
+}
+
+async function execute<T>(endpoint: string, options: RequestInit) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers,
+    cache: 'no-store',
+    credentials: 'include',
+    headers: requestHeaders(options),
   });
+  return { response, result: response.ok ? await parseResponse<T>(response) : null };
+}
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+async function requestWithRefresh<T>(endpoint: string, options: RequestInit): Promise<ApiResponse<T>> {
+  const first = await execute<T>(endpoint, options);
+  if (first.response.ok) return first.result!;
+  const canRefresh = first.response.status === 401 && !endpoint.startsWith('/auth/');
+  if (canRefresh) {
+    const refresh = await execute<unknown>('/auth/refresh', { method: 'POST' });
+    if (refresh.response.ok) {
+      const retry = await execute<T>(endpoint, options);
+      return parseResponse<T>(retry.response);
+    }
   }
+  return parseResponse<T>(first.response);
+}
 
-  return data;
+export async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (method !== 'GET') return requestWithRefresh<T>(endpoint, options);
+
+  const existing = inFlightGets.get(endpoint) as Promise<ApiResponse<T>> | undefined;
+  if (existing) return existing;
+
+  const request = requestWithRefresh<T>(endpoint, options);
+  inFlightGets.set(endpoint, request as Promise<ApiResponse<unknown>>);
+  try {
+    return await request;
+  } finally {
+    if (inFlightGets.get(endpoint) === request) inFlightGets.delete(endpoint);
+  }
+}
+
+export async function downloadApiFile(endpoint: string, options: RequestInit = {}) {
+  const request = () => fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options, credentials: 'include', headers: requestHeaders(options),
+  });
+  let response = await request();
+  if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+    const refresh = await execute<unknown>('/auth/refresh', { method: 'POST' });
+    if (refresh.response.ok) response = await request();
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(body?.message || 'Download failed', response.status, body?.requestId);
+  }
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? 'report.csv';
+  return { blob: await response.blob(), filename };
 }
 
 export { API_BASE_URL };

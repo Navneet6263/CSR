@@ -2,13 +2,15 @@ import { GraduationCap } from "lucide-react";
 import { SectionCard } from "../SectionCard";
 import { Field, TextInput, SelectInput } from "../Field";
 import type { ProfileFormState } from "@/lib/profileForm";
+import type { Institution } from '@/types';
 
 interface Props {
   form: ProfileFormState;
   set: <K extends keyof ProfileFormState>(k: K, v: ProfileFormState[K]) => void;
+  institutions: Institution[];
 }
 
-export function EducationSection({ form, set }: Props) {
+export function EducationSection({ form, set, institutions }: Props) {
   return (
     <SectionCard
       icon={<GraduationCap className="h-5 w-5" />}
@@ -48,11 +50,9 @@ export function EducationSection({ form, set }: Props) {
         <Field label="College / Institution" required>
           <SelectInput value={form.college} onChange={(e) => set("college", e.target.value)}>
             <option value="">Select institution</option>
-            <option>COEP Pune</option>
-            <option>IIT Bombay</option>
-            <option>VJTI Mumbai</option>
-            <option>NIT Surat</option>
-            <option>Other</option>
+            {institutions.map((institution) => <option key={institution.institutionId} value={institution.institutionId}>
+              {institution.name}{institution.state ? ` · ${institution.state}` : ''}
+            </option>)}
           </SelectInput>
         </Field>
         <Field label="Course" required>
@@ -104,9 +104,9 @@ export function EducationSection({ form, set }: Props) {
           </SelectInput>
         </Field>
         {form.prevScholarship === "yes" && (
-          <Field label="Details (source, amount, year)">
-            <TextInput value={form.prevScholarshipDetails} onChange={(e) => set("prevScholarshipDetails", e.target.value)} placeholder="e.g. NSP, ₹12,000, 2024" />
-          </Field>
+          <><Field label="Previous scholarship name"><TextInput value={form.prevScholarshipName} onChange={(e) => set("prevScholarshipName", e.target.value)} /></Field>
+            <Field label="Previous amount"><TextInput value={form.prevScholarshipAmount} onChange={(e) => set("prevScholarshipAmount", e.target.value)} inputMode="decimal" /></Field>
+            <Field label="Previous award year"><TextInput value={form.prevScholarshipYear} onChange={(e) => set("prevScholarshipYear", e.target.value)} inputMode="numeric" maxLength={4} /></Field></>
         )}
       </div>
     </SectionCard>

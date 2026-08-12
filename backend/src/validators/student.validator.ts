@@ -2,7 +2,8 @@ import { z } from 'zod/v4';
 
 // ─── Update Student Profile Schema ──────────────────────────────────────────
 export const updateStudentProfileSchema = z.object({
-  aadharNumber: z.string().length(12, 'Aadhar must be 12 digits').optional(),
+  phone: z.string().trim().regex(/^\+?[0-9][0-9 -]{6,19}$/, 'Invalid phone number').optional(),
+  aadharNumber: z.string().regex(/^\d{12}$/, 'Aadhaar must contain exactly 12 digits').optional(),
   dob: z.string().date('Invalid date format (YYYY-MM-DD)').optional(),
   gender: z.enum(['Male', 'Female', 'Other']).optional(),
   category: z.enum(['General', 'OBC', 'SC', 'ST']).optional(),
@@ -13,12 +14,13 @@ export const updateStudentProfileSchema = z.object({
   annualFamilyIncome: z.number().min(0).optional(),
   familySize: z.number().int().min(1).optional(),
   course: z.string().min(2).max(200).optional(),
-  institutionId: z.union([z.number().int().positive(), z.literal('other')]).optional(),
+  institutionId: z.union([z.number().int().positive(), z.literal('other'), z.null()]).optional(),
   otherInstitutionName: z.string().min(2).max(200).optional(),
   enrollmentYear: z.number().int().min(2000).max(2100).optional(),
   bankAccountNo: z.string().min(5).max(50).optional(),
-  bankIFSC: z.string().min(11).max(20).optional(),
+  bankIFSC: z.string().trim().toUpperCase().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Invalid IFSC').optional(),
   bankName: z.string().min(2).max(100).optional(),
+  bankBranch: z.string().min(2).max(150).optional(),
   
   // Extended Academic
   previousYearMarks: z.number().min(0).max(100).optional(),
@@ -63,9 +65,6 @@ export const updateStudentProfileSchema = z.object({
   previousScholarshipAmount: z.number().min(0).optional(),
   previousScholarshipYear: z.number().int().optional(),
 
-  isAadhaarLinkedToBank: z.boolean().optional(),
-  isEKYCVerified: z.boolean().optional(),
-
   statementOfPurpose: z.string().optional(),
   extracurricularActivities: z.string().optional(),
 
@@ -77,11 +76,12 @@ export const updateStudentProfileSchema = z.object({
   isPermanentSameAsCurrent: z.boolean().optional(),
   currentAddressDurationMonths: z.number().int().min(0).optional(),
   numberOfSiblings: z.number().int().min(0).optional(),
-  siblingDetails: z.any().optional(), // Or a more specific array schema
-  fatherAadharFileURL: z.string().url().max(500).optional().or(z.literal('')),
-  motherAadharFileURL: z.string().url().max(500).optional().or(z.literal('')),
-  fatherPayslipFileURL: z.string().url().max(500).optional().or(z.literal('')),
-  bankStatement6MonthsFileURL: z.string().url().max(500).optional().or(z.literal('')),
+  siblingDetails: z.array(z.object({
+    age: z.number().int().min(0).max(120),
+    gender: z.enum(['Male', 'Female', 'Other']),
+    occupation: z.string().max(100).optional(),
+    salary: z.number().min(0).optional(),
+  })).max(20).optional(),
 });
 
 export type UpdateStudentProfileInput = z.infer<typeof updateStudentProfileSchema>;

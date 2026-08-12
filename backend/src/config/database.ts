@@ -1,7 +1,7 @@
 import knex, { Knex } from 'knex';
 import { config } from './env';
 
-const knexConfig: Knex.Config = {
+export const knexConfig: Knex.Config = {
   client: 'mssql',
   connection: {
     host: config.db.host,
@@ -9,26 +9,36 @@ const knexConfig: Knex.Config = {
     user: config.db.user,
     password: config.db.password,
     database: config.db.name,
+    requestTimeout: 30_000,
     options: {
-      encrypt: false,
-      trustServerCertificate: true,
+      encrypt: config.db.encrypt,
+      trustServerCertificate: config.db.trustServerCertificate,
       enableArithAbort: true,
     },
   },
   pool: {
-    min: 2,
-    max: 10,
-    acquireTimeoutMillis: 30000,
-    idleTimeoutMillis: 30000,
+    min: config.db.poolMin,
+    max: config.db.poolMax,
+    acquireTimeoutMillis: 15_000,
+    idleTimeoutMillis: 30_000,
+    createTimeoutMillis: 15_000,
+    propagateCreateError: false,
   },
   migrations: {
-    directory: '../migrations',
-    tableName: 'knex_migrations',
+    directory: '../database/migrations',
+    tableName: 'app_schema_migrations',
     extension: 'ts',
   },
 };
 
 const db: Knex = knex(knexConfig);
 
-export { knexConfig };
+export async function checkDatabase(): Promise<void> {
+  await db.raw('SELECT 1 AS healthy');
+}
+
+export async function closeDatabase(): Promise<void> {
+  await db.destroy();
+}
+
 export default db;

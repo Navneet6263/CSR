@@ -1,8 +1,8 @@
 "use client";
-import { inr } from "@/lib/finance-mock";
+import { inr } from "@/types/finance";
 
 export function BarChart({ data }: { data: { month: string; amount: number }[] }) {
-  const max = Math.max(...data.map((d) => d.amount));
+  const max = Math.max(1, ...data.map((d) => d.amount));
   return (
     <div className="flex h-56 items-end gap-2 sm:gap-4">
       {data.map((d) => {

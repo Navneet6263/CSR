@@ -2,10 +2,13 @@ import bcrypt from 'bcrypt';
 import db from '../src/config/database';
 
 async function seed() {
+  if (process.env.NODE_ENV === 'production') throw new Error('Seeding is disabled in production.');
+  const seedPassword = process.env.SEED_PASSWORD;
+  if (!seedPassword || seedPassword.length < 12) throw new Error('SEED_PASSWORD (minimum 12 characters) is required.');
   console.log('Starting seed process...');
 
   // 1. Create a common password hash
-  const commonPassword = await bcrypt.hash('Student@123', 10);
+  const commonPassword = await bcrypt.hash(seedPassword, 12);
 
   let sponsorUser = await db('Users').where('Email', 'sponsor@talentbridge.com').first();
   if (!sponsorUser) {
@@ -15,7 +18,8 @@ async function seed() {
       PasswordHash: commonPassword,
       Role: 'CSRPartner',
       AgentCode: 'SPONSOR',
-      IsActive: true
+      IsActive: true,
+      MustChangePassword: true
     }).returning('*');
     sponsorUser = insertedSponsorUser;
   }
@@ -29,7 +33,8 @@ async function seed() {
       PasswordHash: commonPassword,
       Role: 'ScreeningOfficer',
       AgentCode: 'SCREENER_1',
-      IsActive: true
+      IsActive: true,
+      MustChangePassword: true
     });
   }
 
@@ -49,6 +54,7 @@ async function seed() {
     }).returning('*');
     sponsor = insertedSponsor;
   }
+  await db('Users').where({ UserID: sponsorUser.UserID }).update({ SponsorID: sponsor.SponsorID });
 
   // 2.7 Ensure Institution exists
   let institution = await db('Institutions').first();
@@ -130,7 +136,8 @@ async function seed() {
         PasswordHash: commonPassword,
         Role: 'Student',
         AgentCode: `STU${i}`,
-        IsActive: true
+        IsActive: true,
+        MustChangePassword: true
       }).returning('*');
       user = insertedUser;
     }
@@ -209,8 +216,13 @@ async function seed() {
         await db('Applications').insert({
           StudentID: s.StudentID,
           ScholarshipID: scholarshipId,
+          ScholarshipAmount: sch1.ScholarshipID === scholarshipId
+            ? sch1.PerStudentAmount
+            : sch2.PerStudentAmount,
+          SponsorID: sch1.ScholarshipID === scholarshipId ? sch1.SponsorID : sch2.SponsorID,
           Status: 'Submitted', // Submitted means they are waiting for screening/review
-          SubmissionDate: new Date()
+          SubmissionDate: new Date(),
+          StageEnteredAt: new Date()
         });
       }
     };
@@ -222,9 +234,7 @@ async function seed() {
   }
 
   console.log('Seed completed successfully!');
-  console.log('Test Accounts:');
-  console.log('- student1@test.com ... student100@test.com (Password: Student@123)');
-  console.log('- sponsor@talentbridge.com (Password: Student@123)');
+  console.log('Development fixture accounts created with mandatory password change.');
   process.exit(0);
 }
 

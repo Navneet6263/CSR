@@ -18,11 +18,11 @@ function RingTooltip({ active, payload }: any) {
 }
 
 export default function FunnelChart({ data }: { data?: any }) {
-  const applied = data?.applied || 1000;
-  const docs = data?.docsVerified || 800;
-  const bg = data?.bgVerified || 600;
-  const screened = data?.screened || 480;
-  const approved = data?.approved || 400;
+  const applied = Number(data?.applied ?? 0);
+  const docs = Number(data?.docsVerified ?? 0);
+  const bg = Number(data?.bgVerified ?? 0);
+  const screened = Number(data?.screened ?? 0);
+  const approved = Number(data?.approved ?? 0);
 
   const stages = [
     { name: "Applied", value: applied, color: "#0f172a" },

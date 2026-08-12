@@ -1,4 +1,4 @@
-import type { StatCard } from "@/lib/mockData";
+import type { DashboardStat as StatCard } from "@/types/dashboard";
 import { FileCheck, FileText, Layers, Wallet } from "lucide-react";
 
 const iconMap = {

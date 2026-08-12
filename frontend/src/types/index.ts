@@ -9,7 +9,8 @@ export interface RegisterData {
   phone: string;
   password: string;
   confirmPassword: string;
-  role: 'Student' | 'Agent';
+  role: 'Student';
+  termsAccepted: boolean;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -20,14 +21,19 @@ export interface ApiResponse<T = unknown> {
 
 export interface AuthUser {
   id: number;
+  userId: number;
   fullName: string;
   email: string;
+  phone?: string;
   role: string;
+  sponsorId?: number | null;
+  financeFunction?: 'Maker' | 'Checker' | null;
+  mustChangePassword?: boolean;
 }
 
 export interface AuthResponse {
-  token: string;
   user: AuthUser;
+  csrfToken?: string;
 }
 
 export interface StudentProfile {
@@ -35,6 +41,7 @@ export interface StudentProfile {
   userId: number;
   fullName: string;
   email: string;
+  phone?: string;
   aadharNumber?: string;
   dob?: string;
   gender?: string;
@@ -53,6 +60,7 @@ export interface StudentProfile {
   bankAccountNo?: string;
   bankIFSC?: string;
   bankName?: string;
+  bankBranch?: string;
   previousYearMarks?: number;
   tenthBoardName?: string;
   tenthPassingYear?: number;
@@ -106,6 +114,9 @@ export interface StudentProfile {
   motherAadharFileURL?: string;
   fatherPayslipFileURL?: string;
   bankStatement6MonthsFileURL?: string;
+  profileCompletion?: number;
+  profileSections?: Array<{ label: string; complete: boolean }>;
+  missingProfileSections?: string[];
 }
 
 export interface Scholarship {
@@ -158,7 +169,7 @@ export type ApplicationStatus =
   | 'ScreeningPending' | 'ScreeningApproved' | 'ScreeningRejected'
   | 'CSRPending' | 'CSRApproved' | 'CSRDeclined'
   | 'PaymentPending' | 'PaymentInitiated' | 'PaymentCompleted'
-  | 'Cancelled';
+  | 'PaymentFailed' | 'Cancelled';
 
 export interface NavItem {
   label: string;

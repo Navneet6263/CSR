@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { ScrollText, User, ShieldCheck, Settings, Cpu } from "lucide-react";
 import { useFinance } from "@/lib/store/finance-store";
+import { formatFinanceDateTime } from "@/lib/financeFormat";
+import { inr } from "@/types/finance";
 
 
 
 const FILTERS = ["All", "Maker", "Checker", "Admin", "System"] as const;
 type Filter = (typeof FILTERS)[number];
 
-export default function () {
+export default function FinanceAuditPage() {
   const { audit } = useFinance();
   const [filter, setFilter] = useState<Filter>("All");
 
@@ -55,12 +57,18 @@ export default function () {
                   <span className="text-navy-700">{a.action}</span>
                   <span className="font-mono text-[11px] text-navy-500">→ {a.target}</span>
                 </div>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
+                  {a.paymentId ? <span className="rounded bg-navy-50 px-2 py-1 text-navy-700">PAY-{a.paymentId}</span> : null}
+                  {a.amount != null ? <span className="rounded bg-success-50 px-2 py-1 text-success-700">{inr(a.amount)}</span> : null}
+                  {a.referenceNo ? <span className="max-w-full break-all rounded bg-navy-50 px-2 py-1 font-mono text-navy-700">UTR {a.referenceNo}</span> : null}
+                </div>
                 {a.meta ? (
                   <div className="mt-1 break-all text-xs text-navy-500">{a.meta}</div>
                 ) : null}
+                <div className="mt-1 text-[10px] font-medium text-navy-400 sm:hidden">{formatFinanceDateTime(a.ts)}</div>
               </div>
               <div className="hidden shrink-0 text-right text-[11px] font-medium text-navy-500 sm:block">
-                {new Date(a.ts).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                {formatFinanceDateTime(a.ts)}
               </div>
             </li>
           ))}

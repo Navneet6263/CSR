@@ -1,43 +1,30 @@
-"use client";
-import { Inbox, CheckCircle2, RotateCcw, Clock, TrendingUp, TrendingDown } from "lucide-react";
-import { stats } from "@/lib/mock-data";
+'use client';
 
-const items = [
-  { label: "Pending Queue", value: stats.pending, icon: Inbox, delta: "+8 today", trend: "up", accent: "primary" },
-  { label: "Verified Today", value: stats.verifiedToday, icon: CheckCircle2, delta: "+3 vs avg", trend: "up", accent: "success" },
-  { label: "Re-uploads Requested", value: stats.reuploads, icon: RotateCcw, delta: "-2 vs avg", trend: "down", accent: "warn" },
-  { label: "Avg. Review Time", value: stats.avgTime, icon: Clock, delta: "-18s faster", trend: "down", accent: "primary" },
-] as const;
+import { AlertTriangle, CheckCircle2, Inbox, RotateCcw } from 'lucide-react';
 
-const accentMap: Record<string, string> = {
-  primary: "text-primary bg-primary/10 border-primary/30",
-  success: "text-success bg-success/10 border-success/30",
-  warn: "text-warn bg-warn/10 border-warn/30",
-};
+export interface ReviewerStats { pendingReview?: number; approvedToday?: number; rejectedToday?: number; overdue?: number; }
 
-export function StatsGrid() {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {items.map((s) => {
-        const Trend = s.trend === "up" ? TrendingUp : TrendingDown;
-        return (
-          <div key={s.label} className="glass p-5 relative overflow-hidden group">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-xs font-mono uppercase tracking-wider text-fg-subtle">{s.label}</div>
-                <div className="mt-3 text-3xl font-display font-bold tabular-nums">{s.value}</div>
-              </div>
-              <div className={`w-10 h-10 rounded-lg border grid place-items-center ${accentMap[s.accent]}`}>
-                <s.icon className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-1.5 text-xs text-fg-muted">
-              <Trend className="w-3 h-3" /> {s.delta}
-            </div>
-            <div className="absolute -bottom-8 -right-8 w-24 h-24 rounded-full bg-primary/10 blur-2xl opacity-0 group-hover:opacity-100 transition" />
-          </div>
-        );
-      })}
-    </div>
-  );
+export function StatsGrid({ stats }: { stats: ReviewerStats }) {
+  const items = [
+    { label: 'Pending Queue', value: stats.pendingReview ?? 0, icon: Inbox, accent: 'primary' },
+    { label: 'Verified Today', value: stats.approvedToday ?? 0, icon: CheckCircle2, accent: 'success' },
+    { label: 'Re-uploads Requested', value: stats.rejectedToday ?? 0, icon: RotateCcw, accent: 'warn' },
+    { label: 'Past 48h SLA', value: stats.overdue ?? 0, icon: AlertTriangle, accent: 'danger' },
+  ];
+  const accentMap: Record<string, string> = {
+    primary: 'text-primary bg-primary/10 border-primary/30',
+    success: 'text-success bg-success/10 border-success/30',
+    warn: 'text-warn bg-warn/10 border-warn/30',
+    danger: 'text-danger bg-danger/10 border-danger/30',
+  };
+  return <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    {items.map((item) => <div key={item.label} className="glass group relative overflow-hidden p-5">
+      <div className="flex items-start justify-between"><div>
+        <div className="text-xs font-mono uppercase tracking-wider text-fg-subtle">{item.label}</div>
+        <div className="mt-3 text-3xl font-display font-bold tabular-nums">{item.value}</div>
+      </div><div className={`grid h-10 w-10 place-items-center rounded-lg border ${accentMap[item.accent]}`}>
+        <item.icon className="h-4 w-4" />
+      </div></div>
+    </div>)}
+  </div>;
 }

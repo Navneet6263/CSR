@@ -1,8 +1,9 @@
 "use client";
 
 import { CheckCircle2, Download, Receipt } from "lucide-react";
-import { inr } from "@/lib/finance-mock";
+import { inr } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
+import { formatFinanceDate } from "@/lib/financeFormat";
 
 
 
@@ -43,7 +44,7 @@ export default function () {
       <div class="row"><span class="k">Application</span><span class="v">${r.applicationId}</span></div>
       <div class="row"><span class="k">Bank</span><span class="v">${r.bankName}</span></div>
       <div class="row"><span class="k">Sponsor</span><span class="v">${r.sponsor}</span></div>
-      <div class="row"><span class="k">Date</span><span class="v">${r.date}</span></div>
+      <div class="row"><span class="k">Date</span><span class="v">${formatFinanceDate(r.date)}</span></div>
       <div class="row"><span class="k">Maker</span><span class="v">${r.maker}</span></div>
       <div class="row"><span class="k">Checker</span><span class="v">${r.checker}</span></div>
       </div>`;
@@ -71,7 +72,7 @@ export default function () {
 
       {/* Desktop table */}
       <div className="hidden overflow-x-auto rounded-2xl border border-navy-100 bg-white shadow-sm md:block">
-        <table className="min-w-full text-left">
+        <table className="min-w-[850px] text-left">
           <thead className="bg-navy-50/60 text-[10px] font-bold uppercase tracking-widest text-navy-500">
             <tr>
               <th className="px-4 py-3">Txn / UTR</th>
@@ -98,7 +99,7 @@ export default function () {
                   <div>{r.maker}</div>
                   <div className="text-navy-500">✓ {r.checker}</div>
                 </td>
-                <td className="px-4 py-3 text-xs text-navy-700">{r.date}</td>
+                <td className="px-4 py-3 text-xs text-navy-700">{formatFinanceDate(r.date)}</td>
                 <td className="px-4 py-3 text-right font-display font-bold text-navy-900">{inr(r.amount)}</td>
                 <td className="px-4 py-3 text-right">
                   <button
@@ -132,7 +133,7 @@ export default function () {
             </div>
             <div className="mt-2 flex items-end justify-between">
               <div className="text-[10px] text-navy-500">
-                {r.bankName} · {r.date}<br />
+                {r.bankName} · {formatFinanceDate(r.date)}<br />
                 {r.maker} → ✓ {r.checker}
               </div>
               <div className="font-display text-lg font-bold text-navy-900">{inr(r.amount)}</div>

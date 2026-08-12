@@ -2,10 +2,13 @@ import db from '../src/config/database';
 import bcrypt from 'bcrypt';
 
 async function seedDocs() {
+  if (process.env.NODE_ENV === 'production') throw new Error('Seeding is disabled in production.');
+  const seedPassword = process.env.SEED_PASSWORD;
+  if (!seedPassword || seedPassword.length < 12) throw new Error('SEED_PASSWORD (minimum 12 characters) is required.');
   console.log('Starting document seed...');
 
   // 1. Create a DocReviewer user if it doesn't exist
-  const commonPassword = await bcrypt.hash('Student@123', 10);
+  const commonPassword = await bcrypt.hash(seedPassword, 12);
   let docReviewer = await db('Users').where('Email', 'docreviewer@test.com').first();
   if (!docReviewer) {
     const [insertedUser] = await db('Users').insert({
@@ -14,7 +17,8 @@ async function seedDocs() {
       PasswordHash: commonPassword,
       Role: 'DocReviewer',
       AgentCode: 'DOC_REV_1',
-      IsActive: true
+      IsActive: true,
+      MustChangePassword: true
     }).returning('*');
     docReviewer = insertedUser;
   }
@@ -56,7 +60,7 @@ async function seedDocs() {
   }
 
   console.log('Document seeding complete!');
-  console.log('DocReviewer Account: docreviewer@test.com (Password: Student@123)');
+  console.log('Document reviewer fixture created with mandatory password change.');
   process.exit(0);
 }
 

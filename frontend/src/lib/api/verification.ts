@@ -2,6 +2,8 @@ import {
   DocumentChecklistItem, ReviewApplicationRow, DocReviewPayload,
   DocUploadPayload, BGCheckApplicationRow, BGCheckPayload,
 } from '@/types/domain';
+import type { RawReviewerLog } from '@/types/reviewer';
+import type { OfficerCaseDetail, OfficerLog, OfficerStats } from '@/types/officer';
 import { mapDocument, mapReviewApp, mapBGApp } from '@/lib/mappers';
 import { apiClient } from './client';
 
@@ -31,7 +33,7 @@ export const verificationApi = {
     apiClient(`/verify/bg-checks/${appId}`, { method: 'POST', body: JSON.stringify(data) }),
 
   getBGCheckDetails: async (appId: number) => {
-    return apiClient<Record<string, unknown>>(`/verify/bg-checks/${appId}`);
+    return apiClient<OfficerCaseDetail>(`/verify/bg-checks/${appId}`);
   },
 
   getAppDocs: async (applicationId: number) => {
@@ -39,15 +41,15 @@ export const verificationApi = {
   },
 
   getReviewerLogs: async () => {
-    return apiClient<unknown[]>('/verify/logs');
+    return apiClient<RawReviewerLog[]>('/verify/logs');
   },
 
   getOfficerLogs: async () => {
-    return apiClient<unknown[]>('/verify/bg-checks/logs');
+    return apiClient<OfficerLog[]>('/verify/bg-checks/logs');
   },
 
   getOfficerStats: async () => {
-    return apiClient<Record<string, unknown>>('/verify/bg-checks/stats');
+    return apiClient<OfficerStats>('/verify/bg-checks/stats');
   },
 
   getReviewerStats: async () => {

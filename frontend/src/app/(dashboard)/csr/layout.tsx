@@ -10,7 +10,7 @@ export default function CsrLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
         <footer className="border-t border-pink-100 bg-white/60 py-6 text-center text-xs text-slate-500">
-          © 2026 Tata CSR · TalentBridge Partner Portal · Empowering Bharat's Talent
+          © 2026 TalentBridge Partner Portal
         </footer>
       </div>
     </div>

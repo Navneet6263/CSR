@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { adminApi } from '@/lib/api/admin';
-import { mockMetrics } from '@/lib/mockData';
 import MetricsRow from "@/components/admin/MetricsRow";
 import FunnelChart from "@/components/admin/FunnelChart";
 import WorkloadChart from "@/components/admin/WorkloadChart";
@@ -23,12 +22,10 @@ export default function AdminOverviewPage() {
       const res = await adminApi.getDashboardMetrics();
       if (res.success && res.data) {
         setMetrics(res.data);
-      } else {
-        setMetrics(mockMetrics); // fallback to mock data if API response is empty
-      }
+      } else setMetrics(null);
     } catch (err) {
-      console.error("API failed, falling back to mock data:", err);
-      setMetrics(mockMetrics);
+      console.error("Admin metrics request failed:", err);
+      setMetrics(null);
     } finally {
       setLoading(false);
     }
@@ -45,14 +42,14 @@ export default function AdminOverviewPage() {
         </div>
       </header>
 
-      <MetricsRow data={metrics} />
+      {metrics ? <MetricsRow data={metrics} /> : <p className="text-sm text-slate-500">Metrics are unavailable.</p>}
 
       <div className="grid grid-cols-12 gap-5">
         <div className="col-span-12 md:col-span-5">
-          <FunnelChart data={metrics?.funnel} />
+          <FunnelChart data={metrics?.funnel ?? {}} />
         </div>
         <div className="col-span-12 md:col-span-7">
-          <WorkloadChart data={metrics?.workload} />
+          <WorkloadChart data={metrics?.workload ?? {}} />
         </div>
         <div className="col-span-12 md:col-span-5">
           <CriticalAlerts data={metrics?.alerts} />

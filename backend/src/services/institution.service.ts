@@ -1,27 +1,19 @@
 import db from '../config/database';
 
-// ─── Get All Institutions ───────────────────────────────────────────────────
+interface InstitutionFilters { type?: string; state?: string; search?: string; limit?: number; }
 
-interface InstitutionFilters {
-  type?: string;
-  state?: string;
-}
+const publicColumns = [
+  'InstitutionID', 'Name', 'Type', 'District', 'State', 'Address', 'IsVerified',
+];
 
 export async function getAllInstitutions(filters: InstitutionFilters = {}) {
-  const query = db('Institutions').select('*');
-
-  if (filters.type) {
-    query.where({ Type: filters.type });
-  }
-  if (filters.state) {
-    query.where({ State: filters.state });
-  }
-
-  return query.orderBy('Name');
+  const query = db('Institutions').select(publicColumns).where({ IsVerified: true });
+  if (filters.type) query.where({ Type: filters.type });
+  if (filters.state) query.where({ State: filters.state });
+  if (filters.search) query.where('Name', 'like', `%${filters.search}%`);
+  return query.orderBy('Name').limit(filters.limit ?? 100);
 }
 
-// ─── Get Institution By ID ──────────────────────────────────────────────────
-
 export async function getInstitutionById(id: number) {
-  return db('Institutions').where({ InstitutionID: id }).first();
+  return db('Institutions').select(publicColumns).where({ InstitutionID: id, IsVerified: true }).first();
 }

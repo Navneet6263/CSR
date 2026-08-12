@@ -1,4 +1,5 @@
 import AuthBackground from '@/components/auth/AuthBackground';
+import AuthImpactStats from '@/components/auth/AuthImpactStats';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,12 +18,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           
           {/* Text Content - No Box, Floating Freely */}
           <div className="px-2">
-            <div className="flex items-center gap-3 mb-10">
-              <div className="bg-white p-3 rounded-2xl shadow-lg border border-white/40">
-                <img src="/logo.png" alt="Talent Foundation" className="h-14 w-auto object-contain" />
-              </div>
-            </div>
-
             <div>
               <h3 className="text-emerald-300 font-black text-sm tracking-widest uppercase mb-4 drop-shadow-md">Empowering Futures</h3>
               <h2 className="text-4xl xl:text-5xl font-bold text-white leading-[1.2] mb-6 drop-shadow-lg capitalize">
@@ -34,25 +29,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
 
-          {/* Stats Grid - Made lighter so they don't block the image */}
-          <div className="grid grid-cols-2 gap-4 px-2">
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-              <p className="text-3xl font-bold text-white mb-1 drop-shadow-sm">12,400+</p>
-              <p className="text-sm font-semibold text-emerald-100 drop-shadow-sm">Students funded</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-              <p className="text-3xl font-bold text-white mb-1 drop-shadow-sm">₹48Cr</p>
-              <p className="text-sm font-semibold text-emerald-100 drop-shadow-sm">Disbursed</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-              <p className="text-3xl font-bold text-white mb-1 drop-shadow-sm">96%</p>
-              <p className="text-sm font-semibold text-emerald-100 drop-shadow-sm">Approval rate</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.05)]">
-              <p className="text-3xl font-bold text-white mb-1 drop-shadow-sm">3 days</p>
-              <p className="text-sm font-semibold text-emerald-100 drop-shadow-sm">Avg. review time</p>
-            </div>
-          </div>
+          <AuthImpactStats />
         </div>
 
         {/* Right Side: Form Container */}

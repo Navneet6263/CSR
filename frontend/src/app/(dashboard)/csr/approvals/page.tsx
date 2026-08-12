@@ -1,109 +1,41 @@
-"use client";
-import { Metadata } from "next";
-import { useState } from "react";
-import { CheckCircle2, Eye, Filter, Search, ShieldCheck } from "lucide-react";
-import Link from "next/link";
+'use client';
 
-type Row = { id: string; name: string; score: number; amount: string; state: string; course: string };
+import { AlertTriangle, Clock3, Eye, Search, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { screeningApi } from '@/lib/api';
+import type { CSRApplicationRow } from '@/types/domain';
 
-function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
-  return (
-    <button
-      onClick={onChange}
-      className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition ${
-        checked ? "border-emerald-600 bg-emerald-600" : "border-slate-300 bg-white hover:border-emerald-400"
-      }`}
-    >
-      {checked && <CheckCircle2 size={14} className="text-white" />}
-    </button>
-  );
-}
+function age(value?: string) { if (!value) return { hours: 0, label: 'SLA unavailable' }; const hours = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 3_600_000));
+  return { hours, label: hours < 24 ? `${hours}h awaiting sponsor` : `${Math.floor(hours / 24)}d awaiting sponsor` }; }
 
 export default function ApprovalsPage() {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const toggle = (id: string) => {
-    const next = new Set(selected);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setSelected(next);
-  };
-
-  const rows: Row[] = [
-    { id: "APP-1001", name: "Ananya Sharma", score: 88, amount: "₹50,000", state: "Rajasthan", course: "B.Tech CSE" },
-    { id: "APP-1002", name: "Rohan Verma", score: 82, amount: "₹35,000", state: "Punjab", course: "B.Com (Hons)" },
-    { id: "APP-1003", name: "Priya Nair", score: 91, amount: "₹75,000", state: "Kerala", course: "MBBS" },
-    { id: "APP-1004", name: "Arjun Patel", score: 79, amount: "₹30,000", state: "Gujarat", course: "B.Sc Maths" },
-    { id: "APP-1005", name: "Meera Reddy", score: 85, amount: "₹55,000", state: "Telangana", course: "B.Tech ECE" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Funding Approvals Queue</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Applications that cleared Document Audit, Background Check & Merit Screening.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 rounded-xl border border-pink-100 bg-white px-3 py-2 shadow-sm">
-            <Search size={15} className="text-slate-400" />
-            <input placeholder="Search by name or ID" className="w-56 bg-transparent text-sm outline-none placeholder:text-slate-400" />
-          </div>
-          <button className="flex items-center gap-1.5 rounded-xl border border-pink-100 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-pink-50">
-            <Filter size={15} /> Filter
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-pink-100 bg-gradient-to-r from-pink-50/50 to-white px-6 py-3">
-          <div className="flex items-center gap-2 text-sm">
-            <ShieldCheck size={16} className="text-emerald-600" />
-            <span className="font-semibold text-emerald-800">12 Pending Approvals</span>
-          </div>
-          <button className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow hover:bg-slate-800">
-            Bulk Approve Selected
-          </button>
-        </div>
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-500">
-            <tr>
-              <th className="py-3 pl-6 pr-4 font-medium"><Checkbox checked={selected.size === rows.length} onChange={() => {}} /></th>
-              <th className="py-3 px-4 font-medium">Applicant</th>
-              <th className="py-3 px-4 font-medium">Location</th>
-              <th className="py-3 px-4 font-medium">Merit Score</th>
-              <th className="py-3 px-4 font-medium">Amount</th>
-              <th className="py-3 pr-6 text-right font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-pink-50">
-            {rows.map((r) => (
-              <tr key={r.id} className="transition hover:bg-emerald-50/30">
-                <td className="py-4 pl-6 pr-4"><Checkbox checked={selected.has(r.id)} onChange={() => toggle(r.id)} /></td>
-                <td className="py-4 px-4">
-                  <div className="font-bold text-slate-900">{r.name}</div>
-                  <div className="text-xs text-slate-500">{r.id} · {r.course}</div>
-                </td>
-                <td className="py-4 px-4 text-slate-600">{r.state}</td>
-                <td className="py-4 px-4">
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold ${r.score >= 90 ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                    {r.score}/100
-                  </span>
-                </td>
-                <td className="py-4 font-bold text-slate-900">{r.amount}</td>
-                <td className="py-4 pr-6 text-right">
-                  <Link
-                    href={`/csr/applications/${r.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50"
-                  >
-                    <Eye size={13} /> Review A-Z
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  const [rows, setRows] = useState<CSRApplicationRow[]>([]); const [query, setQuery] = useState('');
+  const [error, setError] = useState(''); const [loading, setLoading] = useState(true);
+  const load = useCallback(() => { setLoading(true); return screeningApi.getPendingCSR().then((response) => { setRows(response.data ?? []); setError(''); })
+    .catch((reason: Error) => setError(reason.message)).finally(() => setLoading(false)); }, []);
+  useEffect(() => { void load(); }, [load]);
+  const filtered = useMemo(() => rows.filter((row) => `${row.applicationId} ${row.studentName} ${row.scholarshipName}`.toLowerCase().includes(query.toLowerCase()))
+    .sort((a, b) => age(b.stageEnteredAt).hours - age(a.stageEnteredAt).hours), [rows, query]);
+  const exposure = rows.reduce((sum, row) => sum + Number(row.scholarshipAmount ?? 0), 0);
+  const overdue = rows.filter((row) => age(row.stageEnteredAt).hours >= 48).length;
+  return <div className="space-y-6"><header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">Independent sponsor control</p>
+    <h1 className="mt-1 text-3xl font-bold">Funding approvals queue</h1><p className="mt-1 text-sm text-slate-600">Review each cleared case A–Z before committing sponsor funds.</p></div>
+    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-right"><p className="text-[9px] font-bold uppercase tracking-wider text-emerald-700">Queue exposure</p>
+      <p className="text-xl font-bold text-emerald-900">₹{exposure.toLocaleString('en-IN')}</p></div></header>
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Metric label="Awaiting control" value={rows.length} /><Metric label="Past 48h SLA" value={overdue} warn={overdue > 0} />
+      <Metric label="Policy" value="One-by-one" /></section>
+    <div className="flex items-center gap-2 rounded-xl border bg-white px-3 py-2"><Search size={15} className="text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, scholarship or APP ID" className="w-full text-sm outline-none" /></div>
+    {error ? <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
+    <section className="overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-sm"><div className="flex items-center justify-between border-b bg-pink-50/50 px-5 py-3"><span className="flex items-center gap-2 text-sm font-semibold text-emerald-800"><ShieldCheck size={16} />{filtered.length} cases</span>
+      <span className="text-[10px] text-slate-500">Oldest first · no bulk approval</span></div><div className="divide-y">{filtered.map((row) => { const waiting = age(row.stageEnteredAt); return <div key={row.applicationId}
+        className="grid gap-3 p-4 transition hover:bg-emerald-50/30 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_120px_150px_130px] md:items-center"><div><b className="text-sm">{row.studentName}</b>
+        <p className="text-[10px] text-slate-500">APP-{row.applicationId} · {row.course ?? 'Course not added'} · {row.studentState ?? 'State not added'}</p></div><div><b className="text-xs text-slate-700">{row.scholarshipName}</b>
+        <p className="text-[10px] text-slate-500">{row.institutionName ?? 'Institution not added'}</p></div><span className="text-xs font-bold">{row.previousYearMarks != null ? `${row.previousYearMarks}% merit` : 'Merit —'}</span>
+        <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${waiting.hours >= 48 ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>{waiting.hours >= 48 ? <AlertTriangle size={11} /> : <Clock3 size={11} />}{waiting.label}</span>
+        <Link href={`/csr/applications/${row.applicationId}`} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white"><Eye size={13} />Review A–Z</Link></div>; })}
+        {!filtered.length && !loading ? <p className="p-12 text-center text-sm text-slate-400">No applications awaiting sponsor approval.</p> : null}{loading ? <p className="p-12 text-center text-sm text-slate-400">Loading approval queue…</p> : null}</div></section>
+  </div>;
 }
+
+function Metric({ label, value, warn }: { label: string; value: string | number; warn?: boolean }) { return <div className={`rounded-xl border bg-white p-4 ${warn ? 'border-rose-200' : ''}`}><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p><p className={`mt-1 text-xl font-bold ${warn ? 'text-rose-700' : ''}`}>{value}</p></div>; }

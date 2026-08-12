@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ClipboardList, History, User, Sun, LogOut, ChevronDown } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { NotificationCenter } from '@/components/shared/NotificationCenter';
 
 export function TopNav() {
   const pathname = usePathname();
+  const user = authApi.getUser();
   const items = [
     { to: "/officer", label: "My Visits", icon: ClipboardList, exact: true },
     { to: "/officer/history", label: "History", icon: History, exact: false },
@@ -23,7 +25,7 @@ export function TopNav() {
           </div>
           <div className="min-w-0 leading-tight">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Field Officer</p>
-            <p className="truncate text-sm font-bold text-black">TalentBridge · Rohan K.</p>
+            <p className="truncate text-sm font-bold text-black">TalentBridge · {user?.fullName ?? 'Officer'}</p>
           </div>
         </div>
 
@@ -48,7 +50,7 @@ export function TopNav() {
           })}
         </nav>
 
-        <UserMenu />
+        <div className="ml-auto flex items-center gap-2"><NotificationCenter /><UserMenu /></div>
       </div>
 
       <nav className="flex items-center gap-1 border-t border-slate-100 px-4 py-2 md:hidden">
@@ -76,6 +78,8 @@ export function TopNav() {
 function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const user = authApi.getUser();
+  const initials = (user?.fullName ?? 'BG').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
   
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -92,19 +96,19 @@ function UserMenu() {
         className="flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-slate-100"
       >
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-sm font-semibold text-slate-600 shadow-sm ring-1 ring-slate-200">
-          RK
+          {initials}
         </div>
         <div className="hidden text-left leading-tight sm:block">
-          <p className="text-xs font-semibold text-black">Rohan K.</p>
-          <p className="font-mono text-[10px] text-slate-500">FO-2041</p>
+          <p className="text-xs font-semibold text-black">{user?.fullName ?? 'Officer'}</p>
+          <p className="font-mono text-[10px] text-slate-500">BG-{user?.userId ?? '—'}</p>
         </div>
         <ChevronDown size={14} className={`text-slate-400 transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-slate-200">
           <div className="px-3 py-2">
-            <p className="text-sm font-semibold text-slate-800">Rohan Kulkarni</p>
-            <p className="truncate text-xs text-slate-500">rohan.k@talentbridge.in</p>
+            <p className="text-sm font-semibold text-slate-800">{user?.fullName ?? 'Officer'}</p>
+            <p className="truncate text-xs text-slate-500">{user?.email ?? ''}</p>
           </div>
           <div className="my-1 h-px bg-slate-100" />
           <Link

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Sidebar from '@/components/dashboard/Sidebar';
 import AdminSidebar from '@/components/admin/Sidebar';
 import AdminTopbar from '@/components/admin/Topbar';
@@ -16,33 +16,33 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
 
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
-    const user = authApi.getUser();
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
-    
-    // Role-based route protection
-    const role = user.role;
-    if (role === 'BGCheckOfficer' && pathname.startsWith('/reviewer')) {
-      window.location.href = '/officer';
-      return;
-    }
-    if (role === 'DocReviewer' && pathname.startsWith('/officer')) {
-      window.location.href = '/reviewer';
-      return;
-    }
-
-    setRole(role);
-    setMounted(true);
-  }, [pathname]);
+    let active = true;
+    authApi.restoreSession().then((user) => {
+      if (!active) return;
+      if (!user) { router.replace('/login'); return; }
+      if (user.mustChangePassword) { router.replace('/change-password'); return; }
+      const expectedPrefix: Record<string, string> = {
+        Admin: '/admin', Agent: '/agent', DocReviewer: '/reviewer', BGCheckOfficer: '/officer',
+        ScreeningOfficer: '/screener', CSRPartner: '/csr', Finance: '/finance',
+        SupportAgent: '/support',
+      };
+      const prefix = expectedPrefix[user.role];
+      if (prefix && !pathname.startsWith(prefix)) { router.replace(prefix); return; }
+      setRole(user.role);
+      setMounted(true);
+    });
+    return () => { active = false; };
+  }, [pathname, router]);
 
   // Prevent hydration mismatch by returning nothing until mounted,
   // or return a standard full-width layout temporarily.
   if (!mounted) {
-    return <div className="min-h-screen bg-gradient-to-br from-[#f5f0ff] via-[#f0f4ff] to-[#f0faf5]"></div>;
+    return <div className="min-h-screen bg-slate-50 p-6" aria-label="Opening secure workspace"><div className="mx-auto max-w-7xl space-y-4">
+      <div className="h-16 animate-pulse rounded-2xl bg-white" /><div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-28 animate-pulse rounded-2xl bg-white" />)}</div>
+      <div className="h-96 animate-pulse rounded-2xl bg-white" /></div></div>;
   }
 
   const isStudent = role === 'Student';
@@ -52,6 +52,7 @@ export default function DashboardLayout({
   const isCSRPartner = role === 'CSRPartner' || pathname.startsWith('/csr');
   const isFinance = role === 'Finance' || pathname.startsWith('/finance');
   const isAdmin = role === 'Admin' || pathname.startsWith('/admin');
+  const isSupport = role === 'SupportAgent' || pathname.startsWith('/support');
   const hasSidebar = !isStudent && !isDocReviewer && !isBGOfficer && !isScreener && !isCSRPartner && !isFinance;
 
   if (isAdmin) {
@@ -69,6 +70,8 @@ export default function DashboardLayout({
       </div>
     );
   }
+
+  if (isSupport) return <div className="min-h-screen bg-slate-50 text-slate-900">{children}</div>;
 
   if (isDocReviewer) {
     return <div className="doc-reviewer-bg min-h-screen">{children}</div>;

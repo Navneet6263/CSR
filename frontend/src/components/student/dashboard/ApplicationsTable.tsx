@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Application } from "@/lib/mockData";
+import type { DashboardApplication as Application } from "@/types/dashboard";
 
 interface Props {
   applications: Application[];

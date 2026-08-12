@@ -1,9 +1,10 @@
 "use client";
-import type { DocItem } from "@/lib/mock-data";
+import type { ReviewerDocument as DocItem } from "@/types/reviewer";
 import { CheckCircle2, RotateCcw, XCircle, Circle, FileText } from "lucide-react";
 
 const statusMap = {
   Pending: { icon: Circle, cls: "text-fg-subtle" },
+  Uploaded: { icon: Circle, cls: "text-fg-subtle" },
   Verified: { icon: CheckCircle2, cls: "text-success" },
   ReUploadRequested: { icon: RotateCcw, cls: "text-warn" },
   Rejected: { icon: XCircle, cls: "text-danger" },

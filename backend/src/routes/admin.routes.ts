@@ -1,20 +1,46 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
+import { bulkHoldSchema, emergencyApprovalSchema, validateHoldApplication } from '../validators/admin.validator';
 import {
   getDashboardMetricsHandler,
   toggleApplicationHoldHandler,
-  getRolePipelineHandler
+  getRolePipelineHandler, getStaffHandler, createStaffHandler, deactivateStaffHandler, getAuditEventsHandler,
+  getAdminPaymentQueueHandler,
+  getSponsorsHandler, getScholarshipOverviewHandler,
+  getAnnouncementsHandler, createAnnouncementHandler, archiveAnnouncementHandler,
+  getBroadcastsHandler, sendBroadcastHandler, getTicketsHandler, updateTicketHandler,
+  getSlaAnalyticsHandler, getGeoAnalyticsHandler, bulkHoldApplicationsHandler, exportReportHandler,
+  emergencyApproveApplicationHandler,
 } from '../controllers/admin.controller';
+import { validateBody } from '../middleware/validate';
+import { createStaffSchema } from '../validators/adminUsers.validator';
+import { announcementSchema, broadcastSchema, ticketUpdateSchema } from '../validators/adminComms.validator';
 
 const router = Router();
 
-router.use(authenticate);
-// router.use(requireRole('Admin')); // Assuming we have an Admin role. We can just use requireAuth for testing if Admin role doesn't exist yet, but let's assume it does. Or we can just use requireRole('CSRPartner') since CSR acts as super admin sometimes. Let's use requireRole('CSRPartner', 'Admin') ideally. For now, let's just use requireAuth for prototyping the UI.
-// Actually, let's assume there's an 'Admin' role, or we can just let any authenticated user hit this for now during the prototype phase since we don't have an explicit Admin login yet.
-// Wait, I will use requireRole('Admin') but if the user logs in as CSR, maybe they act as Admin. Let's just remove role restriction on this endpoint for local dev, or add 'Admin'.
+router.use(authenticate, requireRole('Admin'));
 
 router.get('/metrics', getDashboardMetricsHandler);
 router.get('/pipeline/:role', getRolePipelineHandler);
-router.post('/applications/:id/hold', toggleApplicationHoldHandler);
+router.post('/applications/:id/hold', validateHoldApplication, toggleApplicationHoldHandler);
+router.post('/applications/:id/emergency-approve', validateBody(emergencyApprovalSchema), emergencyApproveApplicationHandler);
+router.post('/applications/bulk-hold', validateBody(bulkHoldSchema), bulkHoldApplicationsHandler);
+router.get('/analytics/sla', getSlaAnalyticsHandler);
+router.get('/analytics/geo', getGeoAnalyticsHandler);
+router.post('/reports/:type/export', exportReportHandler);
+router.get('/users', getStaffHandler);
+router.post('/users', validateBody(createStaffSchema), createStaffHandler);
+router.delete('/users/:id', deactivateStaffHandler);
+router.get('/audit-events', getAuditEventsHandler);
+router.get('/payment-queue', getAdminPaymentQueueHandler);
+router.get('/sponsors', getSponsorsHandler);
+router.get('/scholarships/:id/overview', getScholarshipOverviewHandler);
+router.get('/announcements', getAnnouncementsHandler);
+router.post('/announcements', validateBody(announcementSchema), createAnnouncementHandler);
+router.delete('/announcements/:id', archiveAnnouncementHandler);
+router.get('/broadcasts', getBroadcastsHandler);
+router.post('/broadcasts', validateBody(broadcastSchema), sendBroadcastHandler);
+router.get('/support-tickets', getTicketsHandler);
+router.patch('/support-tickets/:id', validateBody(ticketUpdateSchema), updateTicketHandler);
 
 export default router;

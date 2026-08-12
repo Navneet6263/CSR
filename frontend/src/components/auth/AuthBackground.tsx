@@ -23,23 +23,9 @@ export default function AuthBackground() {
 
   return (
     <>
-      {/* Background Slideshow */}
-      {slides.map((src, idx) => (
-        <div
-          key={src}
-          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
-          style={{ opacity: currentSlide === idx ? 1 : 0 }}
-        >
-          <Image
-            src={src}
-            alt="Students"
-            fill
-            sizes="100vw"
-            className="object-cover"
-            priority={idx === 0}
-          />
-        </div>
-      ))}
+      <div key={slides[currentSlide]} className="absolute inset-0 animate-[fade-in_700ms_ease-out]">
+        <Image src={slides[currentSlide]} alt="Students" fill sizes="100vw" className="object-cover" priority={currentSlide === 0} />
+      </div>
 
       {/* Overlays - Kept very subtle so images pop clearly */}
       <div className="absolute inset-0 bg-emerald-950/40 mix-blend-multiply z-0" />

@@ -13,22 +13,13 @@ type Props = {
   value: {
     name: string;
     description: string;
-    sponsor: string;
+    sponsorId: string;
     openDate: string;
     closeDate: string;
   };
   onChange: (patch: Partial<Props["value"]>) => void;
+  sponsors: Array<{ sponsorId: number; name: string }>;
 };
-
-const sponsors = [
-  "Stanley Black and Decker",
-  "Tata CSR Foundation",
-  "Infosys Foundation",
-  "Reliance Foundation",
-  "Azim Premji Foundation",
-  "Wipro Cares",
-  "HDFC Parivartan",
-];
 
 function Field({
   label,
@@ -52,7 +43,7 @@ function Field({
   );
 }
 
-export default function CoreDetailsCard({ value, onChange }: Props) {
+export default function CoreDetailsCard({ value, onChange, sponsors }: Props) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6">
       <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
@@ -70,7 +61,7 @@ export default function CoreDetailsCard({ value, onChange }: Props) {
       <div className="space-y-4 pt-5">
         <Field label="Scholarship Name">
           <Input
-            placeholder="e.g. Tata Merit-cum-Means Scholarship 2026"
+            placeholder="e.g. Merit-cum-Means Scholarship 2026"
             value={value.name}
             onChange={(e) => onChange({ name: e.target.value })}
           />
@@ -87,14 +78,14 @@ export default function CoreDetailsCard({ value, onChange }: Props) {
         </Field>
 
         <Field label="Sponsor Name">
-          <Select value={value.sponsor} onValueChange={(v) => onChange({ sponsor: v })}>
+          <Select value={value.sponsorId} onValueChange={(v) => onChange({ sponsorId: v ?? '' })}>
             <SelectTrigger>
               <SelectValue placeholder="Select sponsoring organisation" />
             </SelectTrigger>
             <SelectContent>
               {sponsors.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
+                <SelectItem key={s.sponsorId} value={String(s.sponsorId)}>
+                  {s.name}
                 </SelectItem>
               ))}
             </SelectContent>

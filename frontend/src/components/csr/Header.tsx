@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, ClipboardCheck, History, UserCircle2, Building2, LogOut } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { NotificationCenter } from '@/components/shared/NotificationCenter';
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: any; label: string }) => {
   const pathname = usePathname();
@@ -22,6 +23,8 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: any; label: 
 };
 
 export default function Header() {
+  const user = authApi.getUser();
+  const initials = (user?.fullName ?? "CSR").split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase();
   return (
     <header className="sticky top-0 z-40 border-b border-pink-100 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
@@ -30,7 +33,7 @@ export default function Header() {
             <Building2 size={22} />
           </div>
           <div>
-            <div className="text-[15px] font-semibold tracking-tight text-slate-900">Tata CSR</div>
+            <div className="text-[15px] font-semibold tracking-tight text-slate-900">CSR Partner</div>
             <div className="text-[11px] font-medium uppercase tracking-wider text-emerald-600">
               TalentBridge Partner Portal
             </div>
@@ -45,13 +48,14 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-4">
+          <NotificationCenter />
           <div className="hidden items-center gap-3 md:flex">
             <div className="text-right">
-              <div className="text-sm font-semibold text-slate-900">Ratan M.</div>
-              <div className="text-[11px] text-slate-500">CSR Head · Tata Trusts</div>
+              <div className="text-sm font-semibold text-slate-900">{user?.fullName ?? "CSR Partner"}</div>
+              <div className="text-[11px] text-slate-500">Sponsor-scoped access</div>
             </div>
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-sm font-bold text-pink-700 ring-2 ring-white">
-              RM
+              {initials}
             </div>
           </div>
           <button 

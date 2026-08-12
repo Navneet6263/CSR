@@ -7,16 +7,9 @@ import Link from "next/link";
 import { Activity, ArrowRight, Check, Send, Sparkles, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { verificationApi } from "@/lib/api/verification";
+import { mapReviewerLog } from '@/lib/reviewerActivity';
+import type { ReviewerActivityLog as ActivityLog } from '@/types/reviewer';
 
-type ActivityLog = {
-  id: string;
-  action: "Approved" | "Rejected" | "Submitted";
-  docType: string;
-  studentName: string;
-  appId: string;
-  reason?: string;
-  timestamp: string;
-};
 
 const meta: Record<ActivityLog["action"], { Icon: typeof Check; ring: string; chip: string }> = {
   Approved: { Icon: Check, ring: "ring-emerald-200/70 bg-emerald-50 text-emerald-600", chip: "bg-emerald-100 text-emerald-700" },
@@ -30,34 +23,7 @@ export function ActivityPopover() {
 
   useEffect(() => { 
     verificationApi.getReviewerLogs().then((res) => {
-      const formatted = (res.data || []).map((l: Record<string, unknown>) => {
-        let actionStr = 'Submitted';
-        if (l.action === 'Verified') actionStr = 'Approved';
-        else if (l.action === 'ReUploadRequested' || l.action === 'Rejected') actionStr = 'Rejected';
-        
-        const formatDocType = (str: string) => {
-          if (!str) return 'Document';
-          const s = str.replace(/([A-Z])/g, ' $1').trim();
-          return s.charAt(0).toUpperCase() + s.slice(1);
-        };
-        
-        return {
-          id: l.id.toString(),
-          action: actionStr,
-          docType: formatDocType(l.docType as string),
-          studentName: l.studentName,
-          appId: l.appId.toString(),
-          reason: l.reason,
-          timestamp: new Date(l.timestamp).toLocaleString("en-US", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
-        };
-      });
+      const formatted = (res.data || []).map(mapReviewerLog);
       setLive(formatted);
     });
   }, []);

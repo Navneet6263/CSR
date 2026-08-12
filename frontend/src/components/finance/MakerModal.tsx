@@ -1,8 +1,11 @@
 "use client";
 import { useState } from "react";
-import { X, Landmark, Building2, Fingerprint, ShieldCheck, Send, AlertTriangle } from "lucide-react";
-import { inr, type Payout } from "@/lib/finance-mock";
+import { Landmark, Building2, Fingerprint, ShieldCheck, Send } from "lucide-react";
+import { inr, type Payout } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
+import { PaymentDetailRow as Row } from './PaymentDetailRow';
+import { FinanceModalShell } from "./FinanceModalShell";
+import { MakerConfirmation } from "./MakerConfirmation";
 
 // UTR: 22 alphanumeric characters (RBI standard for NEFT/RTGS/IMPS reference)
 const UTR_RE = /^[A-Z0-9]{22}$/;
@@ -18,31 +21,28 @@ export function MakerModal({
   const [utr, setUtr] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const total = rows.reduce((s, r) => s + r.amount, 0);
   const batch = rows.length > 1;
   const valid = UTR_RE.test(utr);
   const err = utr.length > 0 && !valid;
+  const amountValid = Number.isFinite(total) && total > 0;
 
-  const submit = () => {
-    makerSubmit(rows.map((r) => r.id), utr);
-    setDone(true);
+  const submit = async () => {
+    if (!amountValid) { setError('Approved scholarship amount is missing. Refresh after the database migration.'); return; }
+    setSaving(true); setError('');
+    try { await makerSubmit(rows.map((r) => r.id), utr); setDone(true); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'UTR could not be recorded.'); }
+    finally { setSaving(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-navy-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="w-full max-w-lg overflow-hidden rounded-t-2xl border border-navy-100 bg-white shadow-2xl sm:rounded-2xl">
-        <div className="flex items-center justify-between bg-navy-900 px-5 py-3 text-white sm:px-6 sm:py-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={18} />
-            <span className="text-xs font-semibold uppercase tracking-widest sm:text-sm">
-              {done ? "Recorded" : batch ? "Batch UTR Entry — Maker" : "Record Payment — Maker"}
-            </span>
-          </div>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-white/10" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
+    <FinanceModalShell
+      onClose={onClose}
+      title={done ? "Recorded" : batch ? "Batch UTR Entry — Maker" : "Record Payment — Maker"}
+    >
 
         {done ? (
           <div className="p-6 text-center sm:p-8">
@@ -67,41 +67,8 @@ export function MakerModal({
             </button>
           </div>
         ) : confirming ? (
-          <div className="p-5 sm:p-6">
-            <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-50 p-4">
-              <AlertTriangle size={22} className="mt-0.5 shrink-0 text-amber-700" />
-              <div className="min-w-0 text-sm text-navy-900">
-                You are recording{" "}
-                <span className="font-display font-bold">{inr(total)}</span> across{" "}
-                <span className="font-bold">{rows.length}</span> beneficiar
-                {rows.length === 1 ? "y" : "ies"} with UTR{" "}
-                <span className="break-all font-mono font-bold">{utr}</span>. Once submitted this
-                cannot be edited — only the Checker can cancel.
-              </div>
-            </div>
-            <div className="mt-4 max-h-40 overflow-y-auto rounded-xl border border-navy-100">
-              {rows.map((r) => (
-                <div key={r.id} className="flex items-center justify-between border-b border-navy-100 px-4 py-2 text-sm last:border-0">
-                  <span className="truncate font-semibold text-navy-900">{r.fullName}</span>
-                  <span className="ml-3 shrink-0 font-mono text-navy-700">{inr(r.amount)}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <button
-                onClick={() => setConfirming(false)}
-                className="rounded-xl border border-navy-100 px-5 py-3 font-semibold text-navy-700 hover:bg-navy-50 sm:flex-1"
-              >
-                Back
-              </button>
-              <button
-                onClick={submit}
-                className="rounded-xl bg-success-500 px-5 py-3 font-display font-bold text-white shadow-lg transition hover:bg-success-700 sm:flex-[2]"
-              >
-                Confirm & Record
-              </button>
-            </div>
-          </div>
+          <MakerConfirmation rows={rows} total={total} utr={utr} saving={saving} error={error}
+            onBack={() => { setError(''); setConfirming(false); }} onConfirm={submit} />
         ) : (
           <div className="p-5 sm:p-6">
             <div className="text-xs font-bold uppercase tracking-widest text-navy-500">
@@ -171,8 +138,11 @@ export function MakerModal({
               </div>
             </label>
 
+            {error && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">{error}</p>}
+            {batch && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">A bank UTR must map to one beneficiary. Select one payment.</p>}
+            {!amountValid && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-700">Approved amount is unavailable. This payment cannot be recorded yet.</p>}
             <button
-              disabled={!valid}
+              disabled={!valid || batch || !amountValid}
               onClick={() => setConfirming(true)}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-navy-900 px-5 py-3.5 font-display text-base font-bold text-white shadow-lg transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-40 sm:text-lg"
             >
@@ -183,30 +153,6 @@ export function MakerModal({
             </p>
           </div>
         )}
-      </div>
-    </div>
+    </FinanceModalShell>
   );
 }
-
-function Row({
-  icon: Icon, label, value, mono, pill,
-}: { icon: typeof Building2; label: string; value: string; mono?: boolean; pill?: "success" | "warn" }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-navy-100/70 py-2 last:border-0">
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-navy-500">
-        <Icon size={14} /> {label}
-      </div>
-      {pill ? (
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${pill === "success" ? "bg-success-500 text-white" : "bg-amber-500 text-white"}`}>
-          {value}
-        </span>
-      ) : (
-        <div className={`min-w-0 truncate text-right text-navy-900 ${mono ? "font-mono text-sm font-bold" : "text-sm font-semibold"}`}>
-          {value}
-        </div>
-      )}
-    </div>
-  );
-}
-
-

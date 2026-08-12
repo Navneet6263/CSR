@@ -9,7 +9,7 @@ type Tab = "landing" | "students" | "support";
 
 const tabs: { id: Tab; label: string; icon: any; desc: string }[] = [
   { id: "landing", label: "Landing Banners", icon: Megaphone, desc: "Public homepage notifications" },
-  { id: "students", label: "Student Notifications", icon: Send, desc: "In-app, email & SMS to applicants" },
+  { id: "students", label: "Student Notifications", icon: Send, desc: "Audited in-app updates to applicants" },
   { id: "support", label: "Support Zone", icon: LifeBuoy, desc: "Zone-wise tickets & resolution" },
 ];
 

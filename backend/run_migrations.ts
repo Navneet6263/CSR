@@ -1,16 +1,19 @@
-import db from './src/config/database';
 import path from 'path';
+import db from './src/config/database';
 
-async function run() {
+async function run(): Promise<void> {
   try {
-    await db.migrate.latest({
-      directory: path.join(__dirname, 'src', 'migrations')
+    const [batch, migrations] = await db.migrate.latest({
+      directory: path.join(__dirname, 'src', 'database', 'migrations'),
+      tableName: 'app_schema_migrations',
     });
-    console.log('Migrations complete');
-  } catch(e) {
-    console.error(e);
+    console.info(`Migration batch ${batch}: ${migrations.length} migration(s) applied.`);
   } finally {
-    process.exit(0);
+    await db.destroy();
   }
 }
-run();
+
+run().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
