@@ -81,8 +81,8 @@ export async function getSupportStudent(studentId: number, actor: WorkflowActor)
       trx('Applications as a').join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
         .select('a.ApplicationID', 'a.Status', 'a.StageEnteredAt', 'a.UpdatedAt', 'a.ScholarshipAmount',
           'sc.Name as ScholarshipName').where('a.StudentID', studentId).orderBy('a.CreatedAt', 'desc'),
-      trx('StudentDocuments').select('DocumentType', 'ScanStatus', 'CurrentVersion', 'CreatedAt')
-        .where('StudentID', studentId).orderBy('CreatedAt', 'desc'),
+      trx('StudentDocuments').select('DocumentType', 'ScanStatus', 'CurrentVersion', 'UploadedAt as CreatedAt')
+        .where('StudentID', studentId).orderBy('UploadedAt', 'desc'),
       trx('SupportTickets').select('TicketID', 'Subject', 'Category', 'Priority', 'Status', 'CreatedAt', 'UpdatedAt')
         .where('UserID', student.UserID).orderBy('CreatedAt', 'desc').limit(20),
       trx('UserActivityEvents').select('ActivityID', 'PageCode', 'StepCode', 'EventType', 'ErrorCode', 'OccurredAt')

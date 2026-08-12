@@ -57,7 +57,15 @@ export async function processEmailOutbox() {
 
 export function startEmailWorker() {
   if (!config.smtp.host) return undefined;
-  void processEmailOutbox().catch((error) => console.error('Email outbox error', error));
-  const timer = setInterval(() => void processEmailOutbox().catch((error) => console.error('Email outbox error', error)), 10_000);
+  let processing = false;
+  const run = async () => {
+    if (processing) return;
+    processing = true;
+    try { await processEmailOutbox(); }
+    catch (error) { console.error('Email outbox error', error); }
+    finally { processing = false; }
+  };
+  void run();
+  const timer = setInterval(() => void run(), 10_000);
   timer.unref(); return timer;
 }
