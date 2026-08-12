@@ -29,7 +29,7 @@ export async function queueNotification(
     Payload: payload === undefined ? null : JSON.stringify(payload),
     IsSent: false,
     RetryCount: 0,
-    NextAttemptAt: trx.fn.now(),
+    NextAttemptAt: new Date(),
     Priority: urgent ? 'High' : 'Normal',
     RequiresAction: urgent,
     ActionURL: applicationId ? paths[recipient?.Role] ?? null : null,
@@ -40,19 +40,19 @@ export async function queueNotification(
 export function getUserNotifications(userId: number, limit = 50) {
   return db('Notifications').select('NotificationID', 'Type', 'Channel', 'Message', 'Payload', 'Priority',
     'RequiresAction', 'ActionURL', 'GroupKey', 'ExpiresAt', 'IsRead', 'ReadAt', 'AcknowledgedAt', 'CreatedAt')
-    .where({ UserID: userId }).where((query) => query.whereNull('ExpiresAt').orWhere('ExpiresAt', '>', db.fn.now()))
+    .where({ UserID: userId }).where((query) => query.whereNull('ExpiresAt').orWhere('ExpiresAt', '>', new Date()))
     .orderBy('CreatedAt', 'desc').limit(limit);
 }
 
 export async function markAllNotificationsRead(userId: number) {
   const updated = await db('Notifications').where({ UserID: userId, IsRead: false })
-    .update({ IsRead: true, ReadAt: db.fn.now() });
+    .update({ IsRead: true, ReadAt: new Date() });
   return { updated };
 }
 
 export async function markNotificationRead(notificationId: number, userId: number) {
   const updated = await db('Notifications').where({ NotificationID: notificationId, UserID: userId })
-    .update({ IsRead: true, ReadAt: db.fn.now() });
+    .update({ IsRead: true, ReadAt: new Date() });
   if (!updated) throw new NotFoundError('Notification not found.');
   return { notificationId, isRead: true };
 }

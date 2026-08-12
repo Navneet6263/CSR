@@ -32,7 +32,7 @@ export async function submitScreeningDecision(
 ) {
   return db.transaction(async (trx) => {
     await trx('Applications').where({ ApplicationID: applicationId }).whereNull('AssignedScreener')
-      .update({ AssignedScreener: actor.userId, UpdatedAt: trx.fn.now() });
+      .update({ AssignedScreener: actor.userId, UpdatedAt: new Date() });
     const application = await lockApplication(trx, applicationId);
     if (!['BGCheckComplete', 'ScreeningPending'].includes(application.Status)) {
       throw new ConflictError('Application is not ready for screening.');
@@ -92,7 +92,7 @@ async function returnForCorrection(
       Status: 'Pending', ReviewedAt: null, Version: trx.raw('Version + 1'),
     });
     await trx('BackgroundChecks').where({ ApplicationID: applicationId }).update({
-      Result: 'Inconclusive', CompletedAt: null, UpdatedAt: trx.fn.now(), Version: trx.raw('Version + 1'),
+      Result: 'Inconclusive', CompletedAt: null, UpdatedAt: new Date(), Version: trx.raw('Version + 1'),
     });
     await transitionApplication(trx, applicationId, 'DocAuditInProgress', actor, { reason: input.notes });
     await trx('Applications').where({ ApplicationID: applicationId }).update({ AssignedScreener: null });
@@ -115,7 +115,7 @@ async function returnForCorrection(
     .where({ ApplicationID: applicationId }).whereIn('CheckType', items);
   if (checks.length !== items.length) throw new ValidationError('One or more selected background checks are invalid.');
   await trx('BackgroundChecks').where({ ApplicationID: applicationId }).whereIn('CheckType', items).update({
-    Result: 'Inconclusive', CompletedAt: null, UpdatedAt: trx.fn.now(), Version: trx.raw('Version + 1'),
+    Result: 'Inconclusive', CompletedAt: null, UpdatedAt: new Date(), Version: trx.raw('Version + 1'),
   });
   await transitionApplication(trx, applicationId, 'BGCheckInProgress', actor, { reason: input.notes });
   await trx('Applications').where({ ApplicationID: applicationId }).update({ AssignedScreener: null });

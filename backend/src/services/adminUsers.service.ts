@@ -45,7 +45,7 @@ export async function createStaff(input: CreateStaffInput, actor: WorkflowActor)
     }
     const password = temporaryPassword();
     const inserted = await trx('Users').insert({ FullName: input.fullName.trim(), Email: email,
-      PasswordHash: await bcrypt.hash(password, 12), Role: input.role, SponsorID: sponsorId,
+      PasswordHash: await bcrypt.hash(password, 12), Role: input.role, AgentCode: null, SponsorID: sponsorId,
       FinanceFunction: input.role === 'Finance' ? input.financeFunction : null,
       IsActive: true, MustChangePassword: true }).returning('*');
     const user = inserted[0];
@@ -64,8 +64,8 @@ export async function deactivateStaff(userId: number, actor: WorkflowActor) {
     const user = await trx('Users').where({ UserID: userId }).first();
     if (!user || user.Role === 'Student' || user.Role === 'Admin') throw new NotFoundError('Staff account not found.');
     await trx('Users').where({ UserID: userId }).update({ IsActive: false,
-      TokenVersion: Number(user.TokenVersion ?? 0) + 1, UpdatedAt: trx.fn.now() });
-    await trx('AuthSessions').where({ UserID: userId }).whereNull('RevokedAt').update({ RevokedAt: trx.fn.now() });
+      TokenVersion: Number(user.TokenVersion ?? 0) + 1, UpdatedAt: new Date() });
+    await trx('AuthSessions').where({ UserID: userId }).whereNull('RevokedAt').update({ RevokedAt: new Date() });
     await writeAudit(trx, { userId: actor.userId, action: 'STAFF_ACCOUNT_DEACTIVATED', entityType: 'User',
       entityId: userId, oldValue: { active: true }, newValue: { active: false }, requestId: actor.requestId,
       ipAddress: actor.ipAddress });

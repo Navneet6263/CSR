@@ -14,7 +14,7 @@ async function claimApplication(
   await trx('Applications')
     .where({ ApplicationID: applicationId })
     .whereNull('AssignedDocReviewer')
-    .update({ AssignedDocReviewer: reviewerId, UpdatedAt: trx.fn.now() });
+    .update({ AssignedDocReviewer: reviewerId, UpdatedAt: new Date() });
   const app = await lockApplication(trx, applicationId);
   if (app.AssignedDocReviewer !== reviewerId) throw new ConflictError('Application is assigned to another reviewer.');
   if (!['Submitted', 'AutoMatched', 'DocAuditInProgress'].includes(app.Status)) {
@@ -53,7 +53,7 @@ export async function reviewDocument(
       .update({
         Status: finalStatus,
         ReviewedBy: actor.userId,
-        ReviewedAt: trx.fn.now(),
+        ReviewedAt: new Date(),
         RejectionReason: status === 'Rejected' ? rejectionReason : null,
         ReUploadCount: status === 'Rejected' ? Number(document.ReUploadCount ?? 0) + 1 : document.ReUploadCount,
         Version: Number(document.Version ?? 0) + 1,
@@ -112,7 +112,7 @@ export async function linkReuploadedDocument(
     await trx('DocumentChecklist').where({ ChecklistID: checklist.ChecklistID }).update({
       DocumentVersionID: studentDoc.DocumentVersionID,
       FileURL: `/api/v1/documents/checklist/${checklist.ChecklistID}/download`,
-      Status: 'Uploaded', UploadedAt: trx.fn.now(), ReviewedBy: null, ReviewedAt: null,
+      Status: 'Uploaded', UploadedAt: new Date(), ReviewedBy: null, ReviewedAt: null,
       RejectionReason: null, Version: Number(checklist.Version ?? 0) + 1,
     });
     await writeAudit(trx, {

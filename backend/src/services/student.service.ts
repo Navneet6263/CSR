@@ -66,11 +66,11 @@ export async function updateStudentProfile(userId: number, data: UpdateStudentPr
     const student = await trx('Students').where({ UserID: userId }).first();
     if (!student) throw new NotFoundError('Student profile not found.');
     if (Object.keys(payload).length) {
-      payload.UpdatedAt = trx.fn.now();
+      payload.UpdatedAt = new Date();
       await trx('Students').where({ UserID: userId }).update(payload);
     }
     if (data.phone !== undefined) {
-      await trx('Users').where({ UserID: userId }).update({ Phone: data.phone, UpdatedAt: trx.fn.now() });
+      await trx('Users').where({ UserID: userId }).update({ Phone: data.phone, UpdatedAt: new Date() });
     }
     await writeAudit(trx, {
       userId,

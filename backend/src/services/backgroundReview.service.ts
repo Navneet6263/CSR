@@ -11,7 +11,7 @@ const requiredChecks: BackgroundCheckType[] = ['Identity', 'Address', 'IncomeVer
 
 async function claimApplication(trx: Knex.Transaction, applicationId: number, officerId: number) {
   await trx('Applications').where({ ApplicationID: applicationId }).whereNull('AssignedBGOfficer')
-    .update({ AssignedBGOfficer: officerId, UpdatedAt: trx.fn.now() });
+    .update({ AssignedBGOfficer: officerId, UpdatedAt: new Date() });
   const application = await lockApplication(trx, applicationId);
   if (application.AssignedBGOfficer !== officerId) throw new ConflictError('Application is assigned to another officer.');
   if (!['DocAuditComplete', 'BGCheckInProgress'].includes(application.Status)) {
@@ -40,7 +40,7 @@ export async function submitBGCheck(
     if (existing?.Result === 'Pass') throw new ConflictError('A passed check cannot be replaced.');
     const values = {
       OfficerID: actor.userId, Result: result, Notes: notes || null,
-      EvidenceURL: evidenceUrl || null, CompletedAt: trx.fn.now(), UpdatedAt: trx.fn.now(),
+      EvidenceURL: evidenceUrl || null, CompletedAt: new Date(), UpdatedAt: new Date(),
       Version: Number(existing?.Version ?? 0) + 1,
     };
     let checkId: number;

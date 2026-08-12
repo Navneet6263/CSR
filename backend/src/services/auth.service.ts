@@ -109,18 +109,18 @@ export async function rotateRefreshToken(refreshToken: string) {
     throw new AuthError('Refresh session is no longer active.');
   }
   if (session.RefreshTokenHash !== hashToken(refreshToken)) {
-    await db('AuthSessions').where({ SessionID: claims.sessionId }).update({ RevokedAt: db.fn.now() });
+    await db('AuthSessions').where({ SessionID: claims.sessionId }).update({ RevokedAt: new Date() });
     throw new AuthError('Refresh token reuse detected.');
   }
 
   const tokens = issueSessionTokens(claims.userId, session.Role, claims.sessionId);
   await db('AuthSessions').where({ SessionID: claims.sessionId }).update({
     RefreshTokenHash: tokens.refreshHash,
-    LastUsedAt: db.fn.now(),
+    LastUsedAt: new Date(),
   });
   return tokens;
 }
 
 export async function revokeSession(sessionId: string): Promise<void> {
-  await db('AuthSessions').where({ SessionID: sessionId }).update({ RevokedAt: db.fn.now() });
+  await db('AuthSessions').where({ SessionID: sessionId }).update({ RevokedAt: new Date() });
 }

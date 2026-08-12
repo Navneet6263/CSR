@@ -7,7 +7,7 @@ interface ResetPayload { name: string; resetUrl: string }
 
 export function queueEmail(trx: Knex.Transaction, recipient: string, template: string, payload: object) {
   return trx('EmailOutbox').insert({ RecipientEmail: recipient, TemplateName: template,
-    PayloadJson: JSON.stringify(payload), Status: 'Pending', AvailableAt: trx.fn.now() });
+    PayloadJson: JSON.stringify(payload), Status: 'Pending', AvailableAt: new Date() });
 }
 
 function escapeHtml(value: string) {
@@ -29,7 +29,7 @@ async function claimBatch() {
       WHERE Status = 'Pending' AND AvailableAt <= SYSUTCDATETIME() ORDER BY EmailID`);
     const batch = Array.isArray(rows) ? rows : [];
     if (batch.length) await trx('EmailOutbox').whereIn('EmailID', batch.map((row) => row.EmailID))
-      .update({ Status: 'Processing', UpdatedAt: trx.fn.now() });
+      .update({ Status: 'Processing', UpdatedAt: new Date() });
     return batch as Array<Record<string, any>>;
   });
 }
@@ -44,12 +44,12 @@ export async function processEmailOutbox() {
     try {
       const body = render(email.TemplateName, email.PayloadJson);
       await transport.sendMail({ from: config.smtp.from, to: email.RecipientEmail, ...body });
-      await db('EmailOutbox').where({ EmailID: email.EmailID }).update({ Status: 'Sent', SentAt: db.fn.now(), UpdatedAt: db.fn.now() });
+      await db('EmailOutbox').where({ EmailID: email.EmailID }).update({ Status: 'Sent', SentAt: new Date(), UpdatedAt: new Date() });
     } catch (error) {
       const attempts = Number(email.Attempts ?? 0) + 1; const terminal = attempts >= 5;
       await db('EmailOutbox').where({ EmailID: email.EmailID }).update({ Status: terminal ? 'Failed' : 'Pending',
         Attempts: attempts, LastError: error instanceof Error ? error.message.slice(0, 1000) : 'Delivery failed',
-        AvailableAt: new Date(Date.now() + Math.min(60, 2 ** attempts) * 60_000), UpdatedAt: db.fn.now() });
+        AvailableAt: new Date(Date.now() + Math.min(60, 2 ** attempts) * 60_000), UpdatedAt: new Date() });
     }
   }
   transport.close();

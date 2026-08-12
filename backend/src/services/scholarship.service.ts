@@ -83,7 +83,7 @@ export async function updateScholarship(id: number, data: UpdateScholarshipInput
       Object.entries(data).map(([key, value]) => [map[key], value]),
     );
     validateScholarshipValues({ ...existing, ...payload });
-    payload.UpdatedAt = trx.fn.now();
+    payload.UpdatedAt = new Date();
     await trx('Scholarships').where({ ScholarshipID: id }).update(payload);
     await writeAudit(trx, { userId: actor.userId, action: 'SCHOLARSHIP_UPDATED', entityType: 'Scholarship',
       entityId: id, oldValue: existing, newValue: payload, requestId: actor.requestId, ipAddress: actor.ipAddress });

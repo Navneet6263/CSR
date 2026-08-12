@@ -57,8 +57,8 @@ export async function transitionApplication(
   const payload: Record<string, unknown> = {
     Status: toStatus,
     Version: nextVersion,
-    StageEnteredAt: trx.fn.now(),
-    UpdatedAt: trx.fn.now(),
+    StageEnteredAt: new Date(),
+    UpdatedAt: new Date(),
   };
   if (options.assignment) payload[options.assignment] = actor.userId;
 

@@ -3,8 +3,19 @@ import { AuthPayload } from '../types';
 import { decryptPii, maskValue } from '../utils/piiCrypto';
 import { assertApplicationAccess } from './applicationAccess.service';
 
-export async function getPendingReviewApplications(reviewerId: number, limit = 50) {
+function pendingReviewBase(reviewerId: number) {
   return db('Applications as a')
+    .whereIn('a.Status', ['Submitted', 'AutoMatched', 'DocAuditInProgress'])
+    .where((query) => query.whereNull('a.AssignedDocReviewer').orWhere('a.AssignedDocReviewer', reviewerId))
+    .whereNotExists(function excludeReuploadWait() {
+      this.select(db.raw('1')).from('DocumentChecklist as waiting')
+        .whereRaw('waiting.ApplicationID = a.ApplicationID')
+        .where('waiting.Status', 'ReUploadRequested');
+    });
+}
+
+export async function getPendingReviewApplications(reviewerId: number, limit = 50) {
+  return pendingReviewBase(reviewerId)
     .join('Students as s', 's.StudentID', 'a.StudentID')
     .join('Users as u', 'u.UserID', 's.UserID')
     .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
@@ -19,8 +30,6 @@ export async function getPendingReviewApplications(reviewerId: number, limit = 5
         WHERE h.ApplicationID = a.ApplicationID AND h.ActorRole = 'ScreeningOfficer'
         AND h.ToStatus = 'DocAuditInProgress' ORDER BY h.CreatedAt DESC) AS ReturnedAt`),
     )
-    .whereIn('a.Status', ['Submitted', 'AutoMatched', 'DocAuditInProgress'])
-    .where((query) => query.whereNull('a.AssignedDocReviewer').orWhere('a.AssignedDocReviewer', reviewerId))
     .orderBy([{ column: 'a.SubmissionDate', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
     .limit(limit);
 }
@@ -89,16 +98,13 @@ export async function getReviewerStats(reviewerId: number) {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
   const [pending, approved, rejected, overdue] = await Promise.all([
-    db('Applications').whereIn('Status', ['Submitted', 'AutoMatched', 'DocAuditInProgress'])
-      .where((query) => query.whereNull('AssignedDocReviewer').orWhere('AssignedDocReviewer', reviewerId))
-      .count('* as count').first(),
+    pendingReviewBase(reviewerId).count('* as count').first(),
     db('DocumentChecklist').where({ ReviewedBy: reviewerId, Status: 'Verified' })
       .where('ReviewedAt', '>=', startOfDay).count('* as count').first(),
     db('DocumentChecklist').where({ ReviewedBy: reviewerId, Status: 'ReUploadRequested' })
       .where('ReviewedAt', '>=', startOfDay).count('* as count').first(),
-    db('Applications').whereIn('Status', ['Submitted', 'AutoMatched', 'DocAuditInProgress'])
-      .where((query) => query.whereNull('AssignedDocReviewer').orWhere('AssignedDocReviewer', reviewerId))
-      .whereRaw('COALESCE(StageEnteredAt, SubmissionDate, CreatedAt) < DATEADD(hour, -48, SYSUTCDATETIME())')
+    pendingReviewBase(reviewerId)
+      .whereRaw('COALESCE(a.StageEnteredAt, a.SubmissionDate, a.CreatedAt) < DATEADD(hour, -48, SYSUTCDATETIME())')
       .count('* as count').first(),
   ]);
   return {

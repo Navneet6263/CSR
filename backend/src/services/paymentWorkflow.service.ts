@@ -68,7 +68,7 @@ export async function initiatePayment(
     const values = {
       Amount: expectedAmount, PaymentType: data.paymentType, Status: 'Pending', MakerID: actor.userId,
       CheckerID: null, ReferenceNo: data.referenceNo, MakerNotes: data.makerNotes || null, CheckerNotes: null,
-      IdempotencyKey: idempotencyKey, DestinationCiphertext: encryptPii(JSON.stringify(destination)), UpdatedAt: trx.fn.now(),
+      IdempotencyKey: idempotencyKey, DestinationCiphertext: encryptPii(JSON.stringify(destination)), UpdatedAt: new Date(),
     };
     if (payment) {
       await trx('Payments').where({ PaymentID: payment.PaymentID }).update(values);
@@ -78,7 +78,7 @@ export async function initiatePayment(
       payment = inserted[0];
     }
     await trx('Sponsors').where({ SponsorID: application.SponsorID })
-      .increment('FundAllocated', expectedAmount).update({ UpdatedAt: trx.fn.now() });
+      .increment('FundAllocated', expectedAmount).update({ UpdatedAt: new Date() });
     await trx('PaymentAttempts').insert({ PaymentID: payment.PaymentID,
       AttemptNumber: await nextAttempt(trx, payment.PaymentID), Status: 'Pending', ActorUserID: actor.userId });
     await transitionApplication(trx, data.appId, 'PaymentInitiated', actor);
@@ -103,10 +103,10 @@ export async function verifyPayment(paymentId: number, actor: WorkflowActor, dat
     const amount = Number(payment.Amount);
     if (Number(sponsor.FundAllocated) < amount) throw new ConflictError('Sponsor allocation is inconsistent.');
     await trx('Payments').where({ PaymentID: paymentId }).update({ CheckerID: actor.userId, Status: data.status,
-      ReferenceNo: payment.ReferenceNo, CheckerNotes: data.checkerNotes || null, UpdatedAt: trx.fn.now() });
+      ReferenceNo: payment.ReferenceNo, CheckerNotes: data.checkerNotes || null, UpdatedAt: new Date() });
     const sponsorUpdate = trx('Sponsors').where({ SponsorID: payment.SponsorID }).decrement('FundAllocated', amount);
     if (data.status === 'Completed') sponsorUpdate.increment('FundUtilized', amount);
-    await sponsorUpdate.update({ UpdatedAt: trx.fn.now() });
+    await sponsorUpdate.update({ UpdatedAt: new Date() });
     await trx('PaymentAttempts').insert({ PaymentID: paymentId, AttemptNumber: await nextAttempt(trx, paymentId),
       Status: data.status, ReferenceNo: data.referenceNo || null,
       FailureReason: data.status === 'Failed' ? data.checkerNotes : null, ActorUserID: actor.userId });

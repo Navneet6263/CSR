@@ -52,8 +52,8 @@ export async function createApplication(
       Status: 'Draft',
       ScholarshipAmount: scholarship.PerStudentAmount,
       SponsorID: scholarship.SponsorID,
-      StageEnteredAt: trx.fn.now(),
-      UpdatedAt: trx.fn.now(),
+      StageEnteredAt: new Date(),
+      UpdatedAt: new Date(),
       EligibilitySnapshot: JSON.stringify(evaluation),
     }).returning('*');
     await trx('EligibilityEvaluations').insert({
@@ -88,8 +88,8 @@ export async function submitApplication(
     await initializeChecklist(trx, applicationId, documents);
     await trx('Applications').where({ ApplicationID: applicationId }).update({
       SubmittedSnapshot: JSON.stringify(snapshot),
-      SubmissionDate: trx.fn.now(),
-      UpdatedAt: trx.fn.now(),
+      SubmissionDate: new Date(),
+      UpdatedAt: new Date(),
     });
     await transitionApplication(trx, applicationId, 'Submitted', actor);
     const userId = await applicationStudentUserId(trx, applicationId);

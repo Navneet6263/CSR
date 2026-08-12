@@ -47,7 +47,7 @@ export async function saveStudentDocument(
           ScanStatus: stored!.scanStatus,
           CurrentVersion: version,
           IsActive: true,
-          UploadedAt: trx.fn.now(),
+          UploadedAt: new Date(),
         }).returning('DocumentID');
         documentId = typeof created === 'object' ? created.DocumentID : created;
       }
@@ -78,7 +78,7 @@ export async function saveStudentDocument(
         ScanStatus: stored!.scanStatus,
         CurrentVersion: version,
         IsActive: true,
-        UploadedAt: trx.fn.now(),
+        UploadedAt: new Date(),
       });
       await writeAudit(trx, {
         userId, action: existing ? 'DOCUMENT_REUPLOADED' : 'DOCUMENT_UPLOADED',

@@ -29,7 +29,7 @@ export function listAnnouncements() {
 export async function createAnnouncement(input: AnnouncementInput, actor: WorkflowActor) {
   return db.transaction(async (trx) => {
     const values = { Title: input.title, Message: input.message, Audience: input.audience, Status: input.status,
-      CreatedBy: actor.userId, PublishedAt: input.status === 'Published' ? trx.fn.now() : null,
+      CreatedBy: actor.userId, PublishedAt: input.status === 'Published' ? new Date() : null,
       ExpiresAt: input.expiresAt ? new Date(input.expiresAt) : null };
     const inserted = await trx('AdminAnnouncements').insert(values).returning('*'); const announcement = inserted[0];
     if (input.status === 'Published') {
@@ -46,7 +46,7 @@ export async function createAnnouncement(input: AnnouncementInput, actor: Workfl
 export async function archiveAnnouncement(id: number, actor: WorkflowActor) {
   return db.transaction(async (trx) => {
     const updated = await trx('AdminAnnouncements').where({ AnnouncementID: id }).whereNot({ Status: 'Archived' })
-      .update({ Status: 'Archived', UpdatedAt: trx.fn.now() });
+      .update({ Status: 'Archived', UpdatedAt: new Date() });
     if (!updated) throw new NotFoundError('Announcement not found.');
     await writeAudit(trx, { userId: actor.userId, action: 'ANNOUNCEMENT_ARCHIVED', entityType: 'Announcement', entityId: id,
       requestId: actor.requestId, ipAddress: actor.ipAddress });
@@ -82,8 +82,8 @@ export async function updateTicket(id: number, status: string, actor: WorkflowAc
     const ticket = await trx('SupportTickets').where({ TicketID: id }).first();
     if (!ticket) throw new NotFoundError('Support ticket not found.');
     await trx('SupportTickets').where({ TicketID: id }).update({ Status: status,
-      AssignedTo: actor.userId, ResolvedAt: status === 'Resolved' ? trx.fn.now() : null,
-      LastActivityAt: trx.fn.now(), UpdatedAt: trx.fn.now(), Version: trx.raw('Version + 1') });
+      AssignedTo: actor.userId, ResolvedAt: status === 'Resolved' ? new Date() : null,
+      LastActivityAt: new Date(), UpdatedAt: new Date(), Version: trx.raw('Version + 1') });
     await trx('SupportTicketEvents').insert({ TicketID: id, ActorUserID: actor.userId,
       EventType: 'AdminStatusChange', FromValue: ticket.Status, ToValue: status });
     await writeAudit(trx, { userId: actor.userId, action: 'SUPPORT_ADMIN_UPDATE', entityType: 'SupportTicket',

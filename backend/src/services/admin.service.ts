@@ -78,7 +78,7 @@ export async function toggleApplicationHold(
     const version = Number(application.Version ?? 0) + 1;
     const updated = await trx('Applications').where({ ApplicationID: applicationId, Version: application.Version ?? 0 })
       .update({ IsHeldByAdmin: hold, AdminHoldReason: hold ? reason : null,
-        Version: version, UpdatedAt: trx.fn.now() });
+        Version: version, UpdatedAt: new Date() });
     if (updated !== 1) throw new ConflictError('Application changed; refresh and retry.');
     await writeAudit(trx, { userId: actor.userId, action: hold ? 'APPLICATION_HELD' : 'APPLICATION_RELEASED',
       entityType: 'Application', entityId: applicationId,
@@ -102,7 +102,7 @@ export async function bulkToggleApplicationHold(
     if (changed.length) {
       await trx('Applications').whereIn('ApplicationID', changed.map((row) => row.ApplicationID))
         .update({ IsHeldByAdmin: hold, AdminHoldReason: hold ? reason : null,
-          Version: trx.raw('Version + 1'), UpdatedAt: trx.fn.now() });
+          Version: trx.raw('Version + 1'), UpdatedAt: new Date() });
       for (const row of changed) {
         await writeAudit(trx, { userId: actor.userId, action: hold ? 'APPLICATION_HELD' : 'APPLICATION_RELEASED',
           entityType: 'Application', entityId: row.ApplicationID,

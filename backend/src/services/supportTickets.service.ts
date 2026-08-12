@@ -11,7 +11,7 @@ export async function createTicket(userId: number, input: CreateSupportTicketInp
   return db.transaction(async (trx) => {
     const inserted = await trx('SupportTickets').insert({ UserID: userId, Subject: input.subject,
       Message: input.message, Category: input.category, Priority: input.priority, Status: 'Open',
-      Source: 'Portal', DueAt: dueAt, LastActivityAt: trx.fn.now() }).returning('*');
+      Source: 'Portal', DueAt: dueAt, LastActivityAt: new Date() }).returning('*');
     const ticket = inserted[0];
     await trx('SupportTicketEvents').insert({ TicketID: ticket.TicketID, ActorUserID: userId,
       EventType: 'Created', Message: input.message });
@@ -58,8 +58,8 @@ export async function updateTicket(ticketId: number, input: UpdateSupportTicketI
     const next = { Status: input.status ?? current.Status, Priority: input.priority ?? current.Priority,
       AssignedTo: input.assignToMe ? actor.userId : current.AssignedTo,
       ResolutionCode: input.status === 'Resolved' ? input.resolutionCode ?? 'Resolved' : current.ResolutionCode,
-      ResolvedAt: input.status === 'Resolved' ? trx.fn.now() : null, LastActivityAt: trx.fn.now(),
-      UpdatedAt: trx.fn.now(), Version: input.version + 1 };
+      ResolvedAt: input.status === 'Resolved' ? new Date() : null, LastActivityAt: new Date(),
+      UpdatedAt: new Date(), Version: input.version + 1 };
     const updated = await trx('SupportTickets').where({ TicketID: ticketId, Version: input.version }).update(next);
     if (updated !== 1) throw new ConflictError('Ticket changed; refresh and retry.');
     await trx('SupportTicketEvents').insert({ TicketID: ticketId, ActorUserID: actor.userId,
@@ -81,8 +81,8 @@ export async function addTicketEvent(ticketId: number, input: SupportEventInput,
     if (input.type === 'Contact') await trx('SupportContactAttempts').insert({ TicketID: ticketId,
       ActorUserID: actor.userId, Channel: input.channel, Outcome: input.outcome, Notes: input.message,
       FollowUpAt: input.followUpAt ? new Date(input.followUpAt) : null });
-    await trx('SupportTickets').where({ TicketID: ticketId }).update({ LastActivityAt: trx.fn.now(),
-      UpdatedAt: trx.fn.now(), Version: trx.raw('Version + 1') });
+    await trx('SupportTickets').where({ TicketID: ticketId }).update({ LastActivityAt: new Date(),
+      UpdatedAt: new Date(), Version: trx.raw('Version + 1') });
     await writeAudit(trx, { userId: actor.userId, action: `SUPPORT_${input.type.toUpperCase()}`,
       entityType: 'SupportTicket', entityId: ticketId, newValue: { channel: input.channel, outcome: input.outcome },
       requestId: actor.requestId, ipAddress: actor.ipAddress });
