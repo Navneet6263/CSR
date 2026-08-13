@@ -15,8 +15,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Scholarship Management System",
-  description: "Complete digital platform for scholarship applications and management",
+  title: { default: "Shikshavritti", template: "%s | Shikshavritti" },
+  description: "Secure digital platform for scholarship applications, verification and disbursement.",
+  icons: { icon: '/brand-mark.svg', shortcut: '/brand-mark.svg', apple: '/brand-mark.svg' },
 };
 
 export default function RootLayout({
@@ -34,4 +35,3 @@ export default function RootLayout({
     </html>
   );
 }
-

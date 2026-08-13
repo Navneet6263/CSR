@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { NotificationCenter } from '@/components/shared/NotificationCenter';
+import Logo from '@/components/shared/Logo';
 import { StudentSupportDialog } from '@/components/student/StudentSupportDialog';
 import { authApi } from '@/lib/api';
 
@@ -18,8 +19,7 @@ export function TopNav({ studentName }: { studentName: string }) {
   const initials = studentName.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
   const submit = (event: FormEvent) => { event.preventDefault(); if (search.trim()) router.push(`/student/scholarships?query=${encodeURIComponent(search.trim())}`); };
   return <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur-md"><div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
-    <Link href="/student" prefetch className="flex shrink-0 items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-lg text-sm font-bold text-primary-foreground" style={{ background: 'var(--gradient-primary)' }}>TB</span>
-      <span className="hidden text-base font-semibold sm:inline">TalentBridge</span></Link>
+    <Link href="/student" prefetch className="shrink-0"><Logo size="sm" showSubtitle={false} /></Link>
     <nav className="hidden flex-1 items-center gap-1 md:flex">{navItems.map((item) => <Link key={item.href} href={item.href} prefetch aria-current={pathname === item.href ? 'page' : undefined}
       className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${pathname === item.href ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'}`}>{item.label}</Link>)}</nav>
     <div className="ml-auto flex items-center gap-2"><form onSubmit={submit} className="relative hidden lg:block"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />

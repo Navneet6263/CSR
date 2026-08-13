@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, History, Settings, ChevronDown } from "lucide-react";
+import { LayoutDashboard, History, Settings, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authApi } from "@/lib/api";
 import { NotificationCenter } from '@/components/shared/NotificationCenter';
+import Logo from '@/components/shared/Logo';
 
 export function TopNav() {
   const [open, setOpen] = useState(false);
@@ -15,15 +16,7 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-border backdrop-blur-2xl bg-bg/70">
       <div className="mx-auto max-w-[1600px] px-6 h-16 flex items-center gap-6">
-        <Link href="/reviewer" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 border border-primary/40 grid place-items-center">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-          </div>
-          <div className="leading-tight">
-            <div className="font-display font-bold text-sm">TalentBridge</div>
-            <div className="text-[10px] font-mono text-fg-subtle tracking-wider uppercase">DocReviewer</div>
-          </div>
-        </Link>
+        <Link href="/reviewer"><Logo size="sm" subtitle="Document Review" /></Link>
 
         <nav className="hidden md:flex items-center gap-1 ml-8">
           {[

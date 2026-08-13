@@ -33,6 +33,7 @@ export const adminApi = {
   getScholarshipOverview: (id: number) => apiClient<Record<string, any>>(`/admin/scholarships/${id}/overview`),
   getAnnouncements: () => apiClient<Record<string, any>[]>('/admin/announcements'),
   createAnnouncement: (data: Record<string, unknown>) => apiClient('/admin/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  updateAnnouncement: (id: number, data: Record<string, unknown>) => apiClient(`/admin/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   archiveAnnouncement: (id: number) => apiClient(`/admin/announcements/${id}`, { method: 'DELETE' }),
   getBroadcasts: () => apiClient<Record<string, any>[]>('/admin/broadcasts'),
   sendBroadcast: (data: Record<string, unknown>) => apiClient('/admin/broadcasts', { method: 'POST', body: JSON.stringify(data) }),

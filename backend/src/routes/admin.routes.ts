@@ -7,7 +7,7 @@ import {
   getRolePipelineHandler, getStaffHandler, createStaffHandler, deactivateStaffHandler, getAuditEventsHandler,
   getAdminPaymentQueueHandler,
   getSponsorsHandler, getScholarshipOverviewHandler,
-  getAnnouncementsHandler, createAnnouncementHandler, archiveAnnouncementHandler,
+  getAnnouncementsHandler, createAnnouncementHandler, updateAnnouncementHandler, archiveAnnouncementHandler,
   getBroadcastsHandler, sendBroadcastHandler, getTicketsHandler, updateTicketHandler,
   getSlaAnalyticsHandler, getGeoAnalyticsHandler, bulkHoldApplicationsHandler, exportReportHandler,
   emergencyApproveApplicationHandler,
@@ -37,6 +37,7 @@ router.get('/sponsors', getSponsorsHandler);
 router.get('/scholarships/:id/overview', getScholarshipOverviewHandler);
 router.get('/announcements', getAnnouncementsHandler);
 router.post('/announcements', validateBody(announcementSchema), createAnnouncementHandler);
+router.patch('/announcements/:id', validateBody(announcementSchema), updateAnnouncementHandler);
 router.delete('/announcements/:id', archiveAnnouncementHandler);
 router.get('/broadcasts', getBroadcastsHandler);
 router.post('/broadcasts', validateBody(broadcastSchema), sendBroadcastHandler);

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { FormEvent, ReactNode, useState } from 'react';
 import { authApi } from '@/lib/api';
 import { NotificationCenter } from '@/components/shared/NotificationCenter';
+import Logo from '@/components/shared/Logo';
 
 const nav = [
   { href: '/support', label: 'Today', icon: LayoutDashboard, exact: true },
@@ -28,11 +29,7 @@ export function SupportShell({ children }: { children: ReactNode }) {
         <button onClick={() => setMenu((value) => !value)} className="rounded-lg border p-2 md:hidden" aria-label="Toggle navigation">
           {menu ? <X size={17} /> : <Menu size={17} />}
         </button>
-        <Link href="/support" className="flex shrink-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-950 text-xs font-black text-white shadow-lg shadow-slate-950/15">TB</span>
-          <span className="hidden leading-tight sm:block"><b className="block text-sm">TalentBridge</b>
-            <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Support operations</span></span>
-        </Link>
+        <Link href="/support" className="shrink-0"><Logo size="sm" subtitle="Support Operations" /></Link>
         <form onSubmit={submit} className="relative mx-auto hidden w-full max-w-xl sm:block">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <input value={search} onChange={(event) => setSearch(event.target.value)}

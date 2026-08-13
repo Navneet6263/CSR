@@ -9,6 +9,7 @@
     "build": "tsc",
     "migrate": "ts-node run_migrations.ts",
     "migrate:status": "knex --knexfile knexfile.ts migrate:list",
+    "bootstrap:admin": "ts-node scripts/bootstrap-admin.ts",
     "typecheck": "tsc --noEmit",
     "test": "ts-node tests/run.ts",
     "seed": "ts-node scripts/seed.ts"

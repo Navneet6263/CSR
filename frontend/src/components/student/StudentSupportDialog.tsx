@@ -19,7 +19,7 @@ export function StudentSupportDialog() {
 
   return <><button onClick={() => setOpen(true)} className="grid h-9 w-9 place-items-center rounded-full bg-amber-100 text-amber-800 transition hover:bg-amber-200" aria-label="Get support" title="Get support"><LifeBuoy size={16} /></button>
     {open ? <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm" onClick={close}><div className="w-full max-w-lg rounded-3xl border bg-white p-5 text-slate-900 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-      <header className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">TalentBridge support</p><h2 className="mt-1 text-xl font-bold">How can we help?</h2></div>
+      <header className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Shikshavritti support</p><h2 className="mt-1 text-xl font-bold">How can we help?</h2></div>
         <button onClick={close} className="rounded-lg border p-2" aria-label="Close"><X size={15} /></button></header>
       {done ? <div className="py-10 text-center"><CheckCircle2 className="mx-auto text-emerald-600" size={42} /><h3 className="mt-3 text-lg font-bold">Request received</h3>
         <p className="mt-1 text-sm text-slate-500">Support can now review your application stage and safe activity signals.</p><button onClick={close} className="mt-5 rounded-xl bg-slate-950 px-5 py-2.5 text-xs font-bold text-white">Done</button></div>

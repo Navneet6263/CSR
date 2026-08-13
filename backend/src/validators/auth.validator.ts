@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 
-const strongPassword = z.string()
+export const strongPassword = z.string()
   .min(10, 'Password must be at least 10 characters')
   .max(100)
   .regex(/[a-z]/, 'Password must contain a lowercase letter')

@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import PrivacyPolicyContent from '@/components/privacy/PrivacyPolicyContent';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | TalentBridge',
+  title: 'Privacy Policy | Shikshavritti',
   description: 'User Agreement and Privacy Policy for the CSR Scholarship Portal.',
 };
 

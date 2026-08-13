@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import Logo from '@/components/shared/Logo';
 
 const nav = [
   { label: "Home", href: "#home" },
@@ -17,15 +18,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <a href="#home" className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
-          </span>
-          <span className="flex min-w-0 flex-col leading-tight">
-            <span className="truncate text-base font-bold tracking-tight text-foreground">TalentBridge</span>
-            <span className="hidden truncate text-[11px] font-medium text-muted-foreground sm:block">
-              Empowering Every Student
-            </span>
-          </span>
+          <Logo size="sm" />
         </a>
 
         <nav className="hidden items-center gap-7 lg:flex">

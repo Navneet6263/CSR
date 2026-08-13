@@ -12,8 +12,8 @@ import { PublicPortalProvider } from '@/components/landing/PublicPortalProvider'
 import { TrustCenter } from '@/components/landing/TrustCenter';
 
 export const metadata: Metadata = {
-  title: "TalentBridge — CSR Scholarships for Every Deserving Student",
-  description: "TalentBridge connects deserving Indian students with CSR scholarships from top companies. Apply once, get matched to every scholarship you qualify for.",
+  title: "Shikshavritti — CSR Scholarships for Every Deserving Student",
+  description: "Shikshavritti connects deserving Indian students with CSR scholarships from trusted companies.",
 };
 
 export default function Home() {

@@ -43,6 +43,29 @@ export async function createAnnouncement(input: AnnouncementInput, actor: Workfl
   });
 }
 
+export async function updateAnnouncement(id: number, input: AnnouncementInput, actor: WorkflowActor) {
+  return db.transaction(async (trx) => {
+    const existing = await trx('AdminAnnouncements').where({ AnnouncementID: id }).whereNot({ Status: 'Archived' }).first();
+    if (!existing) throw new NotFoundError('Announcement not found.');
+    const firstPublish = existing.Status !== 'Published' && input.status === 'Published';
+    const values = {
+      Title: input.title, Message: input.message, Audience: input.audience, Status: input.status,
+      PublishedAt: firstPublish ? new Date() : existing.PublishedAt,
+      ExpiresAt: input.expiresAt ? new Date(input.expiresAt) : null, UpdatedAt: new Date(),
+    };
+    await trx('AdminAnnouncements').where({ AnnouncementID: id }).update(values);
+    if (firstPublish) {
+      const where = input.audience === 'Students' ? "u.Role = 'Student'" : input.audience === 'Staff' ? "u.Role <> 'Student'" : '1=1';
+      await insertNotifications(trx, where, 'ADMIN_ANNOUNCEMENT', input.title, input.message);
+    }
+    await writeAudit(trx, { userId: actor.userId, action: 'ANNOUNCEMENT_UPDATED', entityType: 'Announcement', entityId: id,
+      oldValue: { title: existing.Title, message: existing.Message, audience: existing.Audience, status: existing.Status,
+        expiresAt: existing.ExpiresAt }, newValue: { audience: input.audience, status: input.status, expiresAt: values.ExpiresAt },
+      requestId: actor.requestId, ipAddress: actor.ipAddress });
+    return { ...existing, ...values, AnnouncementID: id };
+  });
+}
+
 export async function archiveAnnouncement(id: number, actor: WorkflowActor) {
   return db.transaction(async (trx) => {
     const updated = await trx('AdminAnnouncements').where({ AnnouncementID: id }).whereNot({ Status: 'Archived' })

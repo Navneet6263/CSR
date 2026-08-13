@@ -3,8 +3,9 @@ import Link from "next/link";
 import { authApi } from "@/lib/api";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ShieldCheck, LayoutDashboard, Wallet, History, UserCircle2, LogOut, CheckSquare, AlertOctagon, ScrollText, Menu, X } from "lucide-react";
+import { LayoutDashboard, Wallet, History, UserCircle2, LogOut, CheckSquare, AlertOctagon, ScrollText, Menu, X } from "lucide-react";
 import { NotificationCenter } from '@/components/shared/NotificationCenter';
+import Logo from '@/components/shared/Logo';
 
 type NavLink = { to: string; label: string; icon: typeof Wallet; exact?: boolean; access?: 'Maker' | 'Checker' };
 const allLinks: NavLink[] = [
@@ -27,17 +28,7 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-navy-100 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link href="/finance" className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-navy-900 text-white shadow-sm">
-            <ShieldCheck size={22} />
-          </div>
-          <div className="min-w-0 leading-tight">
-            <div className="truncate font-display text-lg font-bold text-navy-900">TalentBridge</div>
-            <div className="truncate text-[11px] font-semibold uppercase tracking-widest text-navy-500">
-              Finance &amp; Accounts
-            </div>
-          </div>
-        </Link>
+        <Link href="/finance" className="min-w-0"><Logo size="sm" subtitle="Finance & Accounts" /></Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map(({ to, label, icon: Icon, exact }) => {

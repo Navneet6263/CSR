@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ClipboardCheck, History, UserCircle2, Building2, LogOut } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, History, UserCircle2, LogOut } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { NotificationCenter } from '@/components/shared/NotificationCenter';
+import Logo from '@/components/shared/Logo';
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: any; label: string }) => {
   const pathname = usePathname();
@@ -28,17 +29,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-pink-100 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white shadow-sm">
-            <Building2 size={22} />
-          </div>
-          <div>
-            <div className="text-[15px] font-semibold tracking-tight text-slate-900">CSR Partner</div>
-            <div className="text-[11px] font-medium uppercase tracking-wider text-emerald-600">
-              TalentBridge Partner Portal
-            </div>
-          </div>
-        </div>
+        <Logo size="sm" subtitle="CSR Partner Portal" />
 
         <nav className="hidden items-center gap-1 md:flex">
           <NavLink href="/csr" icon={LayoutDashboard} label="Dashboard" />

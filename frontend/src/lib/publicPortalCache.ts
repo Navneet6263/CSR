@@ -1,6 +1,6 @@
 import { publicApi, type PublicPortal } from '@/lib/api';
 
-const key = 'talentbridge.public-portal.v1'; const ttl = 5 * 60_000;
+const key = 'shikshavritti.public-portal.v1'; const ttl = 5 * 60_000;
 let memory: { data: PublicPortal; storedAt: number } | null = null;
 let request: Promise<PublicPortal | null> | null = null;
 
@@ -12,6 +12,11 @@ function readSession() {
 }
 
 export function getCachedPublicPortal() { const cached = memory ?? readSession(); if (cached) memory = cached; return cached?.data ?? null; }
+
+export function invalidatePublicPortalCache() {
+  memory = null; request = null;
+  if (typeof window !== 'undefined') sessionStorage.removeItem(key);
+}
 
 export function loadPublicPortal() {
   const cached = getCachedPublicPortal(); if (cached) return Promise.resolve(cached);

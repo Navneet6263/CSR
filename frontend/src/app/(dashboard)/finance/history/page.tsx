@@ -37,7 +37,7 @@ export default function () {
       .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0}
       .row:last-child{border:0}.k{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
       .v{font-weight:700}.amt{font-size:32px;font-weight:800;color:#0f172a;margin:8px 0 24px}</style>
-      <div class="card"><h1>TalentBridge · Payment Receipt</h1>
+      <div class="card"><h1>Shikshavritti · Payment Receipt</h1>
       <div class="amt">${inr(r.amount)}</div>
       <div class="row"><span class="k">Transaction / UTR</span><span class="v" style="font-family:monospace">${r.txnId}</span></div>
       <div class="row"><span class="k">Beneficiary</span><span class="v">${r.fullName}</span></div>

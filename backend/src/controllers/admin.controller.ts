@@ -56,6 +56,10 @@ export async function createAnnouncementHandler(req: Request, res: Response, nex
   try { sendSuccess(res, await comms.createAnnouncement(req.body, requestActor(req)), 'Announcement saved.', 201); }
   catch (error) { next(error); }
 }
+export async function updateAnnouncementHandler(req: Request, res: Response, next: NextFunction) {
+  try { sendSuccess(res, await comms.updateAnnouncement(id(req.params.id), req.body, requestActor(req)), 'Announcement updated.'); }
+  catch (error) { next(error); }
+}
 export async function archiveAnnouncementHandler(req: Request, res: Response, next: NextFunction) {
   try { await comms.archiveAnnouncement(id(req.params.id), requestActor(req)); sendSuccess(res, null, 'Announcement archived.'); }
   catch (error) { next(error); }

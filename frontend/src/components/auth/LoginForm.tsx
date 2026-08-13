@@ -58,7 +58,7 @@ export default function LoginForm() {
         <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
           Welcome back
         </h2>
-        <p className="text-slate-500 text-sm">Sign in to your TalentBridge account</p>
+        <p className="text-slate-500 text-sm">Sign in to your Shikshavritti account</p>
       </div>
 
       {apiError && (
@@ -107,7 +107,7 @@ export default function LoginForm() {
       </button>
 
       <p className="text-center text-sm text-slate-500 pt-6">
-        New to TalentBridge?{' '}
+        New to Shikshavritti?{' '}
         <Link href="/register" className="text-slate-800 hover:text-[#2e86c1] font-bold transition-colors ml-1 border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm hover:shadow">
           Create account &rarr;
         </Link>

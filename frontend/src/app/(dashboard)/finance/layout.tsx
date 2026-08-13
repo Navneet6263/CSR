@@ -14,7 +14,7 @@ export default function FinanceLayout({ children }: { children: ReactNode }) {
           </main>
           <footer className="border-t border-navy-100 bg-white">
             <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 text-xs text-navy-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <span>© 2026 TalentBridge · Finance &amp; Accounts</span>
+              <span>© 2026 Shikshavritti · Finance &amp; Accounts</span>
               <span className="font-medium">RBI-compliant · ISO 27001 audited · Maker-Checker enforced</span>
             </div>
           </footer>

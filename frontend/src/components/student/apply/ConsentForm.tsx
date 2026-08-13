@@ -31,7 +31,7 @@ export default function ConsentForm({ scholarship, agreed, setAgreed }: ConsentF
           I understand that in the event of any information being found false or incorrect at any stage, my candidature/scholarship is liable to be cancelled/terminated without any notice.
         </p>
         <p>
-          I grant explicit consent to <strong>{scholarship.sponsorName}</strong> and the TalentBridge platform to access, process, and verify my identity (Aadhaar), academic records, and financial documents for the sole purpose of evaluating my eligibility for this scholarship program.
+          I grant explicit consent to <strong>{scholarship.sponsorName}</strong> and the Shikshavritti platform to access, process, and verify my identity (Aadhaar), academic records, and financial documents for the sole purpose of evaluating my eligibility for this scholarship program.
         </p>
         <p>
           I also agree that if I am selected for the scholarship, the funds will be disbursed directly to the bank account provided in my profile, and I will utilise the funds strictly for academic purposes (tuition fees, books, living expenses related to education).

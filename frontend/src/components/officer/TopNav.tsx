@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ClipboardList, History, User, Sun, LogOut, ChevronDown } from "lucide-react";
+import { ClipboardList, History, User, LogOut, ChevronDown } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { NotificationCenter } from '@/components/shared/NotificationCenter';
 
@@ -20,12 +21,10 @@ export function TopNav() {
     <header className="relative z-20 border-b border-slate-200/70 bg-white/70 backdrop-blur-lg">
       <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-cyan-500 to-sky-600 text-white shadow-md shadow-cyan-500/30">
-            <Sun size={18} strokeWidth={2.4} />
-          </div>
+          <Image src="/brand-mark.svg" alt="" width={40} height={40} className="h-10 w-10 shrink-0" priority />
           <div className="min-w-0 leading-tight">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Field Officer</p>
-            <p className="truncate text-sm font-bold text-black">TalentBridge · {user?.fullName ?? 'Officer'}</p>
+            <p className="truncate text-sm font-bold text-black">Shikshavritti · {user?.fullName ?? 'Officer'}</p>
           </div>
         </div>
 
