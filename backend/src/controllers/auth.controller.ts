@@ -3,6 +3,7 @@ import { config } from '../config/env';
 import {
   loginUser, registerUser, revokeSession, rotateRefreshToken,
 } from '../services/auth.service';
+import { resendStaffOtp, verifyStaffOtp } from '../services/staffOtp.service';
 import { clearSessionCookies, setSessionCookies } from '../services/authTokens.service';
 import { sendSuccess } from '../utils/response';
 import { AuthError } from '../utils/errors';
@@ -31,11 +32,26 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const data = req.body as LoginInput;
     const meta = clientMeta(req);
     const result = await loginUser(data.email, data.password, meta.ipAddress, meta.userAgent);
+    if ('otpRequired' in result) { sendSuccess(res, result, 'OTP sent to your registered email.'); return; }
     setSessionCookies(res, result.tokens);
-    sendSuccess(res, { user: result.user, csrfToken: result.tokens.csrfToken }, 'Login successful.');
+    sendSuccess(res, { user: result.user, csrfToken: result.tokens.csrfToken, otpRequired: false }, 'Login successful.');
   } catch (error) {
     next(error);
   }
+}
+
+export async function verifyLoginOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const meta = clientMeta(req); const result = await verifyStaffOtp(req.body.challengeId, req.body.code, meta.ipAddress, meta.userAgent);
+    setSessionCookies(res, result.tokens);
+    sendSuccess(res, { user: result.user, csrfToken: result.tokens.csrfToken, otpRequired: false }, 'OTP verified.');
+  } catch (error) { next(error); }
+}
+
+export async function resendLoginOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { const meta = clientMeta(req); sendSuccess(res,
+    await resendStaffOtp(req.body.challengeId, meta.ipAddress, meta.userAgent), 'A new OTP was sent.'); }
+  catch (error) { next(error); }
 }
 
 export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {

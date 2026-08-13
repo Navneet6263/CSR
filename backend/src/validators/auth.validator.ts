@@ -22,6 +22,11 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required').max(100),
 });
 
+export const verifyLoginOtpSchema = z.object({
+  challengeId: z.uuid(), code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit OTP'),
+});
+export const resendLoginOtpSchema = z.object({ challengeId: z.uuid() });
+
 export const forgotPasswordSchema = z.object({
   email: z.email('Invalid email address').transform((value) => value.trim().toLowerCase()),
 });

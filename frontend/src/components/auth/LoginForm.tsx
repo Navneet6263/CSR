@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, LockKeyhole, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
 import { LoginCredentials } from '@/types';
@@ -12,8 +12,8 @@ import { authApi } from '@/lib/api';
 import { roleHomePath } from '@/lib/navConfig';
 
 const inputClass =
-  'h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 ' +
-  'focus:bg-white focus:border-emerald-600 focus:ring-emerald-600/15 transition rounded-xl shadow-none';
+  'h-12 bg-white/65 border-white/60 text-slate-900 placeholder:text-slate-500 backdrop-blur-md ' +
+  'focus:bg-white/90 focus:border-emerald-600 focus:ring-emerald-600/15 transition rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,.8)]';
 
 const rememberedEmailKey = 'shikshavritti.remembered-email';
 
@@ -26,11 +26,15 @@ export default function LoginForm() {
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [otp, setOtp] = useState({ challengeId: '', maskedEmail: '', code: '' });
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem(rememberedEmailKey);
     if (savedEmail) { setForm((current) => ({ ...current, email: savedEmail })); setRememberEmail(true); }
   }, []);
+  useEffect(() => { if (resendIn <= 0) return; const timer = window.setTimeout(() => setResendIn((value) => value - 1), 1000);
+    return () => window.clearTimeout(timer); }, [resendIn]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -52,8 +56,11 @@ export default function LoginForm() {
       const res = await authApi.login(form);
       if (rememberEmail) localStorage.setItem(rememberedEmailKey, form.email.trim().toLowerCase());
       else localStorage.removeItem(rememberedEmailKey);
-      if (res.data?.user.mustChangePassword) { router.replace('/change-password'); return; }
-      const role = res.data?.user.role || 'Student';
+      if (res.data?.otpRequired && res.data.challengeId) {
+        setOtp({ challengeId: res.data.challengeId, maskedEmail: res.data.maskedEmail ?? form.email, code: '' }); setResendIn(60); return;
+      }
+      if (res.data?.user?.mustChangePassword) { router.replace('/change-password'); return; }
+      const role = res.data?.user?.role || 'Student';
       router.replace(roleHomePath[role] || '/student');
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Login failed');
@@ -61,6 +68,35 @@ export default function LoginForm() {
       setLoading(false);
     }
   };
+
+  async function verifyOtp(event: React.FormEvent) {
+    event.preventDefault(); if (!/^\d{6}$/.test(otp.code)) { setApiError('Enter the 6-digit OTP.'); return; }
+    setLoading(true); setApiError('');
+    try {
+      const response = await authApi.verifyLoginOtp({ challengeId: otp.challengeId, code: otp.code });
+      if (response.data?.user?.mustChangePassword) { router.replace('/change-password'); return; }
+      const role = response.data?.user?.role ?? 'Student'; router.replace(roleHomePath[role] || '/student');
+    } catch (error) { setApiError(error instanceof Error ? error.message : 'OTP verification failed.'); }
+    finally { setLoading(false); }
+  }
+  async function resendOtp() {
+    setLoading(true); setApiError('');
+    try { const response = await authApi.resendLoginOtp(otp.challengeId);
+      setOtp({ challengeId: response.data?.challengeId ?? '', maskedEmail: response.data?.maskedEmail ?? otp.maskedEmail, code: '' }); setResendIn(60); }
+    catch (error) { setApiError(error instanceof Error ? error.message : 'OTP could not be resent.'); }
+    finally { setLoading(false); }
+  }
+
+  if (otp.challengeId) return <form onSubmit={verifyOtp} className={`space-y-6 ${shake ? 'animate-shake' : ''}`}>
+    <div className="space-y-3"><span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-950 backdrop-blur"><KeyRound className="h-3 w-3" />Email verification</span>
+      <h2 className="text-3xl font-bold tracking-tight text-slate-950">Check your email</h2><p className="text-sm leading-6 text-slate-600">We sent a 6-digit sign-in code to <b>{otp.maskedEmail}</b>. It expires in 10 minutes.</p></div>
+    {apiError && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-600">{apiError}</div>}
+    <label className="block space-y-2 text-xs font-semibold text-slate-700">One-time code<input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp.code} onChange={(event) => setOtp((current) => ({ ...current, code: event.target.value.replace(/\D/g, '').slice(0, 6) }))} placeholder="000000" className="h-14 w-full rounded-xl border border-white/50 bg-white/70 px-4 text-center font-mono text-2xl font-bold tracking-[0.45em] text-slate-950 outline-none backdrop-blur focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/15" /></label>
+    <button disabled={loading || otp.code.length !== 6} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#123b7a] font-semibold text-white shadow-lg shadow-blue-950/15 transition hover:bg-[#0d326a] disabled:opacity-50">{loading ? <LoadingSpinner size="sm" className="text-white" /> : <>Verify & continue <ArrowRight className="h-4 w-4" /></>}</button>
+    <div className="text-center text-xs text-slate-600">Didn’t receive the code? <button type="button" disabled={loading || resendIn > 0} onClick={() => void resendOtp()} className="font-bold text-emerald-800 disabled:text-slate-400">{resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend OTP'}</button></div>
+    <button type="button" onClick={() => { setOtp({ challengeId: '', maskedEmail: '', code: '' }); setApiError(''); }} className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-950"><ArrowLeft className="h-3.5 w-3.5" />Use a different account</button>
+    <p className="rounded-xl border border-amber-200/70 bg-amber-50/80 p-3 text-[11px] leading-5 text-amber-900">For security, staff accounts require email verification on every new sign-in.</p>
+  </form>;
 
   return (
     <form onSubmit={handleSubmit} className={`space-y-6 ${shake ? 'animate-shake' : ''}`}>

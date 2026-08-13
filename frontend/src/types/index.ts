@@ -32,8 +32,12 @@ export interface AuthUser {
 }
 
 export interface AuthResponse {
-  user: AuthUser;
+  user?: AuthUser;
   csrfToken?: string;
+  otpRequired?: boolean;
+  challengeId?: string;
+  maskedEmail?: string;
+  expiresInSeconds?: number;
 }
 
 export interface StudentProfile {

@@ -5,43 +5,11 @@ import { config } from '../config/env';
 import { IUser } from '../types';
 import { AuthError, ConflictError } from '../utils/errors';
 import { RegisterInput } from '../validators/auth.validator';
-import {
-  hashToken, issueSessionTokens, SessionTokens, verifyRefreshToken,
-} from './authTokens.service';
+import { hashToken, issueSessionTokens, verifyRefreshToken } from './authTokens.service';
+import { createSession, publicUser } from './session.service';
+import { createStaffOtpChallenge } from './staffOtp.service';
 
 const SALT_ROUNDS = 12;
-const REFRESH_DAYS = 7;
-
-function publicUser(user: IUser) {
-  return {
-    id: user.UserID,
-    userId: user.UserID,
-    fullName: user.FullName,
-    email: user.Email,
-    phone: user.Phone,
-    role: user.Role,
-    sponsorId: user.SponsorID ?? null,
-    financeFunction: user.FinanceFunction ?? null,
-    mustChangePassword: Boolean(user.MustChangePassword),
-  };
-}
-
-async function createSession(user: IUser, ipAddress?: string, userAgent?: string) {
-  const sessionId = crypto.randomUUID();
-  const tokens = issueSessionTokens(user.UserID, user.Role, sessionId);
-  const expiresAt = new Date(Date.now() + REFRESH_DAYS * 24 * 60 * 60 * 1000);
-
-  await db('AuthSessions').insert({
-    SessionID: sessionId,
-    UserID: user.UserID,
-    RefreshTokenHash: tokens.refreshHash,
-    ExpiresAt: expiresAt,
-    IPAddress: ipAddress?.slice(0, 64) ?? null,
-    UserAgentHash: userAgent ? hashToken(userAgent) : null,
-  });
-  return tokens;
-}
-
 export async function registerUser(
   data: RegisterInput,
   ipAddress?: string,
@@ -87,6 +55,8 @@ export async function loginUser(
   const valid = user ? await bcrypt.compare(password, user.PasswordHash) : false;
   if (!user || !valid) throw new AuthError('Invalid email or password.');
   if (!user.IsActive) throw new AuthError('Account is deactivated. Please contact support.');
+
+  if (user.Role !== 'Student') return createStaffOtpChallenge(user, ipAddress, userAgent);
 
   const tokens = await createSession(user, ipAddress, userAgent);
   return { user: publicUser(user), tokens };

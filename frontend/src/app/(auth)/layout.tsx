@@ -24,10 +24,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </section>
 
       <section className="flex items-center justify-center py-4 lg:justify-end">
-        <div className="w-full max-w-[480px] overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_32px_100px_rgba(2,12,27,.55)] ring-1 ring-white/50">
-          <div className="border-b border-slate-100 bg-white px-6 py-5 sm:px-9"><Logo size="sm" subtitle="CSR Scholarship Platform" /></div>
+        <div className="relative w-full max-w-[480px] overflow-hidden rounded-[30px] border border-white/45 bg-white/55 shadow-[0_32px_100px_rgba(2,12,27,.55)] ring-1 ring-white/30 backdrop-blur-2xl">
+          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
+          <div className="border-b border-white/40 bg-white/35 px-6 py-5 backdrop-blur-xl sm:px-9"><Logo size="sm" subtitle="CSR Scholarship Platform" /></div>
           <div className="p-6 sm:p-9">{children}</div>
-          <div className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50/80 px-6 py-3 text-[10px] font-medium text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />Protected session · Privacy-controlled access</div>
+          <div className="flex items-center justify-center gap-2 border-t border-white/40 bg-white/30 px-6 py-3 text-[10px] font-medium text-slate-600 backdrop-blur-xl"><ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />Protected session · Privacy-controlled access</div>
         </div>
       </section>
     </div>

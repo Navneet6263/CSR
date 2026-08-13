@@ -17,6 +17,16 @@ export const authApi = {
     if (response.data?.user) persistUser(response.data.user);
     return response;
   },
+  verifyLoginOtp: async (data: { challengeId: string; code: string }) => {
+    const response = await apiClient<AuthResponse>('/auth/login/verify-otp', {
+      method: 'POST', body: JSON.stringify(data),
+    });
+    if (response.data?.user) persistUser(response.data.user);
+    return response;
+  },
+  resendLoginOtp: (challengeId: string) => apiClient<AuthResponse>('/auth/login/resend-otp', {
+    method: 'POST', body: JSON.stringify({ challengeId }),
+  }),
 
   register: async (data: RegisterData) => {
     const response = await apiClient<AuthResponse>('/auth/register', {

@@ -3,7 +3,7 @@ import { Knex } from 'knex';
 import db from '../config/database';
 import { config } from '../config/env';
 
-interface ResetPayload { name: string; resetUrl: string }
+interface EmailPayload { name: string; resetUrl?: string; code?: string; expiresMinutes?: number }
 
 export function queueEmail(trx: Knex.Transaction, recipient: string, template: string, payload: object) {
   return trx('EmailOutbox').insert({ RecipientEmail: recipient, TemplateName: template,
@@ -15,10 +15,16 @@ function escapeHtml(value: string) {
 }
 
 function render(template: string, raw: string) {
-  const payload = JSON.parse(raw) as ResetPayload;
-  if (template !== 'PASSWORD_RESET') throw new Error('Unsupported email template.');
-  const url = escapeHtml(payload.resetUrl); const name = escapeHtml(payload.name);
-  return { subject: 'Reset your TalentBridge password',
+  const payload = JSON.parse(raw) as EmailPayload; const name = escapeHtml(payload.name);
+  if (template === 'STAFF_LOGIN_OTP') {
+    const code = escapeHtml(payload.code ?? ''); const minutes = Number(payload.expiresMinutes ?? 10);
+    return { subject: 'Your Shikshavritti sign-in code',
+      text: `Hello ${payload.name}, your Shikshavritti sign-in code is ${payload.code}. It expires in ${minutes} minutes. Do not share it.`,
+      html: `<p>Hello ${name},</p><p>Use this one-time code to complete your Shikshavritti sign-in:</p><p style="font-size:28px;font-weight:700;letter-spacing:8px">${code}</p><p>It expires in ${minutes} minutes. Do not share this code.</p><p>If you did not sign in, contact your administrator.</p>` };
+  }
+  if (template !== 'PASSWORD_RESET' || !payload.resetUrl) throw new Error('Unsupported email template.');
+  const url = escapeHtml(payload.resetUrl);
+  return { subject: 'Reset your Shikshavritti password',
     text: `Hello ${payload.name}, reset your password using this link: ${payload.resetUrl}. It expires in 30 minutes.`,
     html: `<p>Hello ${name},</p><p>Use the secure link below to reset your password. It expires in 30 minutes.</p><p><a href="${url}">Reset password</a></p><p>If you did not request this, ignore this email.</p>` };
 }
