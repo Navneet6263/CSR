@@ -134,6 +134,37 @@ export interface Scholarship {
   applicationCloseDate: string;
   maxApplicants?: number;
   status: string;
+  sponsorLogoURL?: string;
+  contentStatus?: string;
+  publishedContent?: ScholarshipStructuredContent | null;
+}
+
+export interface ScholarshipStructuredContent {
+  overview: string;
+  highlights: string[];
+  eligibility: string[];
+  benefits: string[];
+  requiredDocuments: string[];
+  applicationSteps: string[];
+  termsAndConditions: string[];
+  contact: { email?: string; phone?: string; website?: string };
+  faqs: Array<{ question: string; answer: string }>;
+}
+
+export interface ScholarshipContentRecord {
+  contentId: number;
+  scholarshipId: number;
+  status: 'Draft' | 'Review' | 'Published';
+  draftVersion: number;
+  publishedVersion?: number;
+  sourceType: string;
+  sourceOriginalName?: string;
+  sourceAvailable: boolean;
+  updatedAt?: string;
+  publishedAt?: string;
+  draft: ScholarshipStructuredContent;
+  published?: ScholarshipStructuredContent | null;
+  history: Array<{ versionId: number; versionNumber: number; sourceType: string; sourceOriginalName?: string; changeNote?: string; createdAt: string }>;
 }
 
 export interface EligibilityRule {

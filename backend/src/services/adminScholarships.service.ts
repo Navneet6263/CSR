@@ -2,13 +2,18 @@ import db from '../config/database';
 import { NotFoundError } from '../utils/errors';
 
 export function listSponsors() {
-  return db('Sponsors').select('SponsorID', 'SponsorName', 'TotalFund', 'FundAllocated', 'FundUtilized', 'Status')
+  return db('Sponsors').select('SponsorID', 'SponsorName', 'TotalFund', 'FundAllocated', 'FundUtilized', 'Status',
+    db.raw('CASE WHEN LogoStorageKey IS NULL THEN 0 ELSE 1 END as HasLogo'))
     .where({ Status: 'Active' }).orderBy('SponsorName').limit(200);
 }
 
 export async function getScholarshipOverview(scholarshipId: number) {
   const scholarship = await db('Scholarships as sc').join('Sponsors as sp', 'sp.SponsorID', 'sc.SponsorID')
-    .select('sc.*', 'sp.SponsorName').where('sc.ScholarshipID', scholarshipId).first();
+    .leftJoin('ScholarshipContents as content', 'content.ScholarshipID', 'sc.ScholarshipID')
+    .select('sc.*', 'sp.SponsorName', 'content.ReviewStatus as ContentStatus',
+      'content.DraftVersion', 'content.PublishedVersion',
+      db.raw('CASE WHEN sp.LogoStorageKey IS NULL THEN 0 ELSE 1 END as HasSponsorLogo'))
+    .where('sc.ScholarshipID', scholarshipId).first();
   if (!scholarship) throw new NotFoundError('Scholarship not found.');
   const [statuses, rules, paid, reserved, recentAudit] = await Promise.all([
     db('Applications').select('Status').count('* as count').where({ ScholarshipID: scholarshipId }).groupBy('Status'),
@@ -25,6 +30,8 @@ export async function getScholarshipOverview(scholarshipId: number) {
   ]);
   const statusCounts = Object.fromEntries(statuses.map((row) => [String(row.Status), Number(row.count)]));
   const applicationCount = Object.values(statusCounts).reduce((sum, count) => sum + Number(count), 0);
-  return { scholarship, rules, statusCounts, applicationCount,
+  return { scholarship: { ...scholarship,
+    SponsorLogoURL: scholarship.HasSponsorLogo ? `/api/v1/scholarships/${scholarshipId}/logo` : null },
+    rules, statusCounts, applicationCount,
     disbursed: Number(paid?.total ?? 0), reserved: Number(reserved?.total ?? 0), recentAudit };
 }

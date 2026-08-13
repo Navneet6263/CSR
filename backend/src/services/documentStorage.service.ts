@@ -6,6 +6,8 @@ import { config } from '../config/env';
 import { ValidationError } from '../utils/errors';
 import { scanDocument, validateFileSignature } from './documentScanner.service';
 
+interface UploadedFile { path: string; mimetype: string; }
+
 const aliases: Record<string, string> = {
   aadhar: 'aadhaar_card', identity: 'aadhaar_card', aadhaar_card: 'aadhaar_card',
   passportphoto: 'photo', photo: 'photo', income: 'income_cert', income_cert: 'income_cert',
@@ -40,7 +42,7 @@ async function sha256(filePath: string): Promise<string> {
 }
 
 export async function secureUploadedFile(
-  file: Express.Multer.File,
+  file: UploadedFile,
   studentId: number,
   documentType: string,
 ) {

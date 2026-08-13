@@ -38,7 +38,7 @@ export default function ActionBar({ capacity, rulesCount, onDraft, onLaunch, can
             className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Rocket className="h-4 w-4" />
-            Launch Scholarship Program
+            Continue to Content Review
           </button>
         </div>
       </div>

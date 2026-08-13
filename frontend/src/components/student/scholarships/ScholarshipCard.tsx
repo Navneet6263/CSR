@@ -1,5 +1,10 @@
 import { Calendar, CheckCircle2, IndianRupee, Lock, Sparkles } from "lucide-react";
+import Link from "next/link";
 import type { MatchResult, Scholarship } from "@/lib/scholarships";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+const API_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, '');
+const assetUrl = (value: string) => value.startsWith('/api/v1/') ? `${API_ORIGIN}${value}` : `${API_BASE}${value}`;
 
 interface Props {
   scholarship: Scholarship;
@@ -36,6 +41,13 @@ export function ScholarshipCard({ scholarship: s, match }: Props) {
           </span>
         )}
       </div>
+
+      {s.logoUrl && (
+        <div className="mt-3 flex h-12 items-center rounded-xl border border-border bg-white px-3">
+          {/* Authenticated API image; browser sends the existing session cookie. */}
+          <img src={assetUrl(s.logoUrl)} alt={`${s.provider} logo`} className="max-h-8 max-w-[140px] object-contain" />
+        </div>
+      )}
 
       <h3 className="mt-3 font-display text-lg font-semibold leading-tight tracking-tight">
         {s.title}
@@ -75,15 +87,26 @@ export function ScholarshipCard({ scholarship: s, match }: Props) {
       )}
 
       <div className="mt-5 flex items-center gap-2 border-t border-border pt-4">
-        <button
-          disabled={!match.matched}
-          className="flex-1 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-        >
-          {match.matched ? "Apply now" : "Not eligible"}
-        </button>
-        <button className="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:bg-accent">
+        {match.matched ? (
+          <Link
+            href={`/student/scholarships/${s.id}/apply`}
+            className="flex-1 rounded-full bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          >
+            Apply now
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title={match.blockers.join(', ') || 'Your profile does not meet the configured rules'}
+            className="flex-1 cursor-not-allowed rounded-full bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground"
+          >
+            Not eligible
+          </button>
+        )}
+        <Link href={`/student/scholarships/${s.id}`} className="rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:bg-accent">
           Details
-        </button>
+        </Link>
       </div>
     </article>
   );

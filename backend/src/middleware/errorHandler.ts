@@ -23,7 +23,7 @@ export function errorHandler(
     return;
   }
   if (err instanceof multer.MulterError) {
-    sendError(res, err.code === 'LIMIT_FILE_SIZE' ? 'File exceeds the 5 MB limit.' : 'Invalid upload.', 400);
+    sendError(res, err.code === 'LIMIT_FILE_SIZE' ? 'File exceeds the allowed upload size.' : 'Invalid upload.', 400);
     return;
   }
 

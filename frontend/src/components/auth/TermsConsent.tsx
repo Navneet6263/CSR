@@ -37,13 +37,10 @@ export default function TermsConsent({ accepted, error, onChange }: Props) {
     </div>, document.body) : null;
 
   return <div className="space-y-2">
-    <button type="button" onClick={showPolicy} className={`flex w-full items-center justify-between rounded-xl border px-3 py-3 text-left text-xs font-semibold transition ${accepted ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>
-      <span className="flex items-center gap-2">{accepted ? <Check size={16} /> : <FileText size={15} />}{accepted ? 'Policy reviewed and accepted' : 'Read User Agreement & Privacy Policy'}</span>
-      <span className="text-[10px] uppercase tracking-wider">{accepted ? 'Complete' : 'Required'}</span>
-    </button>
-    <button type="button" onClick={showPolicy} className="flex w-full items-start gap-2 rounded-xl border border-slate-200 p-3 text-left text-xs text-slate-700">
+    <button type="button" onClick={showPolicy} className={`flex w-full items-start gap-2 rounded-[13px] border p-3 text-left text-xs transition ${accepted ? 'border-blue-200 bg-blue-50/60 text-slate-700' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-200'}`}>
       <span aria-hidden className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border ${accepted ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-slate-300 bg-white'}`}>{accepted && <Check size={11} />}</span>
-      <span>{accepted ? 'I agree to the User Agreement & Privacy Policy (Version 1.0).' : 'Open and read the complete policy to provide consent.'}</span>
+      <span className="flex-1">{accepted ? 'I agree to the User Agreement & Privacy Policy (Version 1.0).' : <>Read the <span className="font-bold text-[#146cf0]">User Agreement & Privacy Policy</span> to continue.</>}</span>
+      <FileText size={15} className="shrink-0 text-slate-400" />
     </button>
     {!accepted && <p className="flex items-center gap-1.5 px-1 text-[10px] text-slate-500"><LockKeyhole size={11} />Registration remains locked until the policy is reviewed.</p>}
     {error && <p className="px-1 text-[10px] text-red-500">{error}</p>}

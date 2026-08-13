@@ -10,6 +10,7 @@ interface ConsentFormProps {
 }
 
 export default function ConsentForm({ scholarship, agreed, setAgreed }: ConsentFormProps) {
+  const publishedTerms = scholarship.publishedContent?.termsAndConditions ?? [];
   return (
     <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-8 max-w-3xl mx-auto">
       <div className="text-center">
@@ -24,6 +25,7 @@ export default function ConsentForm({ scholarship, agreed, setAgreed }: ConsentF
       </div>
 
       <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 md:p-8 space-y-6 text-sm text-slate-600 leading-relaxed h-[300px] overflow-y-auto custom-scrollbar">
+        {publishedTerms.length > 0 && <section><h3 className="mb-3 font-bold text-slate-800">Scholarship-specific terms</h3><ol className="list-decimal space-y-2 pl-5">{publishedTerms.map((term) => <li key={term}>{term}</li>)}</ol></section>}
         <p>
           By submitting this application, I hereby declare that all the information provided by me in the application form is true, complete, and correct to the best of my knowledge and belief.
         </p>

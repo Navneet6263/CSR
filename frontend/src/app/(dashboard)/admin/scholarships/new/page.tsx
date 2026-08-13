@@ -48,7 +48,7 @@ export default function NewScholarshipPage() {
         applicationOpenDate: core.openDate, applicationCloseDate: core.closeDate,
         maxApplicants: capacity, status, rules: rules.filter((rule) => rule.value.trim()).map(apiRule) });
       const id = Number(response.data.ScholarshipID ?? response.data.scholarshipId);
-      router.push(`/admin/scholarships/${id}`);
+      router.push(status === 'Active' ? `/admin/scholarships/${id}/content` : `/admin/scholarships/${id}`);
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Scholarship could not be saved.'); }
     finally { setSaving(false); }
   }

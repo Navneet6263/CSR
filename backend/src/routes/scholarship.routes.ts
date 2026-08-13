@@ -2,8 +2,11 @@ import { Router } from 'express';
 import {
   create, getAll, getById, update,
   addRule, getRules, updateRule, deleteRule,
+  downloadContentSource, downloadSponsorLogo, generateContent, getContent, publishContent,
+  saveContent, uploadSponsorLogo,
 } from '../controllers/scholarship.controller';
 import { authenticate, requireRole } from '../middleware/auth';
+import { scholarshipSourceUpload, sponsorLogoUpload } from '../middleware/upload';
 
 const router = Router();
 
@@ -12,6 +15,15 @@ router.post('/', authenticate, requireRole('Admin'), create);
 router.get('/', authenticate, getAll);
 router.get('/:id', authenticate, getById);
 router.put('/:id', authenticate, requireRole('Admin'), update);
+
+// Structured content is drafted/generated first, then explicitly reviewed and published.
+router.get('/:id/content', authenticate, requireRole('Admin'), getContent);
+router.post('/:id/content/generate', authenticate, requireRole('Admin'), scholarshipSourceUpload.single('source'), generateContent);
+router.put('/:id/content', authenticate, requireRole('Admin'), saveContent);
+router.post('/:id/content/publish', authenticate, requireRole('Admin'), publishContent);
+router.get('/:id/content/source', authenticate, requireRole('Admin'), downloadContentSource);
+router.post('/:id/logo', authenticate, requireRole('Admin'), sponsorLogoUpload.single('logo'), uploadSponsorLogo);
+router.get('/:id/logo', authenticate, downloadSponsorLogo);
 
 // ─── Eligibility Rules (nested under scholarship) ──────────────────────────
 router.post('/:id/rules', authenticate, requireRole('Admin'), addRule);

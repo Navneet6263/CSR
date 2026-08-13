@@ -19,6 +19,8 @@ export async function addEligibilityRule(data: EligibilityRuleInput, actor: Work
       IsRequired: data.isRequired, RuleVersion: 1 };
     const inserted = await trx('EligibilityRules').insert(values).returning('*');
     const rule = inserted[0];
+    await trx('ScholarshipContents').where({ ScholarshipID: data.scholarshipId })
+      .update({ ReviewStatus: 'Review', UpdatedAt: new Date() });
     await writeAudit(trx, { userId: actor.userId, action: 'ELIGIBILITY_RULE_CREATED',
       entityType: 'EligibilityRule', entityId: rule.RuleID, newValue: values,
       requestId: actor.requestId, ipAddress: actor.ipAddress });
@@ -39,9 +41,18 @@ export async function updateEligibilityRule(ruleId: number, data: UpdateEligibil
   const payload: Record<string, unknown> = Object.fromEntries(
     Object.entries(data).map(([key, value]) => [map[key], value]),
   );
+  if (data.operator && ['IN', 'NOT_IN'].includes(data.operator)) {
+    payload.ValueMin = null; payload.ValueMax = null;
+  } else if (data.operator === 'BETWEEN') {
+    payload.ValueList = null;
+  } else if (data.operator) {
+    payload.ValueList = null; payload.ValueMax = null;
+  }
   payload.RuleVersion = Number(existing.RuleVersion ?? 0) + 1;
   await db.transaction(async (trx) => {
     await trx('EligibilityRules').where({ RuleID: ruleId }).update(payload);
+    await trx('ScholarshipContents').where({ ScholarshipID: existing.ScholarshipID })
+      .update({ ReviewStatus: 'Review', UpdatedAt: new Date() });
     await writeAudit(trx, { userId: actor.userId, action: 'ELIGIBILITY_RULE_UPDATED',
       entityType: 'EligibilityRule', entityId: ruleId, oldValue: existing, newValue: payload,
       requestId: actor.requestId, ipAddress: actor.ipAddress });
@@ -55,6 +66,8 @@ export async function deleteEligibilityRule(ruleId: number, actor: WorkflowActor
   await assertRulesMutable(existing.ScholarshipID);
   await db.transaction(async (trx) => {
     await trx('EligibilityRules').where({ RuleID: ruleId }).del();
+    await trx('ScholarshipContents').where({ ScholarshipID: existing.ScholarshipID })
+      .update({ ReviewStatus: 'Review', UpdatedAt: new Date() });
     await writeAudit(trx, { userId: actor.userId, action: 'ELIGIBILITY_RULE_DELETED',
       entityType: 'EligibilityRule', entityId: ruleId, oldValue: existing,
       requestId: actor.requestId, ipAddress: actor.ipAddress });

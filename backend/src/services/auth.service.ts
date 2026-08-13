@@ -7,7 +7,6 @@ import { AuthError, ConflictError } from '../utils/errors';
 import { RegisterInput } from '../validators/auth.validator';
 import { hashToken, issueSessionTokens, verifyRefreshToken } from './authTokens.service';
 import { createSession, publicUser } from './session.service';
-import { createStaffOtpChallenge } from './staffOtp.service';
 
 const SALT_ROUNDS = 12;
 export async function registerUser(
@@ -56,7 +55,10 @@ export async function loginUser(
   if (!user || !valid) throw new AuthError('Invalid email or password.');
   if (!user.IsActive) throw new AuthError('Account is deactivated. Please contact support.');
 
-  if (user.Role !== 'Student') return createStaffOtpChallenge(user, ipAddress, userAgent);
+  // TEMPORARY: Staff OTP is disabled for every dashboard role until the OTP
+  // database/email flow is restored. Keep password validation and normal
+  // session creation active for Admin, reviewers, Finance, CSR, and students.
+  // if (user.Role !== 'Student') return createStaffOtpChallenge(user, ipAddress, userAgent);
 
   const tokens = await createSession(user, ipAddress, userAgent);
   return { user: publicUser(user), tokens };

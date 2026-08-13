@@ -60,3 +60,31 @@ export type EligibilityRuleInput = z.infer<typeof eligibilityRuleSchema>;
 export const updateEligibilityRuleSchema = embeddedRuleFields.partial().superRefine(validateRuleValues);
 
 export type UpdateEligibilityRuleInput = z.infer<typeof updateEligibilityRuleSchema>;
+
+const shortList = z.array(z.string().trim().min(2).max(500)).min(1).max(30);
+
+export const scholarshipContentSchema = z.object({
+  overview: z.string().trim().min(20).max(5000),
+  highlights: shortList,
+  eligibility: shortList,
+  benefits: shortList,
+  requiredDocuments: shortList,
+  applicationSteps: shortList,
+  termsAndConditions: shortList,
+  contact: z.object({
+    email: z.string().trim().email().max(200).optional().or(z.literal('')),
+    phone: z.string().trim().max(30).optional(),
+    website: z.string().trim().url().max(500).optional().or(z.literal('')),
+  }),
+  faqs: z.array(z.object({
+    question: z.string().trim().min(3).max(500),
+    answer: z.string().trim().min(3).max(2000),
+  })).max(20).default([]),
+});
+
+export const updateScholarshipContentSchema = z.object({
+  content: scholarshipContentSchema,
+  changeNote: z.string().trim().min(3).max(500).optional(),
+});
+
+export type ScholarshipContentInput = z.infer<typeof scholarshipContentSchema>;

@@ -1,4 +1,4 @@
-import { StudentProfile, Scholarship, EligibilityRule, Application } from '@/types';
+import { StudentProfile, Scholarship, EligibilityRule, Application, ScholarshipContentRecord, ScholarshipStructuredContent } from '@/types';
 import { ScholarshipListResponse } from '@/types/domain';
 import { apiClient } from './client';
 
@@ -48,15 +48,38 @@ export const scholarshipApi = {
     });
     return { ...response, data: mapEligibilityRule(response.data) };
   },
+  updateRule: async (id: number, ruleId: number, data: Partial<EligibilityRule>) => {
+    const response = await apiClient<Record<string, unknown>>(`/scholarships/${id}/rules/${ruleId}`, {
+      method: 'PUT', body: JSON.stringify(data),
+    });
+    return { ...response, data: mapEligibilityRule(response.data) };
+  },
   deleteRule: (id: number, ruleId: number) =>
     apiClient<void>(`/scholarships/${id}/rules/${ruleId}`, { method: 'DELETE' }),
+  getContent: (id: number) => apiClient<ScholarshipContentRecord>(`/scholarships/${id}/content`),
+  generateContent: (id: number, source?: File) => {
+    const form = new FormData();
+    if (source) form.append('source', source);
+    return apiClient<ScholarshipContentRecord>(`/scholarships/${id}/content/generate`, { method: 'POST', body: form });
+  },
+  saveContent: (id: number, content: ScholarshipStructuredContent, changeNote?: string) =>
+    apiClient<ScholarshipContentRecord>(`/scholarships/${id}/content`, {
+      method: 'PUT', body: JSON.stringify({ content, changeNote }),
+    }),
+  publishContent: (id: number) => apiClient<ScholarshipContentRecord>(`/scholarships/${id}/content/publish`, { method: 'POST' }),
+  uploadLogo: (id: number, logo: File) => {
+    const form = new FormData(); form.append('logo', logo);
+    return apiClient<{ scholarshipId: number; sponsorId: number; logoUrl: string }>(`/scholarships/${id}/logo`, { method: 'POST', body: form });
+  },
 };
 
 export const applicationApi = {
-  create: (scholarshipId: number) =>
-    apiClient<Application>('/applications', {
+  create: async (scholarshipId: number) => {
+    const response = await apiClient<Record<string, unknown>>('/applications', {
       method: 'POST', body: JSON.stringify({ scholarshipId }),
-    }),
+    });
+    return { ...response, data: mapApplication(response.data) };
+  },
   submit: (id: number) =>
     apiClient<Application>(`/applications/${id}/submit`, { method: 'POST' }),
   getMy: async () => {

@@ -5,7 +5,7 @@ const apiOrigin = (() => {
 
 const csp = [
   "default-src 'self'", `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
-  "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:", "font-src 'self' data:",
+  "style-src 'self' 'unsafe-inline'", `img-src 'self' data: blob: ${apiOrigin}`, "font-src 'self' data:",
   `connect-src 'self' ${apiOrigin}`, "object-src 'none'", "base-uri 'self'", "form-action 'self'",
   "frame-ancestors 'none'", process.env.NODE_ENV === 'production' && apiOrigin.startsWith('https://') ? 'upgrade-insecure-requests' : '',
 ].filter(Boolean).join('; ');

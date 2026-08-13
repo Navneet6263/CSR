@@ -133,6 +133,10 @@ export function mapPendingPayment(raw: Raw): PendingPaymentRow {
 }
 
 export function mapScholarship(raw: Raw): Scholarship {
+  let publishedContent = raw.PublishedContent ?? raw.publishedContent;
+  if (typeof publishedContent === 'string') {
+    try { publishedContent = JSON.parse(publishedContent); } catch { publishedContent = null; }
+  }
   return {
     scholarshipId: Number(raw.ScholarshipID ?? raw.scholarshipId),
     name: String(raw.Name ?? raw.name ?? ''),
@@ -144,6 +148,9 @@ export function mapScholarship(raw: Raw): Scholarship {
     applicationCloseDate: String(raw.ApplicationCloseDate ?? raw.applicationCloseDate ?? ''),
     maxApplicants: Number(raw.MaxApplicants ?? raw.maxApplicants ?? 0) || undefined,
     status: String(raw.Status ?? raw.status ?? ''),
+    sponsorLogoURL: (raw.SponsorLogoURL ?? raw.sponsorLogoURL) as string | undefined,
+    contentStatus: (raw.ContentStatus ?? raw.contentStatus) as string | undefined,
+    publishedContent: publishedContent as Scholarship['publishedContent'],
   };
 }
 

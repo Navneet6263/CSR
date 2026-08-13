@@ -17,10 +17,15 @@ import {
   updateScholarshipSchema,
   eligibilityRuleSchema,
   updateEligibilityRuleSchema,
+  updateScholarshipContentSchema,
 } from '../validators/scholarship.validator';
 import { ValidationError } from '../utils/errors';
 import { parsePage } from '../utils/pagination';
 import { requestActor } from '../utils/requestActor';
+import {
+  generateScholarshipContent, getScholarshipContentForAdmin, publishScholarshipContent,
+  saveSponsorLogo, scholarshipLogoDownload, scholarshipSourceDownload, updateScholarshipContent,
+} from '../services/scholarshipContent.service';
 
 // ─── Helper: parse Zod and throw on failure ─────────────────────────────────
 
@@ -106,4 +111,55 @@ export async function updateRule(req: Request, res: Response, next: NextFunction
     const data = parseOrThrow(updateEligibilityRuleSchema, req.body);
     sendSuccess(res, await updateEligibilityRule(ruleId, data, requestActor(req)), 'Eligibility rule updated');
   } catch (error) { next(error); }
+}
+
+function sendAsset(res: Response, asset: { path: string; mimeType: string; originalName: string }, cache = false) {
+  const safeName = asset.originalName.replace(/["\r\n]/g, '_');
+  res.setHeader('Content-Type', asset.mimeType);
+  res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
+  res.setHeader('Cache-Control', cache ? 'private, max-age=3600' : 'private, no-store');
+  res.sendFile(asset.path);
+}
+
+export async function getContent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { sendSuccess(res, await getScholarshipContentForAdmin(Number(req.params.id), requestActor(req)),
+    'Scholarship content retrieved.'); }
+  catch (error) { next(error); }
+}
+
+export async function generateContent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { sendSuccess(res, await generateScholarshipContent(Number(req.params.id), requestActor(req), req.file),
+    req.file ? 'Source structured into a review draft.' : 'Professional review draft generated.'); }
+  catch (error) { next(error); }
+}
+
+export async function saveContent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = parseOrThrow(updateScholarshipContentSchema, req.body);
+    sendSuccess(res, await updateScholarshipContent(Number(req.params.id), data.content, data.changeNote, requestActor(req)),
+      'Scholarship content saved for review.');
+  } catch (error) { next(error); }
+}
+
+export async function publishContent(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { sendSuccess(res, await publishScholarshipContent(Number(req.params.id), requestActor(req)),
+    'Scholarship content approved and published.'); }
+  catch (error) { next(error); }
+}
+
+export async function uploadSponsorLogo(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!req.file) throw new ValidationError('Select a PNG or JPEG company logo.');
+    sendSuccess(res, await saveSponsorLogo(Number(req.params.id), requestActor(req), req.file), 'Sponsor logo updated.');
+  } catch (error) { next(error); }
+}
+
+export async function downloadSponsorLogo(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { sendAsset(res, await scholarshipLogoDownload(Number(req.params.id)), true); }
+  catch (error) { next(error); }
+}
+
+export async function downloadContentSource(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try { sendAsset(res, await scholarshipSourceDownload(Number(req.params.id))); }
+  catch (error) { next(error); }
 }

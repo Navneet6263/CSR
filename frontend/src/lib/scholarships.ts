@@ -10,6 +10,7 @@ export interface Scholarship {
   category: ScholarshipCategory;
   tags: string[];
   description: string;
+  logoUrl?: string;
 }
 
 export interface MatchResult {
