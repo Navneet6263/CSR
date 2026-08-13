@@ -3,6 +3,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import { usePublicPortal } from './PublicPortalProvider';
 
 const compactMoney = (value: number) => new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+const SHOW_PUBLIC_IMPACT_STATS = false;
 
 export function Hero() {
   const { data, loading } = usePublicPortal();
@@ -21,7 +22,7 @@ export function Hero() {
         <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground sm:text-lg">Apply once, match against active CSR scholarships, and track document checks, screening, approval, and disbursal end to end.</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"><a href="/register" className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm sm:w-auto">Apply for Scholarship <ArrowRight className="h-4 w-4" /></a><a href="#scholarships" className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-6 py-3 text-sm font-semibold sm:w-auto">View Open Scholarships</a></div>
       </div>
-      <dl className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border shadow-sm sm:mt-20 sm:grid-cols-4">{stats.map((stat) => <div key={stat.label} className="flex flex-col items-center bg-background px-4 py-6 text-center sm:py-8"><dt className="order-2 mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:text-sm">{stat.label}</dt><dd className={`order-1 text-2xl font-bold text-primary sm:text-4xl ${loading ? 'h-9 w-20 animate-pulse rounded bg-muted' : ''}`}>{loading ? '' : stat.value}</dd></div>)}</dl>
+      {SHOW_PUBLIC_IMPACT_STATS && <dl className="mx-auto mt-14 grid max-w-5xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-border bg-border shadow-sm sm:mt-20 sm:grid-cols-4">{stats.map((stat) => <div key={stat.label} className="flex flex-col items-center bg-background px-4 py-6 text-center sm:py-8"><dt className="order-2 mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:text-sm">{stat.label}</dt><dd className={`order-1 text-2xl font-bold text-primary sm:text-4xl ${loading ? 'h-9 w-20 animate-pulse rounded bg-muted' : ''}`}>{loading ? '' : stat.value}</dd></div>)}</dl>}
     </div>
   </section>;
 }
