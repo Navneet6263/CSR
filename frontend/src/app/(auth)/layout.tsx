@@ -1,46 +1,35 @@
+import { CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import AuthBackground from '@/components/auth/AuthBackground';
-import AuthImpactStats from '@/components/auth/AuthImpactStats';
+import Logo from '@/components/shared/Logo';
+
+const assurances = [
+  { icon: LockKeyhole, label: 'Encrypted records' },
+  { icon: ShieldCheck, label: 'Role-based access' },
+  { icon: CheckCircle2, label: 'Auditable decisions' },
+];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen w-full relative flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-      
-      {/* Full Screen Dynamic Slideshow Background */}
-      <div className="absolute inset-0 z-0">
-        <AuthBackground />
-      </div>
-
-      {/* Content Wrapper - Zoomed out slightly to look elegant */}
-      <div className="relative z-10 flex w-full max-w-7xl h-full items-center justify-center lg:justify-between gap-12 lg:gap-24 scale-[0.95] xl:scale-90 origin-center transition-transform">
-
-        {/* Left Side: Hero Text & Stats in a Glass Panel */}
-        <div className="hidden lg:flex w-[50%] flex-col justify-center gap-10">
-          
-          {/* Text Content - No Box, Floating Freely */}
-          <div className="px-2">
-            <div>
-              <h3 className="text-emerald-300 font-black text-sm tracking-widest uppercase mb-4 drop-shadow-md">Empowering Futures</h3>
-              <h2 className="text-4xl xl:text-5xl font-bold text-white leading-[1.2] mb-6 drop-shadow-lg capitalize">
-                Every student deserves a <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-200">fair chance</span>
-              </h2>
-              <p className="text-emerald-50/90 text-lg leading-relaxed max-w-md font-semibold drop-shadow-md">
-                Connect with CSR scholarships, track applications, and get funded — all in one seamless place.
-              </p>
-            </div>
-          </div>
-
-          <AuthImpactStats />
+  return <main className="relative min-h-dvh overflow-x-hidden bg-[#061b33] p-4 sm:p-6 lg:p-8">
+    <AuthBackground />
+    <div className="relative z-10 mx-auto grid min-h-[calc(100dvh-2rem)] w-full max-w-[1380px] items-center gap-8 sm:min-h-[calc(100dvh-3rem)] lg:grid-cols-[1.1fr_.9fr] lg:gap-14">
+      <section className="hidden max-w-2xl self-stretch py-8 lg:flex lg:flex-col lg:justify-between">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-white"><span className="h-px w-8 bg-orange-400" />Shikshavritti</div>
+        <div className="py-12">
+          <p className="mb-5 text-xs font-bold uppercase tracking-[0.28em] text-orange-300">Scholarships built on trust</p>
+          <h1 className="max-w-xl text-5xl font-bold leading-[1.08] tracking-tight text-white xl:text-6xl">A fair path from application to award.</h1>
+          <p className="mt-6 max-w-xl text-base leading-7 text-slate-200 xl:text-lg">One secure workspace for students, verification teams, CSR partners and controlled scholarship disbursement.</p>
+          <div className="mt-9 flex flex-wrap gap-3">{assurances.map(({ icon: Icon, label }) => <span key={label} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md"><Icon className="h-4 w-4 text-emerald-300" />{label}</span>)}</div>
         </div>
+        <p className="text-xs text-slate-300/80">Shikshavritti · Privacy-first scholarship operations</p>
+      </section>
 
-        {/* Right Side: Form Container */}
-        <div className="w-full lg:w-[45%] flex items-center justify-center py-8">
-          <div className="w-full max-w-[440px] bg-white/70 backdrop-blur-2xl p-8 sm:p-10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.15)] border border-white/60">
-            {children}
-          </div>
+      <section className="flex items-center justify-center py-4 lg:justify-end">
+        <div className="w-full max-w-[480px] overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_32px_100px_rgba(2,12,27,.55)] ring-1 ring-white/50">
+          <div className="border-b border-slate-100 bg-white px-6 py-5 sm:px-9"><Logo size="sm" subtitle="CSR Scholarship Platform" /></div>
+          <div className="p-6 sm:p-9">{children}</div>
+          <div className="flex items-center justify-center gap-2 border-t border-slate-100 bg-slate-50/80 px-6 py-3 text-[10px] font-medium text-slate-500"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />Protected session · Privacy-controlled access</div>
         </div>
-
-      </div>
-
+      </section>
     </div>
-  );
+  </main>;
 }

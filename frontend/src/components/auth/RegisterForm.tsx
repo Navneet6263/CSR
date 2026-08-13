@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import LoadingSpinner from '@/components/shared/LoadingSpinner';
@@ -34,6 +35,7 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function RegisterForm() {
+  const router = useRouter();
   const [form, setForm] = useState<RegisterData>(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -59,7 +61,7 @@ export default function RegisterForm() {
     setLoading(true);
     try {
       await authApi.register(form);
-      window.location.href = '/student';
+      router.replace('/student');
     } catch (err: unknown) {
       setApiError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
@@ -123,7 +125,7 @@ export default function RegisterForm() {
         onChange={(termsAccepted) => { setForm((current) => ({ ...current, termsAccepted }));
           setErrors((current) => ({ ...current, termsAccepted: '' })); }} />
 
-      <button type="submit" disabled={loading}
+      <button type="submit" disabled={loading || !form.termsAccepted}
         className="w-full h-11 mt-2 rounded-xl font-semibold text-white bg-[#0f172a] hover:bg-[#1e293b] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg text-sm"
       >
         {loading ? <LoadingSpinner size="sm" className="text-white" /> : 'Create Account'}
