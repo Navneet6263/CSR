@@ -3,6 +3,7 @@ import { ConflictError, NotFoundError } from '../utils/errors';
 import { writeAudit } from './audit.service';
 import { WorkflowActor } from './workflow.service';
 import type { CreateSupportTicketInput, SupportEventInput, UpdateSupportTicketInput } from '../validators/support.validator';
+import { prefixSearchPattern } from '../utils/searchPattern';
 
 const dueHours = { Low: 48, Normal: 24, High: 8, Urgent: 4 } as const;
 
@@ -22,18 +23,30 @@ export async function createTicket(userId: number, input: CreateSupportTicketInp
   });
 }
 
-export function listTickets(status?: string, assignedTo?: number, query?: string, limit = 100) {
+export async function listTickets(status?: string, assignedTo?: number, query?: string, page = 1, limit = 20) {
   const statement = db('SupportTickets as t').join('Users as u', 'u.UserID', 't.UserID')
     .leftJoin('Students as st', 'st.UserID', 'u.UserID')
     .leftJoin('Users as assignee', 'assignee.UserID', 't.AssignedTo')
-    .select('t.*', 'u.FullName as RequesterName', 'u.Email as RequesterEmail',
-      'st.State', 'assignee.FullName as AssigneeName');
+  ;
   if (status && status !== 'All') statement.where('t.Status', status);
   if (assignedTo) statement.where('t.AssignedTo', assignedTo);
-  if (query) statement.where((builder) => builder.where('t.Subject', 'like', `%${query}%`)
-    .orWhere('u.FullName', 'like', `%${query}%`).orWhere('u.Email', 'like', `%${query}%`));
-  return statement.orderByRaw(`CASE t.Priority WHEN 'Urgent' THEN 1 WHEN 'High' THEN 2 WHEN 'Normal' THEN 3 ELSE 4 END`)
-    .orderBy([{ column: 't.DueAt', order: 'asc' }, { column: 't.TicketID', order: 'asc' }]).limit(limit);
+  if (query) { const search = prefixSearchPattern(query); statement.where((builder) => builder.where('t.Subject', 'like', search)
+    .orWhere('u.FullName', 'like', search).orWhere('u.Email', 'like', search)); }
+  const [totalRow, summary, rows] = await Promise.all([
+    statement.clone().countDistinct('t.TicketID as count').first(),
+    db('SupportTickets').select(
+      db.raw("SUM(CASE WHEN Priority='Urgent' AND Status<>'Resolved' THEN 1 ELSE 0 END) AS urgent"),
+      db.raw("SUM(CASE WHEN AssignedTo IS NULL AND Status<>'Resolved' THEN 1 ELSE 0 END) AS unassigned"),
+      db.raw("SUM(CASE WHEN DueAt < SYSUTCDATETIME() AND Status<>'Resolved' THEN 1 ELSE 0 END) AS overdue"),
+    ).first(),
+    statement.clone().select('t.*', 'u.FullName as RequesterName', 'u.Email as RequesterEmail',
+      'st.State', 'assignee.FullName as AssigneeName')
+      .orderByRaw(`CASE t.Priority WHEN 'Urgent' THEN 1 WHEN 'High' THEN 2 WHEN 'Normal' THEN 3 ELSE 4 END`)
+      .orderBy([{ column: 't.DueAt', order: 'asc' }, { column: 't.TicketID', order: 'asc' }])
+      .offset((page - 1) * limit).limit(limit),
+  ]);
+  return { tickets: rows, pagination: { page, limit, total: Number(totalRow?.count ?? 0) },
+    summary: { urgent: Number(summary?.urgent ?? 0), unassigned: Number(summary?.unassigned ?? 0), overdue: Number(summary?.overdue ?? 0) } };
 }
 
 export async function getTicket(ticketId: number) {

@@ -50,6 +50,9 @@ export async function getMatches(req: Request, res: Response, next: NextFunction
   try {
     if (!req.user) throw new AuthError();
     const student = await getStudentProfile(req.user.userId);
-    sendSuccess(res, await matchStudentToScholarships(student.StudentID), 'Scholarship matches retrieved.');
+    const rawIds = String(req.query.scholarshipIds ?? '').split(',').filter(Boolean);
+    const scholarshipIds = rawIds.length ? rawIds.map(Number)
+      .filter((value) => Number.isInteger(value) && value > 0).slice(0, 50) : undefined;
+    sendSuccess(res, await matchStudentToScholarships(student.StudentID, scholarshipIds), 'Scholarship matches retrieved.');
   } catch (error) { next(error); }
 }

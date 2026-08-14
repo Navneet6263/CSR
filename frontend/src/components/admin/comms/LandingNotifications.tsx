@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Calendar, Clock3, Megaphone, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Calendar, Clock3, Megaphone, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { adminApi } from '@/lib/api';
 import { invalidatePublicPortalCache } from '@/lib/publicPortalCache';
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 type Announcement = {
   AnnouncementID: number; Title: string; Message: string; Audience: 'All' | 'Students' | 'Staff';
@@ -28,19 +30,12 @@ export default function LandingNotifications() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
-  const load = useCallback(() => adminApi.getAnnouncements().then((response) => setItems((response.data ?? []) as Announcement[]))
-    .catch((reason: Error) => setError(reason.message)), []);
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState({ live: 0, draft: 0, expired: 0 }); const [loading, setLoading] = useState(true);
+  const load = useCallback(() => { setLoading(true); const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (debouncedQuery) params.set('search', debouncedQuery);
+    return adminApi.getAnnouncements(params.toString()).then((response) => { setItems((response.data?.announcements ?? []) as Announcement[]); setTotal(response.data?.pagination?.total ?? 0); setCounts(response.data?.facets ?? { live: 0, draft: 0, expired: 0 }); })
+    .catch((reason: Error) => setError(reason.message)).finally(() => setLoading(false)); }, [debouncedQuery, limit, page]);
   useEffect(() => { void load(); }, [load]);
-
-  const counts = useMemo(() => items.reduce((total, item) => {
-    const state = stateOf(item).label;
-    if (state === 'LIVE NOW') total.live += 1; else if (state === 'DRAFT') total.draft += 1; else if (state === 'EXPIRED') total.expired += 1;
-    return total;
-  }, { live: 0, draft: 0, expired: 0 }), [items]);
-  const ordered = useMemo(() => [...items].sort((a, b) => {
-    const rank = (item: Announcement) => stateOf(item).label === 'LIVE NOW' ? 0 : stateOf(item).label === 'DRAFT' ? 1 : 2;
-    return rank(a) - rank(b) || new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime();
-  }), [items]);
 
   function reset() { setEditingId(null); setForm(emptyForm); setError(''); }
   function edit(item: Announcement) {
@@ -88,12 +83,13 @@ export default function LandingNotifications() {
       </section>
 
       <section className="overflow-hidden rounded-2xl border bg-white xl:col-span-2">
-        <header className="border-b px-5 py-4"><div className="flex items-center justify-between"><div><h3 className="text-sm font-semibold">Landing announcements</h3><p className="text-xs text-slate-500">Live notices are shown first · {items.length} records</p></div>{counts.live > 0 && <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700">{counts.live} RUNNING</span>}</div></header>
-        <ul className="divide-y">{ordered.map((item) => { const state = stateOf(item); return <li key={item.AnnouncementID} className={state.label === 'LIVE NOW' ? 'bg-emerald-50/30 p-4' : 'p-4'}>
+        <header className="space-y-3 border-b px-5 py-4"><div className="flex items-center justify-between"><div><h3 className="text-sm font-semibold">Landing announcements</h3><p className="text-xs text-slate-500">Live notices are shown first · {total} records</p></div>{counts.live > 0 && <span className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-bold text-emerald-700">{counts.live} RUNNING</span>}</div><div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search announcements" className="w-full rounded-lg border py-2 pl-9 pr-3 text-xs outline-none" /></div></header>
+        <ul className="divide-y">{items.map((item) => { const state = stateOf(item); return <li key={item.AnnouncementID} className={state.label === 'LIVE NOW' ? 'bg-emerald-50/30 p-4' : 'p-4'}>
           <div className="flex items-start gap-3"><span className={`mt-0.5 rounded-full px-2 py-1 text-[9px] font-bold ${state.style}`}>{state.label}</span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-900">{item.Title}</p><p className="mt-1 text-xs leading-5 text-slate-600">{item.Message}</p>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500"><span>{item.Audience}</span><span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Published: {dateTime(item.PublishedAt)}</span><span className="flex items-center gap-1"><Clock3 className="h-3 w-3" />Expires: {dateTime(item.ExpiresAt)}</span>{item.CreatedByName && <span>By {item.CreatedByName}</span>}</div></div>
             <div className="flex shrink-0 items-center gap-1"><button onClick={() => edit(item)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900" aria-label={`Edit ${item.Title}`}><Pencil className="h-4 w-4" /></button><button onClick={() => void archive(item)} className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600" aria-label={`Delete ${item.Title}`}><Trash2 className="h-4 w-4" /></button></div></div>
-        </li>; })}{!items.length && <li className="p-10 text-center text-sm text-slate-500">No database announcements. The landing banner will stay hidden.</li>}</ul>
+        </li>; })}{!items.length && !loading && <li className="p-10 text-center text-sm text-slate-500">No database announcements. The landing banner will stay hidden.</li>}</ul>
+        <div className="border-t p-3"><DataPagination page={page} limit={limit} total={total} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} /></div>
       </section>
     </div>
   </div>;

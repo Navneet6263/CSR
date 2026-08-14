@@ -52,6 +52,9 @@ export default function ApplyForScholarshipPage() {
 
   if (loading) return <div className="grid min-h-[60vh] place-items-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>;
   if (!scholarship || !profile) return <Message message={error || 'Application details are unavailable.'} />;
+  if (scholarship.status === 'Paused') return <Message message={scholarship.resumeAt
+    ? `Applications are paused. Planned reopening: ${new Date(scholarship.resumeAt).toLocaleString('en-IN')}. ${scholarship.pauseReason || ''}`
+    : `Applications are paused. ${scholarship.pauseReason || 'A reopening date will be announced soon.'}`} />;
   if (submitted) return <main className="mx-auto max-w-5xl px-4 py-8"><SuccessView scholarship={scholarship} /></main>;
 
   const completion = profile.profileCompletion ?? 0;

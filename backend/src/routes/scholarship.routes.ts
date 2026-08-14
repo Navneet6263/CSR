@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  create, getAll, getById, update,
+  create, getAll, getById, pause, resume, update,
   addRule, getRules, updateRule, deleteRule,
   downloadContentSource, downloadSponsorLogo, generateContent, getContent, publishContent,
   saveContent, uploadSponsorLogo,
@@ -15,6 +15,8 @@ router.post('/', authenticate, requireRole('Admin'), create);
 router.get('/', authenticate, getAll);
 router.get('/:id', authenticate, getById);
 router.put('/:id', authenticate, requireRole('Admin'), update);
+router.post('/:id/pause', authenticate, requireRole('Admin'), pause);
+router.post('/:id/resume', authenticate, requireRole('Admin'), resume);
 
 // Structured content is drafted/generated first, then explicitly reviewed and published.
 router.get('/:id/content', authenticate, requireRole('Admin'), getContent);

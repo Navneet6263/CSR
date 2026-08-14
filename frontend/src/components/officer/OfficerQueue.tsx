@@ -8,8 +8,7 @@ import type { BGCheckApplicationRow } from '@/types/domain';
 type Filter = 'All' | 'Available' | 'Mine' | 'In progress';
 const filters: Filter[] = ['All', 'Available', 'Mine', 'In progress'];
 
-export function OfficerQueue({ rows, userId, loading }: { rows: BGCheckApplicationRow[]; userId?: number; loading: boolean }) {
-  const [query, setQuery] = useState('');
+export function OfficerQueue({ rows, userId, loading, query, onQueryChange }: { rows: BGCheckApplicationRow[]; userId?: number; loading: boolean; query: string; onQueryChange: (value: string) => void }) {
   const [filter, setFilter] = useState<Filter>('All');
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -29,7 +28,7 @@ export function OfficerQueue({ rows, userId, loading }: { rows: BGCheckApplicati
         <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-700">Live workload</p>
           <h2 className="mt-1 text-lg font-bold text-slate-900">Verification queue</h2></div>
         <div className="relative w-full sm:w-72"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search student, APP ID, city"
+          <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search student, APP ID, city"
             className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-cyan-400 focus:bg-white" /></div>
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">{filters.map((item) => <button key={item} onClick={() => setFilter(item)}

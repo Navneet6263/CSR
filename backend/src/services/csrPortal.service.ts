@@ -1,6 +1,7 @@
 import db from '../config/database';
 import { AuthPayload } from '../types';
 import { assertApplicationAccess } from './applicationAccess.service';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 export async function getCsrStats(sponsorId: number) {
   const [sponsor, statuses, states, genders] = await Promise.all([
@@ -23,13 +24,22 @@ export async function getCsrStats(sponsorId: number) {
   };
 }
 
-export function getCsrHistory(sponsorId: number, limit = 100) {
-  return db('Applications as a').join('Students as s', 's.StudentID', 'a.StudentID')
+export async function getCsrHistory(sponsorId: number, page = 1, limit = 20, search = '', status = '') {
+  const query = db('Applications as a').join('Students as s', 's.StudentID', 'a.StudentID')
     .join('Users as u', 'u.UserID', 's.UserID').join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
-    .select('a.ApplicationID', 'a.Status', 'a.ScholarshipAmount', 'a.UpdatedAt',
-      'u.FullName as StudentName', 'sc.Name as ScholarshipName')
-    .where('a.SponsorID', sponsorId).whereIn('a.Status', ['CSRApproved', 'CSRDeclined', 'PaymentInitiated', 'PaymentCompleted', 'PaymentFailed'])
-    .orderBy('a.UpdatedAt', 'desc').limit(limit);
+    .where('a.SponsorID', sponsorId).whereIn('a.Status', ['CSRApproved', 'CSRDeclined', 'PaymentInitiated', 'PaymentCompleted', 'PaymentFailed']);
+  if (status && status !== 'All') query.where('a.Status', status);
+  if (search.trim()) {
+    const needle = prefixSearchPattern(search);
+    const searchId = numericSearchId(search);
+    query.where((builder) => { builder.where('u.FullName', 'like', needle).orWhere('sc.Name', 'like', needle);
+      if (searchId) builder.orWhere('a.ApplicationID', searchId); });
+  }
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('a.ApplicationID as count').first();
+  const applications = await query.select('a.ApplicationID', 'a.Status', 'a.ScholarshipAmount', 'a.UpdatedAt',
+    'u.FullName as StudentName', 'sc.Name as ScholarshipName')
+    .orderBy('a.UpdatedAt', 'desc').offset((page - 1) * limit).limit(limit);
+  return { applications, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function getCsrApplication(applicationId: number, user: AuthPayload) {

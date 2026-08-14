@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 
 export interface AuditEntry {
-  userId: number;
+  userId?: number;
   action: string;
   entityType: string;
   entityId: number;
@@ -19,7 +19,7 @@ function safeJson(value: unknown): string | null {
 
 export async function writeAudit(trx: Knex.Transaction, entry: AuditEntry): Promise<void> {
   await trx('AuditLogs').insert({
-    UserID: entry.userId,
+    UserID: entry.userId ?? null,
     Action: entry.action,
     EntityType: entry.entityType,
     EntityID: entry.entityId,

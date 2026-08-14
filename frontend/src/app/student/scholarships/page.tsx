@@ -10,15 +10,15 @@ import { studentApi, scholarshipApi } from "@/lib/api";
 import type { MatchResult, Scholarship } from "@/lib/scholarships";
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, PauseCircle } from 'lucide-react';
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 export default function ScholarshipsPage() {
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<FilterState>({
     query: searchParams.get('query') ?? "",
-    category: "All",
-    onlyMatched: true,
-    sort: "match",
+    sort: "deadline",
   });
 
   const [loading, setLoading] = useState(true);
@@ -26,32 +26,34 @@ export default function ScholarshipsPage() {
   const [scholarshipsData, setScholarshipsData] = useState<Scholarship[]>([]);
   const [matches, setMatches] = useState<Map<string, MatchResult>>(new Map());
   const [profileStatus, setProfileStatus] = useState({ completion: 0, missing: [] as string[] });
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [total, setTotal] = useState(0);
+  const debouncedQuery = useDebouncedValue(filters.query);
 
   useEffect(() => {
+    studentApi.getProfile().then((profileRes) => setProfileStatus({
+      completion: profileRes.data?.profileCompletion ?? 0,
+      missing: profileRes.data?.missingProfileSections ?? [],
+    })).catch((reason) => setError(reason instanceof Error ? reason.message : 'Profile could not be loaded.'));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     async function load() {
+      setLoading(true);
       try {
-        const [matchRes, scholRes, profileRes] = await Promise.all([
-          studentApi.getMatches(),
-          scholarshipApi.getAll('status=Active&limit=100'),
-          studentApi.getProfile(),
-        ]);
-
-        setProfileStatus({
-          completion: profileRes.data?.profileCompletion ?? 0,
-          missing: profileRes.data?.missingProfileSections ?? [],
-        });
-
-        const evaluationMap = new Map<string, MatchResult>();
-        for (const item of matchRes.data?.matched ?? []) evaluationMap.set(String(item.scholarshipId), {
-          matched: true, score: 100, reasons: ['All configured eligibility rules passed'], blockers: [],
-        });
-        for (const item of matchRes.data?.failed ?? []) evaluationMap.set(String(item.scholarshipId), {
-          matched: false, score: 0, reasons: [], blockers: item.reasons,
-        });
-        setMatches(evaluationMap);
-
-        // Map backend scholarships to the UI interface
+        const params = new URLSearchParams({ status: 'Active,Paused', page: String(page), limit: String(limit), sort: filters.sort });
+        if (debouncedQuery.trim()) params.set('search', debouncedQuery.trim());
+        const scholRes = await scholarshipApi.getAll(params.toString());
         const rawSchols = scholRes.data?.scholarships || scholRes.data || [];
+        const ids = Array.isArray(rawSchols) ? rawSchols.map((item: any) => Number(item.ScholarshipID ?? item.scholarshipId)).filter(Boolean) : [];
+        const matchRes = await studentApi.getMatches(ids);
+        if (!active) return;
+        const evaluationMap = new Map<string, MatchResult>();
+        for (const item of matchRes.data?.matched ?? []) evaluationMap.set(String(item.scholarshipId), { matched: true, score: 100, reasons: ['All configured eligibility rules passed'], blockers: [] });
+        for (const item of matchRes.data?.failed ?? []) evaluationMap.set(String(item.scholarshipId), { matched: false, score: 0, reasons: [], blockers: item.reasons });
+        setMatches(evaluationMap);
         const mappedSchols: Scholarship[] = Array.isArray(rawSchols) ? rawSchols.map((s: any) => ({
           id: (s.ScholarshipID || s.id || '').toString(),
           title: s.Name || s.name || "",
@@ -62,17 +64,23 @@ export default function ScholarshipsPage() {
           tags: [s.Status || s.status].filter(Boolean),
           description: s.Description || s.description || "",
           logoUrl: s.SponsorLogoURL || s.sponsorLogoURL || undefined,
+          status: s.Status || s.status || 'Active',
+          pauseReason: s.PauseReason || s.pauseReason || undefined,
+          resumeAt: s.ResumeAt || s.resumeAt || undefined,
+          publishPauseNotice: Boolean(s.PublishPauseNotice ?? s.publishPauseNotice),
         })) : [];
         setScholarshipsData(mappedSchols);
-
+        setTotal(Number(scholRes.data?.pagination?.total ?? mappedSchols.length));
+        setError('');
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Scholarships could not be loaded.');
+        if (active) { setError(e instanceof Error ? e.message : 'Scholarships could not be loaded.'); setScholarshipsData([]); setTotal(0); }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
-    load();
-  }, []);
+    void load();
+    return () => { active = false; };
+  }, [debouncedQuery, filters.sort, limit, page]);
 
   const evaluated = useMemo(
     () => {
@@ -84,29 +92,9 @@ export default function ScholarshipsPage() {
   );
 
   const matchedCount = evaluated.filter((e) => e.match.matched).length;
+  const pausedScholarships = evaluated.filter(({ s }) => s.status === 'Paused').map(({ s }) => s);
 
-  const visible = useMemo(() => {
-    const q = filters.query.trim().toLowerCase();
-    const list = evaluated.filter(({ s, match }) => {
-      if (filters.onlyMatched && !match.matched) return false;
-      if (filters.category !== "All" && s.category !== filters.category) return false;
-      if (q) {
-        const hay = `${s.title} ${s.provider} ${s.tags.join(" ")}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-
-    list.sort((a, b) => {
-      if (filters.sort === "amount") return b.s.amount - a.s.amount;
-      if (filters.sort === "deadline")
-        return new Date(a.s.deadline).getTime() - new Date(b.s.deadline).getTime();
-      return b.match.score - a.match.score;
-    });
-    return list;
-  }, [evaluated, filters]);
-
-  if (loading) {
+  if (loading && !scholarshipsData.length) {
     return <div className="min-h-screen p-8 text-center text-muted-foreground">Loading scholarships...</div>;
   }
 
@@ -126,6 +114,27 @@ export default function ScholarshipsPage() {
         <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
           {error}
         </p>
+      )}
+
+      {pausedScholarships.length > 0 && (
+        <section className="overflow-hidden rounded-2xl border border-orange-200 bg-orange-50">
+          <div className="flex items-center gap-2 border-b border-orange-200 px-4 py-3 text-orange-950">
+            <PauseCircle className="h-5 w-5" />
+            <h2 className="font-semibold">Temporarily paused scholarship updates</h2>
+          </div>
+          <ul className="divide-y divide-orange-200">
+            {pausedScholarships.map((item) => (
+              <li key={item.id} className="px-4 py-3 text-sm text-orange-950">
+                <p className="font-semibold">{item.title}</p>
+                <p className="mt-1 text-orange-900/80">{item.pauseReason || 'Applications are temporarily unavailable while the program is reviewed.'}</p>
+                <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  {item.resumeAt ? `Planned reopening: ${new Date(item.resumeAt).toLocaleString('en-IN')}` : 'Reopening date will be announced soon'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {profileStatus.completion < 100 && (
@@ -152,12 +161,14 @@ export default function ScholarshipsPage() {
 
       <ScholarshipFilters
         value={filters}
-        onChange={setFilters}
-        totalCount={evaluated.length}
+        onChange={(value) => { setFilters(value); setPage(1); }}
+        totalCount={total}
+        pageCount={evaluated.length}
         matchedCount={matchedCount}
       />
 
-      {visible.length === 0 ? (
+      {loading && <div className="h-1 overflow-hidden rounded-full bg-muted"><div className="h-full w-1/3 animate-pulse rounded-full bg-primary" /></div>}
+      {evaluated.length === 0 ? (
         <div className="grid place-items-center rounded-2xl border border-dashed border-border bg-card p-12 text-center">
           <p className="text-sm text-muted-foreground">
             No scholarships fit those filters. Try clearing the search or category.
@@ -165,11 +176,13 @@ export default function ScholarshipsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map(({ s, match }) => (
+          {evaluated.map(({ s, match }) => (
             <ScholarshipCard key={s.id} scholarship={s} match={match} />
           ))}
         </div>
       )}
+      {total > 0 && <DataPagination page={page} limit={limit} total={total} loading={loading}
+        pageSizes={[12, 24, 48]} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />}
     </main>
   );
 }

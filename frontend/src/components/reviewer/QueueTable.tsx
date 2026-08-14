@@ -1,21 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { AlertTriangle, ArrowUpRight, Filter, RotateCcw, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { AlertTriangle, ArrowUpRight, RotateCcw, Search } from 'lucide-react';
 import type { ReviewApplicationRow } from '@/types/domain';
 
-export function QueueTable({ applications }: { applications: ReviewApplicationRow[] }) {
-  const scholarships = useMemo(() => ['All Scholarships', ...Array.from(
-    new Set(applications.map((item) => item.scholarshipName).filter(Boolean)),
-  )], [applications]);
-  const [scholarship, setScholarship] = useState('All Scholarships');
-  const [query, setQuery] = useState('');
-  const rows = useMemo(() => applications.filter((application) => {
-    if (scholarship !== 'All Scholarships' && application.scholarshipName !== scholarship) return false;
-    const search = query.trim().toLowerCase();
-    return !search || `${application.applicationId} ${application.studentName}`.toLowerCase().includes(search);
-  }), [applications, scholarship, query]);
+export function QueueTable({ applications, query, onQueryChange }: {
+  applications: ReviewApplicationRow[]; query: string; onQueryChange: (value: string) => void;
+}) {
 
   return (
     <div className="glass overflow-hidden">
@@ -27,15 +18,8 @@ export function QueueTable({ applications }: { applications: ReviewApplicationRo
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search ID or name..."
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search ID, name or scholarship..."
               className="w-56 rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm placeholder:text-fg-subtle focus:border-primary/60 focus:outline-none" />
-          </div>
-          <div className="relative">
-            <Filter className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-subtle" />
-            <select value={scholarship} onChange={(event) => setScholarship(event.target.value)}
-              className="cursor-pointer appearance-none rounded-lg border border-border bg-surface py-2 pl-9 pr-8 text-sm focus:border-primary/60 focus:outline-none">
-              {scholarships.map((item) => <option key={item} className="bg-bg-elev">{item}</option>)}
-            </select>
           </div>
         </div>
       </div>
@@ -47,7 +31,7 @@ export function QueueTable({ applications }: { applications: ReviewApplicationRo
             <th className="px-5 py-3 text-right font-medium">Action</th>
           </tr></thead>
           <tbody>
-            {rows.map((row, index) => (
+            {applications.map((row, index) => (
               <tr key={row.applicationId} className={`border-b border-border last:border-0 hover:bg-surface/40 ${index % 2 ? 'bg-surface/20' : ''}`}>
                 <td className="px-5 py-3.5 font-mono text-primary">APP-{row.applicationId}</td>
                 <td className="px-5 py-3.5"><div className="font-medium">{row.studentName}</div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Building2, CalendarDays, CheckCircle2, FileCheck2, Gift, IndianRupee, ListChecks, Loader2, Scale } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Building2, CalendarClock, CalendarDays, CheckCircle2, FileCheck2, Gift, IndianRupee, ListChecks, Loader2, PauseCircle, Scale } from 'lucide-react';
 import { scholarshipApi } from '@/lib/api';
 import type { Scholarship } from '@/types';
 
@@ -27,6 +27,7 @@ export default function StudentScholarshipDetailsPage() {
   if (!scholarship) return <main className="mx-auto max-w-4xl p-6"><p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-700">{error}</p></main>;
 
   const content = scholarship.publishedContent;
+  const paused = scholarship.status === 'Paused';
   return <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:py-8">
     <Link href="/student/scholarships" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" />Back to scholarships</Link>
 
@@ -50,6 +51,12 @@ export default function StudentScholarshipDetailsPage() {
       </div>
     </section>
 
+    {paused && <section role="status" className="rounded-2xl border border-orange-200 bg-orange-50 p-5 text-orange-950">
+      <h2 className="flex items-center gap-2 font-bold"><PauseCircle className="h-5 w-5" />Applications are temporarily paused</h2>
+      <p className="mt-2 text-sm leading-6 text-orange-900/80">{scholarship.pauseReason || 'The administrator is reviewing this program.'}</p>
+      <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold"><CalendarClock className="h-4 w-4" />{scholarship.resumeAt ? `Planned reopening: ${new Date(scholarship.resumeAt).toLocaleString('en-IN')}` : 'A reopening date has not been announced yet.'}</p>
+    </section>}
+
     {content ? <div className="grid gap-5 lg:grid-cols-2">
       <ContentCard icon={CheckCircle2} title="Program highlights" items={content.highlights} />
       <ContentCard icon={Scale} title="Eligibility" items={content.eligibility} />
@@ -62,7 +69,8 @@ export default function StudentScholarshipDetailsPage() {
 
     <div className="sticky bottom-4 flex flex-col items-center justify-between gap-3 rounded-2xl border bg-background/95 p-4 shadow-xl backdrop-blur sm:flex-row">
       <p className="text-xs text-muted-foreground">Review all eligibility rules, documents, and terms before applying.</p>
-      <Link href={`/student/scholarships/${id}/apply`} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">Review & apply <ArrowRight className="h-4 w-4" /></Link>
+      {paused ? <span className="inline-flex cursor-not-allowed items-center gap-2 rounded-full bg-orange-100 px-6 py-3 text-sm font-semibold text-orange-800"><PauseCircle className="h-4 w-4" />Applications paused</span>
+        : <Link href={`/student/scholarships/${id}/apply`} className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">Review & apply <ArrowRight className="h-4 w-4" /></Link>}
     </div>
   </main>;
 }

@@ -150,6 +150,10 @@ export function mapScholarship(raw: Raw): Scholarship {
     status: String(raw.Status ?? raw.status ?? ''),
     sponsorLogoURL: (raw.SponsorLogoURL ?? raw.sponsorLogoURL) as string | undefined,
     contentStatus: (raw.ContentStatus ?? raw.contentStatus) as string | undefined,
+    pauseReason: (raw.PauseReason ?? raw.pauseReason) as string | undefined,
+    pausedAt: (raw.PausedAt ?? raw.pausedAt) as string | undefined,
+    resumeAt: (raw.ResumeAt ?? raw.resumeAt) as string | undefined,
+    publishPauseNotice: Boolean(raw.PublishPauseNotice ?? raw.publishPauseNotice),
     publishedContent: publishedContent as Scholarship['publishedContent'],
   };
 }

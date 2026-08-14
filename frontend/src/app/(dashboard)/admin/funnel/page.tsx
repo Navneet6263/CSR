@@ -19,14 +19,14 @@ export default function AdminFunnel() {
   useEffect(() => {
     import('@/lib/api').then(({ applicationApi }) => {
       applicationApi.getAll().then(res => {
-        const apps = res.data?.applications || [];
-        
+        const byStatus = res.data?.statusCounts ?? {};
+        const count = (statuses: string[]) => statuses.reduce((sum, status) => sum + Number(byStatus[status] ?? 0), 0);
         const counts = {
-          registered: apps.length,
-          docAudit: apps.filter(a => ['DocAuditInProgress', 'DocAuditComplete', 'BGCheckInProgress', 'BGCheckComplete', 'ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.status)).length,
-          screening: apps.filter(a => ['ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.status)).length,
-          csr: apps.filter(a => ['CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted'].includes(a.status)).length,
-          funded: apps.filter(a => a.status === 'PaymentCompleted').length,
+          registered: Object.values(byStatus).reduce((sum, value) => sum + Number(value), 0),
+          docAudit: count(['DocAuditInProgress', 'DocAuditComplete', 'BGCheckInProgress', 'BGCheckComplete', 'ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted']),
+          screening: count(['ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted']),
+          csr: count(['CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated', 'PaymentCompleted']),
+          funded: count(['PaymentCompleted']),
         };
 
         setStages([

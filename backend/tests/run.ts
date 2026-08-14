@@ -6,3 +6,4 @@ import './screening.test';
 import './adminOverride.test';
 import './support.test';
 import './scholarshipContent.test';
+import './searchPattern.test';

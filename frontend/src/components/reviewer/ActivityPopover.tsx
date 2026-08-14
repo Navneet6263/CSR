@@ -22,8 +22,8 @@ export function ActivityPopover() {
   const [live, setLive] = useState<ActivityLog[]>([]);
 
   useEffect(() => { 
-    verificationApi.getReviewerLogs().then((res) => {
-      const formatted = (res.data || []).map(mapReviewerLog);
+    verificationApi.getReviewerLogs('page=1&limit=6').then((res) => {
+      const formatted = (res.data?.logs || []).map(mapReviewerLog);
       setLive(formatted);
     });
   }, []);

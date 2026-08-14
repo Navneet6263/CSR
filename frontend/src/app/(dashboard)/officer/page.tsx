@@ -9,6 +9,8 @@ import { TopNav } from '@/components/officer/TopNav';
 import { authApi, verificationApi } from '@/lib/api';
 import type { BGCheckApplicationRow } from '@/types/domain';
 import type { OfficerLog, OfficerStats } from '@/types/officer';
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const emptyStats: OfficerStats = { pending: 0, assigned: 0, available: 0, completed: 0, today: 0, overdue: 0 };
 
@@ -16,18 +18,22 @@ export default function OfficerDashboard() {
   const [rows, setRows] = useState<BGCheckApplicationRow[]>([]);
   const [stats, setStats] = useState<OfficerStats>(emptyStats);
   const [logs, setLogs] = useState<OfficerLog[]>([]);
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160);
+  const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true); const [error, setError] = useState('');
   const user = authApi.getUser();
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
+      const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+      if (debouncedQuery) params.set('search', debouncedQuery);
       const [queue, summary, activity] = await Promise.all([
-        verificationApi.getPendingBGChecks(), verificationApi.getOfficerStats(), verificationApi.getOfficerLogs(),
+        verificationApi.getPendingBGChecks(params.toString()), verificationApi.getOfficerStats(), verificationApi.getOfficerLogs('page=1&limit=5'),
       ]);
-      setRows(queue.data ?? []); setStats(summary.data ?? emptyStats); setLogs(activity.data ?? []);
+      setRows(queue.data?.applications ?? []); setTotal(queue.data?.pagination?.total ?? 0); setStats(summary.data ?? emptyStats); setLogs(activity.data?.logs ?? []);
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Field workload could not be loaded.'); }
     finally { setLoading(false); }
-  }, []);
+  }, [debouncedQuery, limit, page]);
   useEffect(() => { void load(); }, [load]);
 
   return <div className="flex min-h-screen flex-col bg-slate-50/50"><TopNav />
@@ -50,7 +56,8 @@ export default function OfficerDashboard() {
       </section>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <OfficerQueue rows={rows} userId={user?.userId} loading={loading} />
+        <div className="space-y-3"><OfficerQueue rows={rows} userId={user?.userId} loading={loading} query={query} onQueryChange={(value) => { setQuery(value); setPage(1); }} />
+          <DataPagination page={page} limit={limit} total={total} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} /></div>
         <aside className="space-y-5"><OfficerActivity rows={logs} /><VerificationProtocol /></aside>
       </div>
     </main>

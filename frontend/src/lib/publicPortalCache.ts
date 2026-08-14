@@ -1,6 +1,6 @@
 import { publicApi, type PublicPortal } from '@/lib/api';
 
-const key = 'shikshavritti.public-portal.v1'; const ttl = 5 * 60_000;
+const key = 'shikshavritti.public-portal.v2'; const ttl = 60_000;
 let memory: { data: PublicPortal; storedAt: number } | null = null;
 let request: Promise<PublicPortal | null> | null = null;
 

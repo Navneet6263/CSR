@@ -1,17 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ShieldCheck, Search, Clock } from "lucide-react";
 import { CheckerModal } from "@/components/finance/CheckerModal";
 import { inr, type Payout } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
 import { formatFinanceDateTime } from "@/lib/financeFormat";
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 
 
 export default function () {
-  const { awaitingChecker } = useFinance();
+  const { awaitingChecker, awaitingCheckerTotal, loadCheckerPage } = useFinance();
   const [active, setActive] = useState<Payout | null>(null);
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [loading, setLoading] = useState(false);
+  useEffect(() => { setLoading(true); loadCheckerPage(page, limit, debouncedQuery).finally(() => setLoading(false)); }, [debouncedQuery, limit, loadCheckerPage, page]);
 
   const total = awaitingChecker.reduce((s, r) => s + r.amount, 0);
 
@@ -26,10 +30,11 @@ export default function () {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <MiniStat icon={ShieldCheck} label="Awaiting verification" value={String(awaitingChecker.length)} />
+        <MiniStat icon={ShieldCheck} label="Awaiting verification" value={String(awaitingCheckerTotal)} />
         <MiniStat icon={Clock} label="Total value" value={inr(total)} />
         <MiniStat icon={Search} label="Dual-control" value="Enforced" />
       </div>
+      <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-navy-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search student, sponsor, payment or APP ID" className="w-full rounded-xl border border-navy-100 bg-white py-2 pl-9 pr-3 text-sm outline-none" /></div>
 
       {awaitingChecker.length === 0 ? (
         <div className="rounded-2xl border border-navy-100 bg-white py-16 text-center">
@@ -71,6 +76,7 @@ export default function () {
       )}
 
       {active ? <CheckerModal row={active} onClose={() => setActive(null)} /> : null}
+      <DataPagination page={page} limit={limit} total={awaitingCheckerTotal} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
     </div>
   );
 }

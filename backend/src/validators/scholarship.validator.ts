@@ -51,6 +51,18 @@ export const updateScholarshipSchema = scholarshipFields.omit({ rules: true }).p
 
 export type UpdateScholarshipInput = z.infer<typeof updateScholarshipSchema>;
 
+export const pauseScholarshipSchema = z.object({
+  reason: z.string().trim().min(10, 'Please provide a clear pause reason').max(1000),
+  resumeAt: z.string().datetime().optional(),
+  publishNotice: z.boolean().default(true),
+}).superRefine((data, context) => {
+  if (data.resumeAt && new Date(data.resumeAt).getTime() <= Date.now()) {
+    context.addIssue({ code: 'custom', path: ['resumeAt'], message: 'Resume date must be in the future' });
+  }
+});
+
+export type PauseScholarshipInput = z.infer<typeof pauseScholarshipSchema>;
+
 // ─── Eligibility Rule Schema ────────────────────────────────────────────────
 export const eligibilityRuleSchema = z.object({ scholarshipId: z.coerce.number().int().positive() })
   .and(embeddedRuleSchema);

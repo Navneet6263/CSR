@@ -19,8 +19,14 @@ function id(value: unknown) {
   return parsed;
 }
 
-export async function getStaffHandler(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await adminUsers.listStaff()); } catch (error) { next(error); }
+export async function getStaffHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    const active = req.query.active === 'true' ? true : req.query.active === 'false' ? false : undefined;
+    sendSuccess(res, await adminUsers.listStaff({ page, limit, active,
+      search: String(req.query.search ?? '').trim().slice(0, 100) || undefined,
+      role: String(req.query.role ?? '') || undefined }));
+  } catch (error) { next(error); }
 }
 
 export async function createStaffHandler(req: Request, res: Response, next: NextFunction) {
@@ -33,12 +39,18 @@ export async function deactivateStaffHandler(req: Request, res: Response, next: 
   catch (error) { next(error); }
 }
 
-export async function getAuditEventsHandler(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await getRecentAuditEvents()); } catch (error) { next(error); }
+export async function getAuditEventsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 25, 100);
+    sendSuccess(res, await getRecentAuditEvents({ page, limit,
+      search: String(req.query.search ?? '').trim().slice(0, 120) || undefined,
+      tone: String(req.query.tone ?? '') || undefined }));
+  } catch (error) { next(error); }
 }
 
-export async function getAdminPaymentQueueHandler(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await getAdminPaymentQueue()); } catch (error) { next(error); }
+export async function getAdminPaymentQueueHandler(req: Request, res: Response, next: NextFunction) {
+  try { const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await getAdminPaymentQueue(page, limit, String(req.query.search ?? ''))); } catch (error) { next(error); }
 }
 
 export async function getSponsorsHandler(_req: Request, res: Response, next: NextFunction) {
@@ -49,8 +61,9 @@ export async function getScholarshipOverviewHandler(req: Request, res: Response,
   try { sendSuccess(res, await getScholarshipOverview(id(req.params.id))); } catch (error) { next(error); }
 }
 
-export async function getAnnouncementsHandler(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await comms.listAnnouncements()); } catch (error) { next(error); }
+export async function getAnnouncementsHandler(req: Request, res: Response, next: NextFunction) {
+  try { const { page, limit } = parsePage(req.query.page, req.query.limit, 12, 100);
+    sendSuccess(res, await comms.listAnnouncements(page, limit, String(req.query.search ?? ''))); } catch (error) { next(error); }
 }
 export async function createAnnouncementHandler(req: Request, res: Response, next: NextFunction) {
   try { sendSuccess(res, await comms.createAnnouncement(req.body, requestActor(req)), 'Announcement saved.', 201); }
@@ -64,15 +77,18 @@ export async function archiveAnnouncementHandler(req: Request, res: Response, ne
   try { await comms.archiveAnnouncement(id(req.params.id), requestActor(req)); sendSuccess(res, null, 'Announcement archived.'); }
   catch (error) { next(error); }
 }
-export async function getBroadcastsHandler(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await comms.listBroadcasts()); } catch (error) { next(error); }
+export async function getBroadcastsHandler(req: Request, res: Response, next: NextFunction) {
+  try { const { page, limit } = parsePage(req.query.page, req.query.limit, 12, 100);
+    sendSuccess(res, await comms.listBroadcasts(page, limit, String(req.query.search ?? ''))); } catch (error) { next(error); }
 }
 export async function sendBroadcastHandler(req: Request, res: Response, next: NextFunction) {
   try { sendSuccess(res, await comms.sendBroadcast(req.body, requestActor(req)), 'Notification sent.', 201); }
   catch (error) { next(error); }
 }
-export async function getTicketsHandler(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await comms.listSupportTickets()); } catch (error) { next(error); }
+export async function getTicketsHandler(req: Request, res: Response, next: NextFunction) {
+  try { const { page, limit } = parsePage(req.query.page, req.query.limit, 12, 100);
+    sendSuccess(res, await comms.listSupportTickets(page, limit, String(req.query.search ?? ''),
+      String(req.query.status ?? ''), String(req.query.state ?? ''))); } catch (error) { next(error); }
 }
 export async function updateTicketHandler(req: Request, res: Response, next: NextFunction) {
   try { sendSuccess(res, await comms.updateTicket(id(req.params.id), req.body.status, requestActor(req))); }
@@ -105,7 +121,8 @@ export async function getRolePipelineHandler(req: Request, res: Response, next: 
     const role = req.params.role as admin.PipelineRole;
     if (!roles.includes(role)) throw new ValidationError('Invalid pipeline role.');
     const { page, limit } = parsePage(req.query.page, req.query.limit, 25, 100);
-    sendSuccess(res, await admin.getPipelineByRole(role, page, limit));
+    sendSuccess(res, await admin.getPipelineByRole(role, page, limit,
+      String(req.query.search ?? '').trim().slice(0, 100)));
   } catch (error) { next(error); }
 }
 

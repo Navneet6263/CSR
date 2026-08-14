@@ -1,5 +1,6 @@
 import db from '../config/database';
 import { NotFoundError } from '../utils/errors';
+import { resumeDueScholarships } from './scholarship.service';
 
 export function listSponsors() {
   return db('Sponsors').select('SponsorID', 'SponsorName', 'TotalFund', 'FundAllocated', 'FundUtilized', 'Status',
@@ -8,6 +9,7 @@ export function listSponsors() {
 }
 
 export async function getScholarshipOverview(scholarshipId: number) {
+  await resumeDueScholarships();
   const scholarship = await db('Scholarships as sc').join('Sponsors as sp', 'sp.SponsorID', 'sc.SponsorID')
     .leftJoin('ScholarshipContents as content', 'content.ScholarshipID', 'sc.ScholarshipID')
     .select('sc.*', 'sp.SponsorName', 'content.ReviewStatus as ContentStatus',
@@ -24,7 +26,8 @@ export async function getScholarshipOverview(scholarshipId: number) {
       .whereIn('Status', ['CSRApproved', 'PaymentPending', 'PaymentInitiated'])
       .sum('ScholarshipAmount as total').first(),
     db('AuditLogs as al').leftJoin('Users as u', 'u.UserID', 'al.UserID')
-      .select('al.Action', 'al.CreatedAt', 'u.FullName as ActorName')
+      .select('al.LogID', 'al.Action', 'al.CreatedAt', 'al.OldValue', 'al.NewValue', 'al.RequestID',
+        'u.FullName as ActorName', 'u.Role as ActorRole')
       .where({ 'al.EntityType': 'Scholarship', 'al.EntityID': scholarshipId })
       .orderBy('al.CreatedAt', 'desc').limit(20),
   ]);

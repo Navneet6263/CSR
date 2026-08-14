@@ -12,10 +12,10 @@ export const studentApi = {
   updateProfile: (data: Partial<StudentProfile>) =>
     apiClient<StudentProfile>('/students/me', { method: 'PUT', body: JSON.stringify(data) }),
   getDocuments: () => apiClient<any[]>('/students/me/documents'),
-  getMatches: () => apiClient<{
+  getMatches: (scholarshipIds?: number[]) => apiClient<{
     matched: Array<{ scholarshipId: number; name: string }>;
     failed: Array<{ scholarshipId: number; name: string; reasons: string[] }>;
-  }>('/students/me/matches'),
+  }>(`/students/me/matches${scholarshipIds?.length ? `?scholarshipIds=${scholarshipIds.join(',')}` : ''}`),
   uploadDocument: (docType: string, file: File) => {
     const formData = new FormData();
     formData.append('docType', docType);
@@ -38,6 +38,9 @@ export const scholarshipApi = {
     apiClient<Record<string, unknown>>('/scholarships', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: number, data: Partial<Scholarship>) =>
     apiClient<Scholarship>(`/scholarships/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  pause: (id: number, data: { reason: string; resumeAt?: string; publishNotice: boolean }) =>
+    apiClient<Scholarship>(`/scholarships/${id}/pause`, { method: 'POST', body: JSON.stringify(data) }),
+  resume: (id: number) => apiClient<Scholarship>(`/scholarships/${id}/resume`, { method: 'POST' }),
   getRules: async (id: number) => {
     const response = await apiClient<Record<string, unknown>[]>(`/scholarships/${id}/rules`);
     return { ...response, data: (response.data ?? []).map(mapEligibilityRule) };
@@ -82,13 +85,13 @@ export const applicationApi = {
   },
   submit: (id: number) =>
     apiClient<Application>(`/applications/${id}/submit`, { method: 'POST' }),
-  getMy: async () => {
-    const response = await apiClient<Record<string, unknown>[]>('/applications/my');
-    return { ...response, data: (response.data ?? []).map(mapApplication) };
+  getMy: async (params?: string) => {
+    const response = await apiClient<{ applications: Record<string, unknown>[]; pagination: { page: number; limit: number; total: number } }>(`/applications/my${params ? `?${params}` : ''}`);
+    return { ...response, data: { applications: (response.data?.applications ?? []).map(mapApplication), pagination: response.data.pagination } };
   },
   getById: (id: number) => apiClient<Record<string, unknown>>(`/applications/${id}`),
   getAll: (params?: string) =>
-    apiClient<{ applications: Application[] }>(`/applications${params ? '?' + params : ''}`),
+    apiClient<{ applications: Application[]; pagination: { page: number; limit: number; total: number }; statusCounts: Record<string, number> }>(`/applications${params ? '?' + params : ''}`),
 };
 
 export const institutionApi = {

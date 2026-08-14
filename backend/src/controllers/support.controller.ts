@@ -4,6 +4,7 @@ import * as tickets from '../services/supportTickets.service';
 import { ValidationError } from '../utils/errors';
 import { requestActor } from '../utils/requestActor';
 import { sendSuccess } from '../utils/response';
+import { parsePage } from '../utils/pagination';
 
 function positive(value: string | string[] | undefined, label: string) {
   const parsed = Number(Array.isArray(value) ? value[0] : value);
@@ -27,8 +28,9 @@ export async function student(req: Request, res: Response, next: NextFunction) {
   catch (error) { next(error); }
 }
 
-export async function activity(_req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await read.listRecentActivity()); } catch (error) { next(error); }
+export async function activity(req: Request, res: Response, next: NextFunction) {
+  try { const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await read.listRecentActivity(page, limit, req.query.blockersOnly === 'true')); } catch (error) { next(error); }
 }
 
 export async function recordActivity(req: Request, res: Response, next: NextFunction) {
@@ -44,8 +46,9 @@ export async function createTicket(req: Request, res: Response, next: NextFuncti
 export async function listTickets(req: Request, res: Response, next: NextFunction) {
   try {
     const mine = req.query.mine === 'true' ? req.user!.userId : undefined;
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
     sendSuccess(res, await tickets.listTickets(String(req.query.status ?? ''), mine,
-      String(req.query.query ?? '').trim().slice(0, 100)));
+      String(req.query.query ?? '').trim().slice(0, 100), page, limit));
   } catch (error) { next(error); }
 }
 

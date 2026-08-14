@@ -1,4 +1,5 @@
 import db from '../config/database';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 function queueBase() {
   return db('Applications as a')
@@ -27,24 +28,40 @@ function queueBase() {
     );
 }
 
-export async function getPendingScreening(userId: number, limit = 50) {
-  return queueBase()
+function applyQueueSearch(query: ReturnType<typeof queueBase>, search: string) {
+  if (!search.trim()) return query;
+  const needle = prefixSearchPattern(search);
+  const searchId = numericSearchId(search);
+  return query.where((builder) => { builder.where('u.FullName', 'like', needle).orWhere('sc.Name', 'like', needle)
+    .orWhere('sp.SponsorName', 'like', needle).orWhere('s.City', 'like', needle).orWhere('s.State', 'like', needle)
+    .orWhere('s.Course', 'like', needle); if (searchId) builder.orWhere('a.ApplicationID', searchId); });
+}
+
+export async function getPendingScreening(userId: number, page = 1, limit = 20, search = '') {
+  const query = applyQueueSearch(queueBase()
     .whereIn('a.Status', ['BGCheckComplete', 'ScreeningPending'])
     .where((query) => query.whereNull('a.AssignedScreener').orWhere('a.AssignedScreener', userId))
     .whereNotExists(function excludeRecordedDecision() {
       this.select(db.raw('1')).from('ApplicationDecisions as recorded')
         .whereRaw('recorded.ApplicationID = a.ApplicationID').where('recorded.Stage', 'Screening')
         .whereIn('recorded.Decision', ['Approve', 'Reject']);
-    })
-    .orderBy([{ column: 'a.StageEnteredAt', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
-    .limit(limit);
+    }), search);
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('a.ApplicationID as count').first();
+  const applications = await query.orderBy([{ column: 'a.StageEnteredAt', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
+    .offset((page - 1) * limit).limit(limit);
+  return { applications, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
-export async function getScreeningHistory(userId: number, limit = 100) {
-  return queueBase().join('ApplicationDecisions as decision', function joinDecision() {
+export async function getScreeningHistory(userId: number, page = 1, limit = 20, search = '', decision = '') {
+  const query = applyQueueSearch(queueBase().join('ApplicationDecisions as decision', function joinDecision() {
     this.on('decision.ApplicationID', '=', 'a.ApplicationID').andOnVal('decision.Stage', '=', 'Screening');
   }).select('decision.Decision as decision', 'decision.Reason as decisionNotes', 'decision.CreatedAt as decisionAt')
-    .where('decision.ActorUserID', userId).orderBy('decision.CreatedAt', 'desc').limit(limit);
+    .where('decision.ActorUserID', userId), search);
+  if (decision === 'Returned') query.whereIn('decision.Decision', ['ReturnDocument', 'ReturnBackground']);
+  else if (decision && decision !== 'All') query.where('decision.Decision', decision);
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('decision.DecisionID as count').first();
+  const applications = await query.orderBy('decision.CreatedAt', 'desc').offset((page - 1) * limit).limit(limit);
+  return { applications, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function getScreenerStats(userId: number) {
@@ -76,8 +93,10 @@ export async function getScreenerStats(userId: number) {
     approvalRate: approvedCount + rejectedCount ? Math.round(approvedCount / (approvedCount + rejectedCount) * 100) : 0 };
 }
 
-export async function getPendingCSR(sponsorId: number, limit = 50) {
-  return queueBase().where('a.Status', 'ScreeningApproved').where('a.SponsorID', sponsorId)
-    .orderBy([{ column: 'a.StageEnteredAt', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
-    .limit(limit);
+export async function getPendingCSR(sponsorId: number, page = 1, limit = 20, search = '') {
+  const query = applyQueueSearch(queueBase().where('a.Status', 'ScreeningApproved').where('a.SponsorID', sponsorId), search);
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('a.ApplicationID as count').first();
+  const applications = await query.orderBy([{ column: 'a.StageEnteredAt', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
+    .offset((page - 1) * limit).limit(limit);
+  return { applications, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }

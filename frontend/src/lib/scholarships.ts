@@ -11,6 +11,10 @@ export interface Scholarship {
   tags: string[];
   description: string;
   logoUrl?: string;
+  status: string;
+  pauseReason?: string;
+  resumeAt?: string;
+  publishPauseNotice?: boolean;
 }
 
 export interface MatchResult {

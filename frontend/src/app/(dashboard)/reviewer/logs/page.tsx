@@ -1,13 +1,15 @@
 'use client';
 
 import { Check, FileCheck2, Filter, Search, Send, X, Loader2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { TopNav } from "@/components/reviewer/TopNav";
 import { verificationApi } from "@/lib/api/verification";
 import { mapReviewerLog } from '@/lib/reviewerActivity';
 import type { ReviewerActivityLog as ActivityLog } from '@/types/reviewer';
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 
 const meta: Record<ActivityLog["action"], { icon: typeof Check; tone: string; verb: string }> = {
@@ -21,23 +23,19 @@ export default function LogsPage() {
   const [f, setF] = useState<"All" | ActivityLog["action"]>("All");
   const [live, setLive] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [total, setTotal] = useState(0);
+  const debouncedQ = useDebouncedValue(q, 160);
 
-  useEffect(() => {
-    verificationApi.getReviewerLogs().then((res) => {
-      const formatted = (res.data || []).map(mapReviewerLog);
+  const load = useCallback(() => {
+    setLoading(true); const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (debouncedQ) params.set('search', debouncedQ); if (f !== 'All') params.set('action', f);
+    verificationApi.getReviewerLogs(params.toString()).then((res) => {
+      const formatted = (res.data?.logs || []).map(mapReviewerLog);
       setLive(formatted);
+      setTotal(res.data?.pagination?.total ?? 0);
     }).finally(() => setLoading(false));
-  }, []);
-
-  const items = useMemo(
-    () =>
-      live.filter((l) => {
-        const okQ = !q || `${l.studentName} ${l.appId} ${l.docType}`.toLowerCase().includes(q.toLowerCase());
-        const okF = f === "All" || l.action === f;
-        return okQ && okF;
-      }),
-    [q, f, live],
-  );
+  }, [debouncedQ, f, limit, page]);
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div className="min-h-screen pb-16">
@@ -53,7 +51,7 @@ export default function LogsPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => { setQ(e.target.value); setPage(1); }}
                 placeholder="Search logs…"
                 className="h-10 w-64 rounded-xl border-white/60 bg-white/70 pl-9 shadow-sm"
               />
@@ -63,7 +61,7 @@ export default function LogsPage() {
               {(["All", "Approved", "Rejected", "Submitted"] as const).map((opt) => (
                 <button
                   key={opt}
-                  onClick={() => setF(opt)}
+                  onClick={() => { setF(opt); setPage(1); }}
                   className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                     f === opt ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-white/80"
                   }`}
@@ -82,7 +80,7 @@ export default function LogsPage() {
                 <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Loading activity logs...
               </li>
             )}
-            {!loading && items.map((l) => {
+            {!loading && live.map((l) => {
               const M = meta[l.action];
               const Icon = M.icon;
               return (
@@ -121,7 +119,7 @@ export default function LogsPage() {
                 </li>
               );
             })}
-            {!loading && items.length === 0 && (
+            {!loading && live.length === 0 && (
               <li className="ml-6 py-8 text-center text-sm text-muted-foreground">No logs match your filters.</li>
             )}
           </ol>
@@ -129,6 +127,7 @@ export default function LogsPage() {
             <FileCheck2 className="h-3.5 w-3.5" /> End of recent activity
           </div>
         </div>
+        <DataPagination page={page} limit={limit} total={total} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
       </main>
     </div>
   );

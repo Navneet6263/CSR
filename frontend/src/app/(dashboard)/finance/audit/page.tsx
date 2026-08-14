@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { ScrollText, User, ShieldCheck, Settings, Cpu } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ScrollText, User, ShieldCheck, Settings, Cpu, Search } from "lucide-react";
 import { useFinance } from "@/lib/store/finance-store";
 import { formatFinanceDateTime } from "@/lib/financeFormat";
 import { inr } from "@/types/finance";
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 
 
@@ -12,8 +14,10 @@ const FILTERS = ["All", "Maker", "Checker", "Admin", "System"] as const;
 type Filter = (typeof FILTERS)[number];
 
 export default function FinanceAuditPage() {
-  const { audit } = useFinance();
+  const { audit, auditTotal, loadAuditPage } = useFinance();
   const [filter, setFilter] = useState<Filter>("All");
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [loading, setLoading] = useState(false);
+  useEffect(() => { setLoading(true); loadAuditPage(page, limit, debouncedQuery).finally(() => setLoading(false)); }, [debouncedQuery, limit, loadAuditPage, page]);
 
   const rows = filter === "All" ? audit : audit.filter((a) => a.role === filter);
 
@@ -26,6 +30,7 @@ export default function FinanceAuditPage() {
           Every Maker action, Checker verification, and Admin override — immutable log.
         </p>
       </div>
+      <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-navy-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search actor, action, UTR or APP ID" className="w-full rounded-xl border border-navy-100 bg-white py-2 pl-9 pr-3 text-sm outline-none" /></div>
 
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
@@ -77,6 +82,7 @@ export default function FinanceAuditPage() {
           ) : null}
         </ol>
       </div>
+      <DataPagination page={page} limit={limit} total={auditTotal} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
     </div>
   );
 }

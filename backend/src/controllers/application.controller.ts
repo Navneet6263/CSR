@@ -49,7 +49,10 @@ export async function getMyApplications(req: Request, res: Response, next: NextF
   try {
     if (!req.user) throw new AuthError();
     const studentId = await requireStudentId(req.user.userId);
-    sendSuccess(res, await getStudentApplications(studentId), 'Applications retrieved.');
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 10, 50);
+    sendSuccess(res, await getStudentApplications(studentId, { page, limit,
+      search: String(req.query.search ?? '').trim().slice(0, 100) || undefined,
+      bucket: String(req.query.bucket ?? '') || undefined }), 'Applications retrieved.');
   } catch (error) { next(error); }
 }
 

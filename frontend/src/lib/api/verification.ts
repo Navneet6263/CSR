@@ -7,10 +7,12 @@ import type { OfficerCaseDetail, OfficerLog, OfficerStats } from '@/types/office
 import { mapDocument, mapReviewApp, mapBGApp } from '@/lib/mappers';
 import { apiClient } from './client';
 
+type Page<T> = { applications?: T[]; logs?: T[]; pagination: { page: number; limit: number; total: number } };
+
 export const verificationApi = {
-  getPendingDocs: async () => {
-    const res = await apiClient<Record<string, unknown>[]>('/verify/docs/pending');
-    return { ...res, data: (res.data || []).map(mapReviewApp) as ReviewApplicationRow[] };
+  getPendingDocs: async (params = '') => {
+    const res = await apiClient<Page<Record<string, unknown>>>(`/verify/docs/pending${params ? `?${params}` : ''}`);
+    return { ...res, data: { applications: (res.data?.applications || []).map(mapReviewApp) as ReviewApplicationRow[], pagination: res.data?.pagination } };
   },
 
   reviewDoc: (id: number, data: DocReviewPayload) =>
@@ -24,9 +26,9 @@ export const verificationApi = {
   uploadDoc: (data: DocUploadPayload) =>
     apiClient('/verify/docs/upload', { method: 'POST', body: JSON.stringify(data) }),
 
-  getPendingBGChecks: async () => {
-    const res = await apiClient<Record<string, unknown>[]>('/verify/bg-checks/pending');
-    return { ...res, data: (res.data || []).map(mapBGApp) as BGCheckApplicationRow[] };
+  getPendingBGChecks: async (params = '') => {
+    const res = await apiClient<Page<Record<string, unknown>>>(`/verify/bg-checks/pending${params ? `?${params}` : ''}`);
+    return { ...res, data: { applications: (res.data?.applications || []).map(mapBGApp) as BGCheckApplicationRow[], pagination: res.data?.pagination } };
   },
 
   submitBGCheck: (appId: number, data: BGCheckPayload) =>
@@ -40,12 +42,12 @@ export const verificationApi = {
     return apiClient<Record<string, unknown>>(`/verify/docs/application/${applicationId}`);
   },
 
-  getReviewerLogs: async () => {
-    return apiClient<RawReviewerLog[]>('/verify/logs');
+  getReviewerLogs: async (params = '') => {
+    return apiClient<{ logs: RawReviewerLog[]; pagination: { page: number; limit: number; total: number } }>(`/verify/logs${params ? `?${params}` : ''}`);
   },
 
-  getOfficerLogs: async () => {
-    return apiClient<OfficerLog[]>('/verify/bg-checks/logs');
+  getOfficerLogs: async (params = '') => {
+    return apiClient<{ logs: OfficerLog[]; pagination: { page: number; limit: number; total: number } }>(`/verify/bg-checks/logs${params ? `?${params}` : ''}`);
   },
 
   getOfficerStats: async () => {

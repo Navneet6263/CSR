@@ -13,8 +13,8 @@ export default function SupportDashboard() {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [summary, directory, queue] = await Promise.all([supportApi.overview(), supportApi.students('', 1, 50), supportApi.tickets()]);
-      setOverview(summary.data); setStudents(directory.data?.data ?? []); setTickets(queue.data ?? []);
+      const [summary, directory, queue] = await Promise.all([supportApi.overview(), supportApi.students('', 1, 6), supportApi.tickets('All', false, '', 1, 5)]);
+      setOverview(summary.data); setStudents(directory.data?.data ?? []); setTickets(queue.data?.tickets ?? []);
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Support workload could not be loaded.'); }
     finally { setLoading(false); }
   }, []);

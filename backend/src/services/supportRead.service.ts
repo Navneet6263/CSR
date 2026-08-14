@@ -4,6 +4,7 @@ import type { ActivityEventInput } from '../validators/support.validator';
 import { writeAudit } from './audit.service';
 import { WorkflowActor } from './workflow.service';
 import { profileReadiness } from './profileReadiness.service';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 const activeStatuses = ['Draft', 'Submitted', 'AutoMatched', 'DocAuditInProgress', 'DocAuditComplete',
   'BGCheckInProgress', 'BGCheckComplete', 'ScreeningPending', 'ScreeningApproved', 'CSRPending',
@@ -46,8 +47,9 @@ export async function getSupportOverview() {
 
 export async function listSupportStudents(query = '', page = 1, limit = 25) {
   const base = db('Students as st').join('Users as u', 'u.UserID', 'st.UserID').where('u.Role', 'Student');
-  if (query) base.where((builder) => builder.where('u.FullName', 'like', `%${query}%`)
-    .orWhere('u.Email', 'like', `%${query}%`).orWhereRaw('CAST(st.StudentID AS VARCHAR) LIKE ?', [`%${query}%`]));
+  if (query) { const search = prefixSearchPattern(query); const searchId = numericSearchId(query);
+    base.where((builder) => { builder.where('u.FullName', 'like', search).orWhere('u.Email', 'like', search);
+      if (searchId) builder.orWhere('st.StudentID', searchId); }); }
   const [total, rows] = await Promise.all([
     base.clone().count('* as count').first(),
     base.clone().select('st.*', 'u.FullName', 'u.Email', 'u.Phone', 'u.CreatedAt as RegisteredAt')
@@ -98,10 +100,22 @@ export async function getSupportStudent(studentId: number, actor: WorkflowActor)
   });
 }
 
-export function listRecentActivity(limit = 100) {
-  return db('UserActivityEvents as e').join('Users as u', 'u.UserID', 'e.UserID')
-    .select('e.ActivityID', 'e.UserID', 'u.FullName', 'e.PageCode', 'e.StepCode', 'e.EventType',
-      'e.ErrorCode', 'e.OccurredAt').where('u.Role', 'Student').orderBy('e.OccurredAt', 'desc').limit(limit);
+export async function listRecentActivity(page = 1, limit = 20, blockersOnly = false) {
+  const query = db('UserActivityEvents as e').join('Users as u', 'u.UserID', 'e.UserID').where('u.Role', 'Student');
+  if (blockersOnly) query.whereNot('e.EventType', 'PageView');
+  const since = new Date(Date.now() - 15 * 60_000);
+  const [totalRow, facets, rows] = await Promise.all([
+    query.clone().countDistinct('e.ActivityID as count').first(),
+    db('UserActivityEvents as e').join('Users as u', 'u.UserID', 'e.UserID').where('u.Role', 'Student').select(
+      db.raw("SUM(CASE WHEN e.EventType IN ('UploadError','ValidationError') THEN 1 ELSE 0 END) AS blocked"),
+      db.raw("SUM(CASE WHEN e.EventType='HelpRequested' THEN 1 ELSE 0 END) AS help"),
+      db.raw('COUNT(DISTINCT CASE WHEN e.OccurredAt >= ? THEN e.UserID END) AS active', [since]),
+    ).first(),
+    query.clone().select('e.ActivityID', 'e.UserID', 'u.FullName', 'e.PageCode', 'e.StepCode', 'e.EventType',
+      'e.ErrorCode', 'e.OccurredAt').orderBy('e.OccurredAt', 'desc').offset((page - 1) * limit).limit(limit),
+  ]);
+  return { activities: rows, pagination: { page, limit, total: Number(totalRow?.count ?? 0) },
+    facets: { blocked: Number(facets?.blocked ?? 0), help: Number(facets?.help ?? 0), active: Number(facets?.active ?? 0) } };
 }
 
 export async function recordActivity(userId: number, input: ActivityEventInput, requestId?: string) {

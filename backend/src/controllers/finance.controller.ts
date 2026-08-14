@@ -21,8 +21,8 @@ function idempotencyKey(req: Request) {
 
 export async function getPendingInitiation(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await finance.getPendingInitiation(limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await finance.getPendingInitiation(page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -40,8 +40,8 @@ export async function initiatePayment(req: Request, res: Response, next: NextFun
 
 export async function getPendingVerifications(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await finance.getPendingVerifications(req.user!.userId, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await finance.getPendingVerifications(req.user!.userId, page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -58,14 +58,14 @@ export async function getPaymentHistory(req: Request, res: Response, next: NextF
       throw new ValidationError('Payment history status must be completed or failed.');
     }
     const status = req.params.status === 'failed' ? 'Failed' : 'Completed';
-    const { limit } = parsePage(undefined, req.query.limit, 100, 100);
-    sendSuccess(res, await finance.getPaymentHistory(status, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await finance.getPaymentHistory(status, page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
 export async function getFinanceAudit(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 100, 100);
-    sendSuccess(res, await finance.getFinanceAudit(limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await finance.getFinanceAudit(page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }

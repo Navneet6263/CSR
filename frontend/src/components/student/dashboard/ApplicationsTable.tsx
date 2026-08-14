@@ -43,9 +43,9 @@ export function ApplicationsTable({ applications }: Props) {
             </tr>
           </thead>
           <tbody>
-            {applications.map((app) => (
+            {applications.map((app, index) => (
               <tr
-                key={app.id}
+                key={app.id || `application-row-${index}`}
                 className="border-b border-border last:border-0 transition hover:bg-muted/40"
               >
                 <td className="px-6 py-3">

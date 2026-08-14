@@ -5,9 +5,9 @@ export const adminApi = {
     return await apiClient<any>('/admin/metrics');
   },
 
-  getPipeline: async (role: 'reviewer' | 'bgchecker' | 'screener' | 'csr', page: number = 1, limit: number = 10) => {
+  getPipeline: async (role: 'reviewer' | 'bgchecker' | 'screener' | 'csr', page: number = 1, limit: number = 10, search = '') => {
     return await apiClient<{ data: Record<string, unknown>[]; total: number;
-      workload: Array<{ userId?: number; sponsorId?: number; count: number }> }>(`/admin/pipeline/${role}?page=${page}&limit=${limit}`);
+      workload: Array<{ userId?: number; sponsorId?: number; count: number }> }>(`/admin/pipeline/${role}?page=${page}&limit=${limit}${search ? `&search=${encodeURIComponent(search)}` : ''}`);
   },
 
   toggleHold: async (applicationId: number, hold: boolean, reason?: string) => {
@@ -22,22 +22,22 @@ export const adminApi = {
         method: 'POST', body: JSON.stringify({ reason, confirmation, expectedStatus }),
       },
     ),
-  getUsers: () => apiClient<Record<string, unknown>[]>('/admin/users'),
+  getUsers: (params?: string) => apiClient<{ users: Record<string, unknown>[]; pagination: { page: number; limit: number; total: number }; summary: { total: number; csrPartners: number; internalStaff: number; inactive: number } }>(`/admin/users${params ? `?${params}` : ''}`),
   createUser: (data: Record<string, unknown>) => apiClient<Record<string, unknown>>('/admin/users', {
     method: 'POST', body: JSON.stringify(data),
   }),
   deactivateUser: (userId: number) => apiClient(`/admin/users/${userId}`, { method: 'DELETE' }),
-  getAuditEvents: () => apiClient<Record<string, unknown>[]>('/admin/audit-events'),
-  getPaymentQueue: () => apiClient<Record<string, unknown>[]>('/admin/payment-queue'),
+  getAuditEvents: (params?: string) => apiClient<{ events: Record<string, unknown>[]; pagination: { page: number; limit: number; total: number }; facets: { ok: number; warn: number; info: number; danger: number } }>(`/admin/audit-events${params ? `?${params}` : ''}`),
+  getPaymentQueue: (params = '') => apiClient<{ applications: Record<string, unknown>[]; pagination: { page: number; limit: number; total: number }; summary: { amount: number } }>(`/admin/payment-queue${params ? `?${params}` : ''}`),
   getSponsors: () => apiClient<Record<string, unknown>[]>('/admin/sponsors'),
   getScholarshipOverview: (id: number) => apiClient<Record<string, any>>(`/admin/scholarships/${id}/overview`),
-  getAnnouncements: () => apiClient<Record<string, any>[]>('/admin/announcements'),
+  getAnnouncements: (params = '') => apiClient<{ announcements: Record<string, any>[]; pagination: { page: number; limit: number; total: number }; facets: { live: number; draft: number; expired: number } }>(`/admin/announcements${params ? `?${params}` : ''}`),
   createAnnouncement: (data: Record<string, unknown>) => apiClient('/admin/announcements', { method: 'POST', body: JSON.stringify(data) }),
   updateAnnouncement: (id: number, data: Record<string, unknown>) => apiClient(`/admin/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   archiveAnnouncement: (id: number) => apiClient(`/admin/announcements/${id}`, { method: 'DELETE' }),
-  getBroadcasts: () => apiClient<Record<string, any>[]>('/admin/broadcasts'),
+  getBroadcasts: (params = '') => apiClient<{ broadcasts: Record<string, any>[]; pagination: { page: number; limit: number; total: number } }>(`/admin/broadcasts${params ? `?${params}` : ''}`),
   sendBroadcast: (data: Record<string, unknown>) => apiClient('/admin/broadcasts', { method: 'POST', body: JSON.stringify(data) }),
-  getSupportTickets: () => apiClient<Record<string, any>[]>('/admin/support-tickets'),
+  getSupportTickets: (params = '') => apiClient<{ tickets: Record<string, any>[]; pagination: { page: number; limit: number; total: number }; facets: { open: number; progress: number; resolved: number; urgent: number; states: string[] } }>(`/admin/support-tickets${params ? `?${params}` : ''}`),
   updateSupportTicket: (id: number, status: string) => apiClient(`/admin/support-tickets/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   getSlaAnalytics: () => apiClient<Array<Record<string, any>>>('/admin/analytics/sla'),
   getGeoAnalytics: () => apiClient<{ states: Array<Record<string, any>>; cities: Array<Record<string, any>> }>('/admin/analytics/geo'),

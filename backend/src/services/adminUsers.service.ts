@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import db from '../config/database';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 import { WorkflowActor } from './workflow.service';
 import { writeAudit } from './audit.service';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../utils/errors';
@@ -11,12 +12,35 @@ export interface CreateStaffInput {
   financeFunction?: 'Maker' | 'Checker'; sponsorId?: number; organization?: string; fundCap?: number;
 }
 
-export function listStaff(limit = 100) {
-  return db('Users as u').leftJoin('Sponsors as s', 's.SponsorID', 'u.SponsorID')
+const staffRoles = ['Finance', 'CSRPartner', 'DocReviewer', 'BGCheckOfficer', 'ScreeningOfficer', 'SupportAgent'];
+
+export async function listStaff(filters: { page?: number; limit?: number; search?: string; role?: string; active?: boolean } = {}) {
+  const page = filters.page ?? 1; const limit = filters.limit ?? 20;
+  const query = db('Users as u').leftJoin('Sponsors as s', 's.SponsorID', 'u.SponsorID')
     .select('u.UserID', 'u.FullName', 'u.Email', 'u.Role', 'u.SponsorID', 'u.IsActive', 'u.MustChangePassword',
       'u.FinanceFunction', 'u.CreatedAt', 's.SponsorName', 's.TotalFund', 's.FundAllocated', 's.FundUtilized')
-    .whereIn('u.Role', ['Finance', 'CSRPartner', 'DocReviewer', 'BGCheckOfficer', 'ScreeningOfficer', 'SupportAgent'])
-    .orderBy('u.CreatedAt', 'desc').limit(limit);
+    .whereIn('u.Role', staffRoles);
+  if (filters.role && staffRoles.includes(filters.role)) query.where('u.Role', filters.role);
+  if (filters.active !== undefined) query.where('u.IsActive', filters.active);
+  if (filters.search) {
+    const search = prefixSearchPattern(filters.search);
+    const searchId = numericSearchId(filters.search);
+    query.where((builder) => { builder.where('u.FullName', 'like', search).orWhere('u.Email', 'like', search)
+      .orWhere('s.SponsorName', 'like', search); if (searchId) builder.orWhere('u.UserID', searchId); });
+  }
+  const summaryBase = db('Users').whereIn('Role', staffRoles);
+  const [total, users, summary] = await Promise.all([
+    query.clone().clearSelect().count('* as count').first(),
+    query.orderBy([{ column: 'u.CreatedAt', order: 'desc' }, { column: 'u.UserID', order: 'desc' }])
+      .limit(limit).offset((page - 1) * limit),
+    summaryBase.select(db.raw('COUNT(*) as total'),
+      db.raw("SUM(CASE WHEN Role = 'CSRPartner' THEN 1 ELSE 0 END) as csrPartners"),
+      db.raw("SUM(CASE WHEN Role <> 'CSRPartner' THEN 1 ELSE 0 END) as internalStaff"),
+      db.raw('SUM(CASE WHEN IsActive = 0 THEN 1 ELSE 0 END) as inactive')).first(),
+  ]);
+  return { users, pagination: { page, limit, total: Number(total?.count ?? 0) },
+    summary: { total: Number(summary?.total ?? 0), csrPartners: Number(summary?.csrPartners ?? 0),
+      internalStaff: Number(summary?.internalStaff ?? 0), inactive: Number(summary?.inactive ?? 0) } };
 }
 
 function temporaryPassword() {

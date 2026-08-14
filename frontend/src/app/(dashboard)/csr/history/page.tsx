@@ -1,15 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Search } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { screeningApi } from '@/lib/api';
 
 export default function HistoryPage() {
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]); const [error, setError] = useState('');
-  useEffect(() => { screeningApi.getCSRHistory().then((response) => setRows(response.data ?? [])).catch((reason: Error) => setError(reason.message)); }, []);
+  const [rows, setRows] = useState<Record<string, unknown>[]>([]); const [error, setError] = useState(''); const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [total, setTotal] = useState(0);
+  const load = useCallback(() => { setLoading(true); const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (debouncedQuery) params.set('search', debouncedQuery);
+    screeningApi.getCSRHistory(params.toString()).then((response) => { setRows(response.data?.applications ?? []); setTotal(response.data?.pagination?.total ?? 0); setError(''); }).catch((reason: Error) => setError(reason.message)).finally(() => setLoading(false)); }, [debouncedQuery, limit, page]);
+  useEffect(() => { load(); }, [load]);
   return <div className="space-y-6"><div><h1 className="text-3xl font-bold">Funding Decision History</h1><p className="text-sm text-slate-500">Sponsor-scoped approval and payment outcomes.</p></div>
+    <div className="flex items-center gap-2 rounded-xl border bg-white px-3 py-2"><Search size={15} className="text-slate-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search student, scholarship or APP ID" className="w-full text-sm outline-none" /></div>
     {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
     <div className="overflow-hidden rounded-2xl border bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="p-4">Application</th><th className="p-4">Student</th><th className="p-4">Scholarship</th><th className="p-4">Status</th><th className="p-4 text-right">Amount</th><th className="p-4">Updated</th></tr></thead>
       <tbody className="divide-y">{rows.map((row) => <tr key={String(row.ApplicationID)}><td className="p-4 font-mono">APP-{String(row.ApplicationID)}</td><td className="p-4 font-semibold">{String(row.StudentName)}</td><td className="p-4">{String(row.ScholarshipName)}</td><td className="p-4">{String(row.Status)}</td><td className="p-4 text-right font-bold">₹{Number(row.ScholarshipAmount ?? 0).toLocaleString('en-IN')}</td><td className="p-4">{new Date(String(row.UpdatedAt)).toLocaleDateString('en-IN')}</td></tr>)}
-        {!rows.length && <tr><td colSpan={6} className="p-10 text-center text-slate-400">No funding decisions yet.</td></tr>}</tbody></table></div>
+        {!rows.length && !loading && <tr><td colSpan={6} className="p-10 text-center text-slate-400">No funding decisions yet.</td></tr>}</tbody></table></div>
+    <DataPagination page={page} limit={limit} total={total} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
   </div>;
 }

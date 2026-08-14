@@ -3,6 +3,8 @@ import {
   createScholarship,
   getAllScholarships,
   getScholarshipById,
+  pauseScholarship,
+  resumeScholarship,
   updateScholarship,
 } from '../services/scholarship.service';
 import {
@@ -18,6 +20,7 @@ import {
   eligibilityRuleSchema,
   updateEligibilityRuleSchema,
   updateScholarshipContentSchema,
+  pauseScholarshipSchema,
 } from '../validators/scholarship.validator';
 import { ValidationError } from '../utils/errors';
 import { parsePage } from '../utils/pagination';
@@ -53,6 +56,9 @@ export async function getAll(req: Request, res: Response, next: NextFunction): P
     const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
     const filters = {
       status: req.query.status as string | undefined,
+      search: String(req.query.search ?? '').trim().slice(0, 120) || undefined,
+      sponsorId: Number(req.query.sponsorId) > 0 ? Number(req.query.sponsorId) : undefined,
+      sort: ['amount', 'deadline'].includes(String(req.query.sort)) ? String(req.query.sort) : undefined,
       page,
       limit,
     };
@@ -75,6 +81,19 @@ export async function update(req: Request, res: Response, next: NextFunction): P
     const data = parseOrThrow(updateScholarshipSchema, req.body);
     const result = await updateScholarship(id, data, requestActor(req));
     sendSuccess(res, result, 'Scholarship updated');
+  } catch (error) { next(error); }
+}
+
+export async function pause(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = parseOrThrow(pauseScholarshipSchema, req.body);
+    sendSuccess(res, await pauseScholarship(Number(req.params.id), data, requestActor(req)), 'Scholarship paused.');
+  } catch (error) { next(error); }
+}
+
+export async function resume(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await resumeScholarship(Number(req.params.id), requestActor(req)), 'Scholarship is live again.');
   } catch (error) { next(error); }
 }
 

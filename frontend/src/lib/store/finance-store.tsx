@@ -10,6 +10,12 @@ type FinanceContext = {
   pending: Payout[]; awaitingChecker: Payout[]; completed: CompletedPayment[];
   failed: FailedPayment[]; audit: AuditEvent[]; loading: boolean; error: string;
   overview: FinanceOverview;
+  pendingTotal: number; awaitingCheckerTotal: number; completedTotal: number; failedTotal: number; auditTotal: number;
+  loadPendingPage: (page: number, limit: number, search?: string) => Promise<void>;
+  loadCheckerPage: (page: number, limit: number, search?: string) => Promise<void>;
+  loadCompletedPage: (page: number, limit: number, search?: string) => Promise<void>;
+  loadFailedPage: (page: number, limit: number, search?: string) => Promise<void>;
+  loadAuditPage: (page: number, limit: number, search?: string) => Promise<void>;
   refresh: () => Promise<void>;
   makerSubmit: (ids: string[], utr: string) => Promise<void>;
   checkerVerify: (id: string, utr: string, notes: string) => Promise<{ ok: boolean }>;
@@ -44,7 +50,7 @@ function mapVerification(row: PendingPaymentRow): Payout {
   };
 }
 
-function mapCompleted(row: Record<string, unknown>): CompletedPayment {
+export function mapCompleted(row: Record<string, unknown>): CompletedPayment {
   return {
     txnId: text(row.ReferenceNo), applicationId: `APP-${text(row.ApplicationID)}`,
     fullName: text(row.StudentName, 'Applicant'), bankName: text(row.BankName), amount: number(row.Amount),
@@ -53,7 +59,7 @@ function mapCompleted(row: Record<string, unknown>): CompletedPayment {
   };
 }
 
-function mapFailed(row: Record<string, unknown>): FailedPayment {
+export function mapFailed(row: Record<string, unknown>): FailedPayment {
   return {
     id: `PAY-${text(row.PaymentID)}`, paymentId: number(row.PaymentID),
     applicationId: `APP-${text(row.ApplicationID)}`, fullName: text(row.StudentName, 'Applicant'),
@@ -64,7 +70,7 @@ function mapFailed(row: Record<string, unknown>): FailedPayment {
   };
 }
 
-function mapAudit(row: Record<string, unknown>): AuditEvent {
+export function mapAudit(row: Record<string, unknown>): AuditEvent {
   return { id: text(row.id), ts: text(row.timestamp), actor: text(row.actor, 'System'),
     role: text(row.role, 'System') as AuditEvent['role'], action: text(row.action),
     target: text(row.target), paymentId: number(row.paymentId) || undefined,
@@ -80,6 +86,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [failed, setFailed] = useState<FailedPayment[]>([]);
   const [audit, setAudit] = useState<AuditEvent[]>([]);
   const [overview, setOverview] = useState<FinanceOverview>(emptyOverview);
+  const [pendingTotal, setPendingTotal] = useState(0); const [awaitingCheckerTotal, setAwaitingCheckerTotal] = useState(0);
+  const [completedTotal, setCompletedTotal] = useState(0); const [failedTotal, setFailedTotal] = useState(0); const [auditTotal, setAuditTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -88,25 +96,48 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     try {
       const financeFunction = authApi.getUser()?.financeFunction;
       const makerQueue = financeFunction === 'Maker'
-        ? financeApi.getPendingInitiation() : Promise.resolve({ data: [] as PaymentQueueRow[] });
+        ? financeApi.getPendingInitiation('page=1&limit=12') : Promise.resolve({ data: { payments: [] as PaymentQueueRow[], pagination: { page: 1, limit: 12, total: 0 } } });
       const checkerQueue = financeFunction === 'Checker'
-        ? financeApi.getPendingVerifications() : Promise.resolve({ data: [] as PendingPaymentRow[] });
+        ? financeApi.getPendingVerifications('page=1&limit=12') : Promise.resolve({ data: { payments: [] as PendingPaymentRow[], pagination: { page: 1, limit: 12, total: 0 } } });
       const [summary, initiation, verification, done, failedRows, auditRows] = await Promise.all([
         financeApi.getOverview(),
         makerQueue, checkerQueue,
-        financeApi.getHistory('completed'), financeApi.getHistory('failed'), financeApi.getAudit(),
+        financeApi.getHistory('completed', 'page=1&limit=12'), financeApi.getHistory('failed', 'page=1&limit=12'), financeApi.getAudit('page=1&limit=12'),
       ]);
       setOverview(summary.data ?? emptyOverview);
-      setPending((initiation.data ?? []).map(mapInitiation));
-      setAwaitingChecker((verification.data ?? []).map(mapVerification));
-      setCompleted((done.data ?? []).map(mapCompleted));
-      setFailed((failedRows.data ?? []).map(mapFailed));
-      setAudit((auditRows.data ?? []).map(mapAudit));
+      setPending((initiation.data?.payments ?? []).map(mapInitiation));
+      setAwaitingChecker((verification.data?.payments ?? []).map(mapVerification));
+      setPendingTotal(initiation.data?.pagination?.total ?? 0); setAwaitingCheckerTotal(verification.data?.pagination?.total ?? 0);
+      setCompleted((done.data?.payments ?? []).map(mapCompleted));
+      setFailed((failedRows.data?.payments ?? []).map(mapFailed));
+      setAudit((auditRows.data?.events ?? []).map(mapAudit));
+      setCompletedTotal(done.data?.pagination?.total ?? 0); setFailedTotal(failedRows.data?.pagination?.total ?? 0); setAuditTotal(auditRows.data?.pagination?.total ?? 0);
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Finance data could not be loaded.'); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  const loadPendingPage = useCallback(async (page: number, limit: number, search = '') => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) params.set('search', search);
+    const response = await financeApi.getPendingInitiation(params.toString()); setPending((response.data?.payments ?? []).map(mapInitiation)); setPendingTotal(response.data?.pagination?.total ?? 0);
+  }, []);
+  const loadCheckerPage = useCallback(async (page: number, limit: number, search = '') => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) params.set('search', search);
+    const response = await financeApi.getPendingVerifications(params.toString()); setAwaitingChecker((response.data?.payments ?? []).map(mapVerification)); setAwaitingCheckerTotal(response.data?.pagination?.total ?? 0);
+  }, []);
+  const loadCompletedPage = useCallback(async (page: number, limit: number, search = '') => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) params.set('search', search);
+    const response = await financeApi.getHistory('completed', params.toString()); setCompleted((response.data?.payments ?? []).map(mapCompleted)); setCompletedTotal(response.data?.pagination?.total ?? 0);
+  }, []);
+  const loadFailedPage = useCallback(async (page: number, limit: number, search = '') => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) params.set('search', search);
+    const response = await financeApi.getHistory('failed', params.toString()); setFailed((response.data?.payments ?? []).map(mapFailed)); setFailedTotal(response.data?.pagination?.total ?? 0);
+  }, []);
+  const loadAuditPage = useCallback(async (page: number, limit: number, search = '') => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) params.set('search', search);
+    const response = await financeApi.getAudit(params.toString()); setAudit((response.data?.events ?? []).map(mapAudit)); setAuditTotal(response.data?.pagination?.total ?? 0);
+  }, []);
 
   const makerSubmit = useCallback(async (ids: string[], utr: string) => {
     if (ids.length !== 1) throw new Error('Each bank UTR can be recorded against exactly one payment.');
@@ -136,9 +167,12 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   }, [awaitingChecker, refresh]);
 
   const value = useMemo<FinanceContext>(() => ({ pending, awaitingChecker, completed, failed,
-    audit, overview, loading, error, refresh, makerSubmit, checkerVerify, checkerCancel,
+    audit, overview, loading, error, pendingTotal, awaitingCheckerTotal, completedTotal, failedTotal, auditTotal,
+    loadPendingPage, loadCheckerPage, loadCompletedPage, loadFailedPage, loadAuditPage,
+    refresh, makerSubmit, checkerVerify, checkerCancel,
   }), [pending, awaitingChecker, completed, failed, audit, overview, loading, error, refresh,
-    makerSubmit, checkerVerify, checkerCancel]);
+    pendingTotal, awaitingCheckerTotal, completedTotal, failedTotal, auditTotal, loadPendingPage, loadCheckerPage,
+    loadCompletedPage, loadFailedPage, loadAuditPage, makerSubmit, checkerVerify, checkerCancel]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

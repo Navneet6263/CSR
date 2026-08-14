@@ -2,6 +2,7 @@ import db from '../config/database';
 import { AuthPayload } from '../types';
 import { decryptPii, maskValue } from '../utils/piiCrypto';
 import { assertApplicationAccess } from './applicationAccess.service';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 function pendingReviewBase(reviewerId: number) {
   return db('Applications as a')
@@ -14,11 +15,19 @@ function pendingReviewBase(reviewerId: number) {
     });
 }
 
-export async function getPendingReviewApplications(reviewerId: number, limit = 50) {
-  return pendingReviewBase(reviewerId)
+export async function getPendingReviewApplications(reviewerId: number, page = 1, limit = 20, search = '') {
+  const query = pendingReviewBase(reviewerId)
     .join('Students as s', 's.StudentID', 'a.StudentID')
     .join('Users as u', 'u.UserID', 's.UserID')
-    .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
+    .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID');
+  if (search.trim()) {
+    const needle = prefixSearchPattern(search);
+    const searchId = numericSearchId(search);
+    query.where((builder) => { builder.where('u.FullName', 'like', needle).orWhere('u.Email', 'like', needle)
+      .orWhere('sc.Name', 'like', needle); if (searchId) builder.orWhere('a.ApplicationID', searchId); });
+  }
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('a.ApplicationID as count').first();
+  const applications = await query
     .select(
       'a.ApplicationID', 'a.Status', 'a.SubmissionDate', 'a.StageEnteredAt', 'a.IsHeldByAdmin',
       'a.AdminHoldReason', 'a.AssignedDocReviewer', 'u.FullName as StudentName',
@@ -31,7 +40,8 @@ export async function getPendingReviewApplications(reviewerId: number, limit = 5
         AND h.ToStatus = 'DocAuditInProgress' ORDER BY h.CreatedAt DESC) AS ReturnedAt`),
     )
     .orderBy([{ column: 'a.SubmissionDate', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
-    .limit(limit);
+    .offset((page - 1) * limit).limit(limit);
+  return { applications, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function getStudentReUploads(studentId: number) {
@@ -79,19 +89,29 @@ export async function getApplicationDocumentDetails(applicationId: number, user:
     docs: await getApplicationDocs(applicationId), returnInstruction: instruction ?? null };
 }
 
-export async function getReviewerLogs(reviewerId: number) {
-  return db('DocumentChecklist as dc')
+export async function getReviewerLogs(reviewerId: number, page = 1, limit = 20, search = '', action = '') {
+  const query = db('DocumentChecklist as dc')
     .join('Applications as a', 'a.ApplicationID', 'dc.ApplicationID')
     .join('Students as s', 's.StudentID', 'a.StudentID')
-    .join('Users as u', 'u.UserID', 's.UserID')
+    .join('Users as u', 'u.UserID', 's.UserID');
+  query.where('dc.ReviewedBy', reviewerId);
+  if (action) query.where('dc.Status', action === 'Approved' ? 'Verified' : action === 'Rejected' ? 'ReUploadRequested' : action);
+  if (search.trim()) {
+    const needle = prefixSearchPattern(search);
+    const searchId = numericSearchId(search);
+    query.where((builder) => { builder.where('u.FullName', 'like', needle).orWhere('dc.DocumentType', 'like', needle);
+      if (searchId) builder.orWhere('a.ApplicationID', searchId); });
+  }
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('dc.ChecklistID as count').first();
+  const logs = await query
     .select(
       'dc.ChecklistID as id', 'dc.Status as action', 'dc.DocumentType as docType',
       'u.FullName as studentName', 'a.ApplicationID as appId',
       'dc.RejectionReason as reason', 'dc.ReviewedAt as timestamp',
     )
-    .where('dc.ReviewedBy', reviewerId)
     .orderBy('dc.ReviewedAt', 'desc')
-    .limit(100);
+    .offset((page - 1) * limit).limit(limit);
+  return { logs, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function getReviewerStats(reviewerId: number) {

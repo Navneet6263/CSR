@@ -1,4 +1,5 @@
 import db from '../config/database';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 import { ConflictError } from '../utils/errors';
 import { writeAudit } from './audit.service';
 import { WorkflowActor, lockApplication } from './workflow.service';
@@ -122,7 +123,7 @@ const pipelineStatuses: Record<PipelineRole, string[]> = {
   csr: ['ScreeningApproved', 'CSRPending'],
 };
 
-export async function getPipelineByRole(role: PipelineRole, page = 1, limit = 25) {
+export async function getPipelineByRole(role: PipelineRole, page = 1, limit = 25, searchTerm = '') {
   const assignmentByRole: Record<PipelineRole, string | null> = {
     reviewer: 'a.AssignedDocReviewer', bgchecker: 'a.AssignedBGOfficer',
     screener: 'a.AssignedScreener', csr: null,
@@ -130,6 +131,13 @@ export async function getPipelineByRole(role: PipelineRole, page = 1, limit = 25
   const base = db('Applications as a').join('Students as s', 'a.StudentID', 's.StudentID')
     .join('Users as u', 's.UserID', 'u.UserID').join('Scholarships as sc', 'a.ScholarshipID', 'sc.ScholarshipID')
     .whereIn('a.Status', pipelineStatuses[role]);
+  const filtered = base.clone();
+  if (searchTerm) {
+    const search = prefixSearchPattern(searchTerm);
+    const searchId = numericSearchId(searchTerm);
+    filtered.where((query) => { query.where('u.FullName', 'like', search).orWhere('sc.Name', 'like', search)
+      .orWhere('a.Status', 'like', search); if (searchId) query.orWhere('a.ApplicationID', searchId); });
+  }
   const assignment = assignmentByRole[role];
   const workloadQuery = assignment
     ? base.clone().select(db.raw(`${assignment} as userId`)).count('* as count')
@@ -137,8 +145,8 @@ export async function getPipelineByRole(role: PipelineRole, page = 1, limit = 25
     : base.clone().select('a.SponsorID as sponsorId').count('* as count')
       .whereNotNull('a.SponsorID').groupBy('a.SponsorID');
   const [count, data, workload] = await Promise.all([
-    base.clone().count('* as count').first(),
-    base.clone().select('a.ApplicationID as applicationId', 'a.Status as status',
+    filtered.clone().count('* as count').first(),
+    filtered.clone().select('a.ApplicationID as applicationId', 'a.Status as status',
       'a.SubmissionDate as submissionDate', 'a.StageEnteredAt as stageEnteredAt',
       'a.ScholarshipAmount as scholarshipAmount',
       'a.IsHeldByAdmin as isHeldByAdmin', 'a.AdminHoldReason as adminHoldReason',

@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Send, ArrowDownAZ, Filter } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Send, ArrowDownAZ, Filter, Search } from "lucide-react";
 import { MakerModal } from "@/components/finance/MakerModal";
 import { inr, daysBetween, type Payout, type Sponsor } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 export default function () {
-  const { pending, overview } = useFinance();
+  const { pending, overview, pendingTotal, loadPendingPage } = useFinance();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [modalRows, setModalRows] = useState<Payout[] | null>(null);
   const [sponsor, setSponsor] = useState<Sponsor | "All">("All");
   const [sortNewest, setSortNewest] = useState(false); // default = oldest first (priority)
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [loading, setLoading] = useState(false);
+  useEffect(() => { setLoading(true); loadPendingPage(page, limit, debouncedQuery).finally(() => setLoading(false)); }, [debouncedQuery, limit, loadPendingPage, page]);
   const sponsors = useMemo<(Sponsor | 'All')[]>(() => ['All', ...Array.from(new Set(pending.map((row) => row.sponsor)))], [pending]);
 
   const rows = useMemo(() => {
@@ -43,7 +47,7 @@ export default function () {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SummaryCard label="Queued" value={String(rows.length)} />
+        <SummaryCard label="Queued" value={String(pendingTotal)} />
         <SummaryCard label="Total amount" value={inr(totalAmount)} />
         <SummaryCard label="Selected" value={String(selected.size)} highlight={selected.size > 0} />
         <SummaryCard label="Batch amount" value={inr(selectedAmount)} highlight={selected.size > 0} />
@@ -77,6 +81,7 @@ export default function () {
           <Send size={14} /> Record UTR ({selected.size})
         </button>
       </div>
+      <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-navy-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search student, sponsor or APP ID" className="w-full rounded-xl border border-navy-100 bg-white py-2 pl-9 pr-3 text-sm outline-none" /></div>
 
       <div className="hidden overflow-x-auto rounded-2xl border border-navy-100 bg-white shadow-sm md:block">
         <table className="min-w-[900px] text-left">
@@ -172,6 +177,7 @@ export default function () {
           <div className="rounded-xl border border-navy-100 bg-white py-10 text-center text-sm text-navy-500">Maker queue cleared. {emptyMessage}</div>
         ) : null}
       </div>
+      <DataPagination page={page} limit={limit} total={pendingTotal} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
 
       {modalRows ? (
         <MakerModal

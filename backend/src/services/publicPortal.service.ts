@@ -2,8 +2,10 @@ import db from '../config/database';
 import { evaluateEligibility, EligibilityRuleRecord } from './eligibilityEvaluator.service';
 import { IStudent } from '../types';
 import { PublicEligibilityInput } from '../validators/public.validator';
+import { resumeDueScholarships } from './scholarship.service';
 
 export async function getPublicPortal() {
+  await resumeDueScholarships();
   const now = new Date();
   const [students, funded, disbursed, sponsors, scholarships, outcomes, announcements] = await Promise.all([
     db('Students').count('* as count').first(),

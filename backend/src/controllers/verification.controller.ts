@@ -16,8 +16,8 @@ function id(value: unknown): number {
 
 export async function getDocsPending(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await documents.getPendingReviewApplications(req.user!.userId, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await documents.getPendingReviewApplications(req.user!.userId, page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -49,8 +49,8 @@ export async function uploadDoc(req: Request, res: Response, next: NextFunction)
 
 export async function getBGChecksPending(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await background.getPendingBGChecks(req.user!.userId, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await background.getPendingBGChecks(req.user!.userId, page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -70,7 +70,11 @@ export async function getAppDocs(req: Request, res: Response, next: NextFunction
 }
 
 export async function getReviewerLogsHandler(req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await documents.getReviewerLogs(req.user!.userId)); } catch (error) { next(error); }
+  try {
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await documents.getReviewerLogs(req.user!.userId, page, limit,
+      String(req.query.search ?? ''), String(req.query.action ?? '')));
+  } catch (error) { next(error); }
 }
 
 export async function getStatsHandler(req: Request, res: Response, next: NextFunction) {
@@ -83,7 +87,11 @@ export async function getBGCheckDetailsHandler(req: Request, res: Response, next
 }
 
 export async function getBGOfficerLogsHandler(req: Request, res: Response, next: NextFunction) {
-  try { sendSuccess(res, await background.getBGOfficerLogs(req.user!.userId)); } catch (error) { next(error); }
+  try {
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await background.getBGOfficerLogs(req.user!.userId, page, limit,
+      String(req.query.search ?? ''), String(req.query.status ?? '')));
+  } catch (error) { next(error); }
 }
 
 export async function getBGOfficerStatsHandler(req: Request, res: Response, next: NextFunction) {

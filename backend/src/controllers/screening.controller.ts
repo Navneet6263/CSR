@@ -15,8 +15,9 @@ function id(value: unknown): number {
 
 export async function getScreeningHistoryHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await screening.getScreeningHistory(req.user!.userId, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await screening.getScreeningHistory(req.user!.userId, page, limit,
+      String(req.query.search ?? ''), String(req.query.decision ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -32,8 +33,8 @@ export async function getConsolidatedHandler(req: Request, res: Response, next: 
 
 export async function getPendingScreeningHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await screening.getPendingScreening(req.user!.userId, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await screening.getPendingScreening(req.user!.userId, page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -48,8 +49,8 @@ export async function submitScreeningDecisionHandler(req: Request, res: Response
 export async function getPendingCSRHandler(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user!.sponsorId) throw new ForbiddenError('CSR account is not linked to a sponsor.');
-    const { limit } = parsePage(undefined, req.query.limit, 50, 100);
-    sendSuccess(res, await screening.getPendingCSR(req.user!.sponsorId, limit));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await screening.getPendingCSR(req.user!.sponsorId, page, limit, String(req.query.search ?? '')));
   } catch (error) { next(error); }
 }
 
@@ -74,7 +75,9 @@ export async function getCsrStatsHandler(req: Request, res: Response, next: Next
 export async function getCsrHistoryHandler(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user!.sponsorId) throw new ForbiddenError('CSR account is not linked to a sponsor.');
-    sendSuccess(res, await getCsrHistory(req.user!.sponsorId));
+    const { page, limit } = parsePage(req.query.page, req.query.limit, 20, 100);
+    sendSuccess(res, await getCsrHistory(req.user!.sponsorId, page, limit,
+      String(req.query.search ?? ''), String(req.query.status ?? '')));
   } catch (error) { next(error); }
 }
 

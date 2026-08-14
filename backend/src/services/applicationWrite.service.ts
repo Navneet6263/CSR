@@ -6,12 +6,14 @@ import { evaluateEligibility, profileFingerprint } from './eligibilityEvaluator.
 import { writeAudit } from './audit.service';
 import { buildSubmissionSnapshot, initializeChecklist } from './applicationSubmission.service';
 import { applicationStudentUserId, queueNotification } from './notification.service';
+import { resumeDueScholarships } from './scholarship.service';
 
 export async function createApplication(
   studentId: number,
   scholarshipId: number,
   actor: WorkflowActor,
 ) {
+  await resumeDueScholarships();
   return db.transaction(async (trx) => {
     const rows = await trx.raw(
       'SELECT * FROM Scholarships WITH (UPDLOCK, ROWLOCK) WHERE ScholarshipID = ?',

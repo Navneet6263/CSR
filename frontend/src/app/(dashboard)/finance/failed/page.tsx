@@ -1,16 +1,21 @@
 "use client";
 
-import { AlertOctagon, RefreshCw, MailCheck } from "lucide-react";
+import { AlertOctagon, RefreshCw, MailCheck, Search } from "lucide-react";
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
 import { inr } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
 import { formatFinanceDate } from "@/lib/financeFormat";
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 
 
 export default function FailedPaymentsPage() {
-  const { failed } = useFinance();
+  const { failed, failedTotal, loadFailedPage } = useFinance();
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [loading, setLoading] = useState(false);
+  useEffect(() => { setLoading(true); loadFailedPage(page, limit, debouncedQuery).finally(() => setLoading(false)); }, [debouncedQuery, limit, loadFailedPage, page]);
   const user = authApi.getUser();
   const total = failed.reduce((s, f) => s + f.amount, 0);
 
@@ -27,7 +32,7 @@ export default function FailedPaymentsPage() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-red-200 bg-red-50 p-4">
           <div className="text-[10px] font-bold uppercase tracking-widest text-red-700">Failed count</div>
-          <div className="mt-1 font-display text-xl font-bold text-navy-900">{failed.length}</div>
+          <div className="mt-1 font-display text-xl font-bold text-navy-900">{failedTotal}</div>
         </div>
         <div className="rounded-xl border border-navy-100 bg-white p-4">
           <div className="text-[10px] font-bold uppercase tracking-widest text-navy-500">Total value</div>
@@ -40,6 +45,7 @@ export default function FailedPaymentsPage() {
           </div>
         </div>
       </div>
+      <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-navy-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search student, sponsor, UTR or APP ID" className="w-full rounded-xl border border-navy-100 bg-white py-2 pl-9 pr-3 text-sm outline-none" /></div>
 
       {failed.length === 0 ? (
         <div className="rounded-2xl border border-navy-100 bg-white py-16 text-center">
@@ -93,6 +99,7 @@ export default function FailedPaymentsPage() {
           ))}
         </div>
       )}
+      <DataPagination page={page} limit={limit} total={failedTotal} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
     </div>
   );
 }

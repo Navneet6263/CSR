@@ -2,6 +2,7 @@ import db from '../config/database';
 import { AuthPayload } from '../types';
 import { assertApplicationAccess } from './applicationAccess.service';
 import { decryptPii, maskValue } from '../utils/piiCrypto';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 function actionableApplications(officerId: number) {
   return db('Applications as a')
@@ -14,11 +15,20 @@ function actionableApplications(officerId: number) {
       AND passed.CheckType IN ('Identity', 'Address', 'IncomeVerification')) < 3`);
 }
 
-export async function getPendingBGChecks(officerId: number, limit = 50) {
-  return actionableApplications(officerId)
+export async function getPendingBGChecks(officerId: number, page = 1, limit = 20, search = '') {
+  const query = actionableApplications(officerId)
     .join('Students as s', 's.StudentID', 'a.StudentID')
     .join('Users as u', 'u.UserID', 's.UserID')
-    .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
+    .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID');
+  if (search.trim()) {
+    const needle = prefixSearchPattern(search);
+    const searchId = numericSearchId(search);
+    query.where((builder) => { builder.where('u.FullName', 'like', needle).orWhere('sc.Name', 'like', needle)
+      .orWhere('s.City', 'like', needle).orWhere('s.State', 'like', needle);
+      if (searchId) builder.orWhere('a.ApplicationID', searchId); });
+  }
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('a.ApplicationID as count').first();
+  const applications = await query
     .select(
       'a.ApplicationID', 'a.Status as ApplicationStatus', 'a.ScholarshipID',
       'a.IsHeldByAdmin', 'a.AdminHoldReason', 'a.AssignedBGOfficer',
@@ -36,7 +46,8 @@ export async function getPendingBGChecks(officerId: number, limit = 50) {
         WHERE inconclusive.ApplicationID = a.ApplicationID AND inconclusive.Result = 'Inconclusive') AS InconclusiveChecks`),
     )
     .orderBy([{ column: 'a.StageEnteredAt', order: 'asc' }, { column: 'a.ApplicationID', order: 'asc' }])
-    .limit(limit);
+    .offset((page - 1) * limit).limit(limit);
+  return { applications, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function getBGCheckDetails(applicationId: number, user: AuthPayload) {
@@ -88,16 +99,27 @@ export async function getBGCheckDetails(applicationId: number, user: AuthPayload
   };
 }
 
-export async function getBGOfficerLogs(officerId: number) {
-  return db('BackgroundChecks as b')
+export async function getBGOfficerLogs(officerId: number, page = 1, limit = 20, search = '', status = '') {
+  const query = db('BackgroundChecks as b')
     .join('Applications as a', 'a.ApplicationID', 'b.ApplicationID')
     .join('Students as s', 's.StudentID', 'a.StudentID')
     .join('Users as u', 'u.UserID', 's.UserID')
-    .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
+    .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID');
+  query.where('b.OfficerID', officerId);
+  if (status && status !== 'All') query.where('b.Result', status);
+  if (search.trim()) {
+    const needle = prefixSearchPattern(search);
+    const searchId = numericSearchId(search);
+    query.where((builder) => { builder.where('u.FullName', 'like', needle).orWhere('sc.Name', 'like', needle)
+      .orWhere('b.CheckType', 'like', needle); if (searchId) builder.orWhere('b.ApplicationID', searchId); });
+  }
+  const totalRow = await query.clone().clearSelect().clearOrder().countDistinct('b.CheckID as count').first();
+  const logs = await query
     .select('b.CheckID as logId', 'b.ApplicationID as appId', 'u.FullName as studentName',
       'sc.Name as scholarshipName', 'b.CheckType as actionType', 'b.Result as status',
       'b.Notes as notes', 'b.EvidenceURL as evidenceUrl', 'b.CompletedAt as timestamp')
-    .where('b.OfficerID', officerId).orderBy('b.CompletedAt', 'desc').limit(100);
+    .orderBy('b.CompletedAt', 'desc').offset((page - 1) * limit).limit(limit);
+  return { logs, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function getBGOfficerStats(officerId: number) {

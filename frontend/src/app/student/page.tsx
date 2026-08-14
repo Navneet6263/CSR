@@ -7,7 +7,7 @@ import { ProgressStepper } from "@/components/student/dashboard/ProgressStepper"
 import { NotificationsFeed } from "@/components/student/dashboard/NotificationsFeed";
 import { ApplicationsTable } from "@/components/student/dashboard/ApplicationsTable";
 import { authApi, applicationApi, notificationApi, scholarshipApi, studentApi } from "@/lib/api";
-import type { DashboardNotification } from '@/types/dashboard';
+import type { DashboardApplication, DashboardNotification } from '@/types/dashboard';
 
 function Skeleton({ h = "h-40" }: { h?: string }) {
   return <div className={`${h} animate-pulse rounded-2xl bg-muted`} />;
@@ -15,7 +15,7 @@ function Skeleton({ h = "h-40" }: { h?: string }) {
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState<any[]>([]);
-  const [recentApps, setRecentApps] = useState<any[]>([]);
+  const [recentApps, setRecentApps] = useState<DashboardApplication[]>([]);
   const [progressSteps, setProgressSteps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentProfileData, setStudentProfileData] = useState<any>(null);
@@ -28,12 +28,13 @@ export default function StudentDashboard() {
       try {
         const u = authApi.getUser();
         const [profRes, appsRes, scholsRes, docsRes, notificationRes] = await Promise.all([
-          studentApi.getProfile(), applicationApi.getMy(),
-          scholarshipApi.getAll('status=Active&limit=100'), studentApi.getDocuments(), notificationApi.list(),
+          studentApi.getProfile(), applicationApi.getMy('page=1&limit=10'),
+          scholarshipApi.getAll('status=Active&page=1&limit=1'), studentApi.getDocuments(), notificationApi.list(),
         ]);
 
-        const apps = appsRes.data || [];
+        const apps = appsRes.data?.applications || [];
         const schols = scholsRes.data?.scholarships || scholsRes.data || [];
+        const openScholarshipCount = Number(scholsRes.data?.pagination?.total ?? (Array.isArray(schols) ? schols.length : 0));
         const prof = profRes.data;
         setNotifications((notificationRes.data ?? []).map((item) => ({ id: String(item.NotificationID),
           title: item.Type.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase()),
@@ -90,7 +91,7 @@ export default function StudentDashboard() {
           { 
             id: "open", 
             label: "Open Scholarships", 
-            value: schols.length.toString(), 
+            value: openScholarshipCount.toString(),
             hint: "Currently accepting applications",
             tone: "neutral" 
           },
@@ -103,11 +104,11 @@ export default function StudentDashboard() {
           },
         ]);
 
-        setRecentApps(apps.slice(0, 10).map((a: any) => {
+        setRecentApps(apps.slice(0, 10).map((a: any): DashboardApplication => {
           const st = a.Status || a.status;
           const amt = a.ScholarshipAmount || a.scholarshipAmount;
           return {
-            id: a.ApplicationID || a.id,
+            id: String(a.applicationId ?? a.ApplicationID ?? a.id ?? ''),
             scholarship: a.ScholarshipName || a.scholarshipName || "",
             appliedOn: new Date(a.CreatedAt || a.createdAt).toLocaleDateString(),
             currentStage: st,
@@ -116,7 +117,7 @@ export default function StudentDashboard() {
               : ['EligibilityFailed', 'ScreeningRejected', 'CSRDeclined', 'Cancelled'].includes(st) ? 'Rejected'
                 : st === 'Draft' ? 'Pending' : 'Under Review'
           };
-        }));
+        }).filter((application) => Boolean(application.id)));
 
         // Setup progress stepper for most recent app
         const lastApp = apps[0];

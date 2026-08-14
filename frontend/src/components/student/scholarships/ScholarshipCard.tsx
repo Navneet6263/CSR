@@ -1,4 +1,4 @@
-import { Calendar, CheckCircle2, IndianRupee, Lock, Sparkles } from "lucide-react";
+import { Calendar, CalendarClock, CheckCircle2, IndianRupee, Lock, PauseCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { MatchResult, Scholarship } from "@/lib/scholarships";
 
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export function ScholarshipCard({ scholarship: s, match }: Props) {
+  const paused = s.status === 'Paused';
   const daysLeft = Math.max(
     0,
     Math.ceil((new Date(s.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
@@ -29,7 +30,7 @@ export function ScholarshipCard({ scholarship: s, match }: Props) {
           <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-accent-foreground">
             {s.category}
           </span>
-          {match.matched && (
+        {match.matched && !paused && (
             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
               <Sparkles className="h-3 w-3" /> {match.score}% match
             </span>
@@ -41,6 +42,14 @@ export function ScholarshipCard({ scholarship: s, match }: Props) {
           </span>
         )}
       </div>
+
+      {paused && (
+        <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 p-3 text-orange-950">
+          <p className="flex items-center gap-1.5 text-xs font-bold"><PauseCircle className="h-4 w-4" />Applications paused</p>
+          <p className="mt-1 text-xs leading-5 text-orange-900/80">{s.pauseReason || 'This program is temporarily under review.'}</p>
+          <p className="mt-1.5 flex items-center gap-1 text-[11px] font-medium"><CalendarClock className="h-3.5 w-3.5" />{s.resumeAt ? `Reopens ${new Date(s.resumeAt).toLocaleString('en-IN')}` : 'Reopening date will be announced'}</p>
+        </div>
+      )}
 
       {s.logoUrl && (
         <div className="mt-3 flex h-12 items-center rounded-xl border border-border bg-white px-3">
@@ -87,7 +96,11 @@ export function ScholarshipCard({ scholarship: s, match }: Props) {
       )}
 
       <div className="mt-5 flex items-center gap-2 border-t border-border pt-4">
-        {match.matched ? (
+        {paused ? (
+          <button type="button" disabled className="flex-1 cursor-not-allowed rounded-full bg-orange-100 px-4 py-2 text-sm font-semibold text-orange-800">
+            Applications paused
+          </button>
+        ) : match.matched ? (
           <Link
             href={`/student/scholarships/${s.id}/apply`}
             className="flex-1 rounded-full bg-primary px-4 py-2 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"

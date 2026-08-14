@@ -2,18 +2,16 @@
 
 import { ArrowUpRight, CheckCircle2, Clock3, MapPin, Search, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ScreeningApplicationRow } from '@/types/domain';
 
 type Filter = 'All' | 'Available' | 'Mine' | 'On hold';
 const filters: Filter[] = ['All', 'Available', 'Mine', 'On hold'];
 
-export function ScreeningQueue({ rows, userId, loading, initialSearch = '' }: {
-  rows: ScreeningApplicationRow[]; userId?: number; loading: boolean; initialSearch?: string;
+export function ScreeningQueue({ rows, userId, loading, query, onQueryChange }: {
+  rows: ScreeningApplicationRow[]; userId?: number; loading: boolean; query: string; onQueryChange: (value: string) => void;
 }) {
-  const [query, setQuery] = useState(initialSearch); const [filter, setFilter] = useState<Filter>('All');
-  useEffect(() => { const update = (event: Event) => setQuery(String((event as CustomEvent).detail ?? ''));
-    window.addEventListener('screener-search', update); return () => window.removeEventListener('screener-search', update); }, []);
+  const [filter, setFilter] = useState<Filter>('All');
   const visible = useMemo(() => rows.filter((row) => {
     const needle = query.trim().toLowerCase();
     const matches = !needle || [row.applicationId, row.studentName, row.scholarshipName, row.sponsorName,
@@ -25,7 +23,7 @@ export function ScreeningQueue({ rows, userId, loading, initialSearch = '' }: {
 
   return <section className="glass-card overflow-hidden">
     <div className="border-b border-border-soft p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] uppercase tracking-[0.25em] text-gold">Priority workload</p><h2 className="mt-1 text-xl font-semibold text-text">Actionable queue</h2></div>
-      <div className="relative w-full sm:w-80"><Search className="absolute left-3 top-2.5 h-4 w-4 text-text-dim" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search APP ID, student or scholarship" className="w-full rounded-lg border border-brand/10 bg-brand/5 py-2 pl-9 pr-3 text-xs text-text outline-none focus:border-brand/40" /></div></div>
+      <div className="relative w-full sm:w-80"><Search className="absolute left-3 top-2.5 h-4 w-4 text-text-dim" /><input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search APP ID, student or scholarship" className="w-full rounded-lg border border-brand/10 bg-brand/5 py-2 pl-9 pr-3 text-xs text-text outline-none focus:border-brand/40" /></div></div>
       <div className="mt-3 flex flex-wrap gap-1.5">{filters.map((item) => <button key={item} onClick={() => setFilter(item)} className={`rounded-md px-2.5 py-1.5 text-[10px] font-semibold ${filter === item ? 'bg-brand text-white' : 'border border-brand/10 bg-brand/5 text-text-muted hover:bg-brand/10'}`}>{item}</button>)}</div></div>
     <div className="min-h-64 divide-y divide-border-soft">{loading ? Array.from({ length: 3 }, (_, index) => <div key={index} className="animate-pulse p-5"><div className="h-4 w-1/3 rounded bg-brand/10" /><div className="mt-3 h-3 w-2/3 rounded bg-brand/5" /></div>) : null}
       {!loading && visible.map((row) => <QueueRow key={row.applicationId} row={row} mine={row.assignedScreenerId === userId} />)}

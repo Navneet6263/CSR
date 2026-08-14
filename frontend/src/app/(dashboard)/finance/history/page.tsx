@@ -1,14 +1,19 @@
 "use client";
 
-import { CheckCircle2, Download, Receipt } from "lucide-react";
+import { CheckCircle2, Download, Receipt, Search } from "lucide-react";
+import { useEffect, useState } from 'react';
 import { inr } from "@/types/finance";
 import { useFinance } from "@/lib/store/finance-store";
 import { formatFinanceDate } from "@/lib/financeFormat";
+import DataPagination from '@/components/shared/DataPagination';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 
 
 export default function () {
-  const { completed } = useFinance();
+  const { completed, completedTotal, loadCompletedPage } = useFinance();
+  const [query, setQuery] = useState(''); const debouncedQuery = useDebouncedValue(query, 160); const [page, setPage] = useState(1); const [limit, setLimit] = useState(12); const [loading, setLoading] = useState(false);
+  useEffect(() => { setLoading(true); loadCompletedPage(page, limit, debouncedQuery).finally(() => setLoading(false)); }, [debouncedQuery, limit, loadCompletedPage, page]);
   const total = completed.reduce((s, r) => s + r.amount, 0);
 
   const exportCsv = () => {
@@ -59,7 +64,7 @@ export default function () {
           <div className="text-[11px] font-bold uppercase tracking-widest text-navy-500">Records</div>
           <h1 className="mt-1 font-display text-2xl font-bold text-navy-900 sm:text-3xl">Transaction History</h1>
           <p className="mt-1 text-xs text-navy-500 sm:text-sm">
-            {completed.length} completed transfers · {inr(total)} disbursed
+            {completedTotal} completed transfers · {inr(total)} on this page
           </p>
         </div>
         <button
@@ -69,6 +74,8 @@ export default function () {
           <Download size={16} /> Export CSV
         </button>
       </div>
+
+      <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-navy-400" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} placeholder="Search student, sponsor, UTR or APP ID" className="w-full rounded-xl border border-navy-100 bg-white py-2 pl-9 pr-3 text-sm outline-none" /></div>
 
       {/* Desktop table */}
       <div className="hidden overflow-x-auto rounded-2xl border border-navy-100 bg-white shadow-sm md:block">
@@ -147,6 +154,7 @@ export default function () {
           </div>
         ))}
       </div>
+      <DataPagination page={page} limit={limit} total={completedTotal} loading={loading} onPageChange={setPage} onLimitChange={(value) => { setLimit(value); setPage(1); }} />
     </div>
   );
 }

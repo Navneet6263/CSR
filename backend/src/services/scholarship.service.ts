@@ -1,11 +1,53 @@
 import db from '../config/database';
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors';
-import { CreateScholarshipInput, UpdateScholarshipInput } from '../validators/scholarship.validator';
+import { CreateScholarshipInput, PauseScholarshipInput, UpdateScholarshipInput } from '../validators/scholarship.validator';
 import { writeAudit } from './audit.service';
 import { WorkflowActor } from './workflow.service';
 import { buildGeneratedScholarshipContent } from './scholarshipContent.service';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
-interface ScholarshipFilters { status?: string; page?: number; limit?: number; }
+interface ScholarshipFilters {
+  status?: string;
+  search?: string;
+  sponsorId?: number;
+  sort?: string;
+  page?: number;
+  limit?: number;
+}
+
+function pauseMessage(name: string, reason: string, resumeAt?: string | Date | null) {
+  const resume = resumeAt
+    ? ` Applications are planned to reopen on ${new Date(resumeAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}.`
+    : ' A reopening date will be announced after the review is complete.';
+  return `${name} has been temporarily paused. ${reason}${resume}`;
+}
+
+export async function resumeDueScholarships(now = new Date()) {
+  const due = await db('Scholarships').select('ScholarshipID').where({ Status: 'Paused' })
+    .whereNotNull('ResumeAt').where('ResumeAt', '<=', now).limit(100);
+  for (const item of due) {
+    await db.transaction(async (trx) => {
+      const scholarship = await trx('Scholarships').where({ ScholarshipID: item.ScholarshipID, Status: 'Paused' })
+        .whereNotNull('ResumeAt').where('ResumeAt', '<=', now).forUpdate().first();
+      if (!scholarship) return;
+      await trx('Scholarships').where({ ScholarshipID: scholarship.ScholarshipID }).update({
+        Status: 'Active', PauseReason: null, PausedAt: null, PausedBy: null, ResumeAt: null,
+        PublishPauseNotice: false, PauseAnnouncementID: null, UpdatedAt: now,
+      });
+      if (scholarship.PauseAnnouncementID) await trx('AdminAnnouncements')
+        .where({ AnnouncementID: scholarship.PauseAnnouncementID }).whereNot({ Status: 'Archived' })
+        .update({ Status: 'Archived', UpdatedAt: now });
+      await trx('Notifications').where({ GroupKey: `scholarship-pause:${scholarship.ScholarshipID}` })
+        .where((query) => query.whereNull('ExpiresAt').orWhere('ExpiresAt', '>', now))
+        .update({ ExpiresAt: now });
+      await writeAudit(trx, { action: 'SCHOLARSHIP_AUTO_RESUMED', entityType: 'Scholarship',
+        entityId: scholarship.ScholarshipID,
+        oldValue: { status: 'Paused', reason: scholarship.PauseReason, resumeAt: scholarship.ResumeAt },
+        newValue: { status: 'Active', resumedAt: now, trigger: 'Scheduled' } });
+    });
+  }
+  return due.length;
+}
 
 async function assertSponsor(sponsorId: number) {
   const sponsor = await db('Sponsors').where({ SponsorID: sponsorId, Status: 'Active' }).first();
@@ -57,6 +99,7 @@ export async function createScholarship(data: CreateScholarshipInput, actor: Wor
 }
 
 export async function getAllScholarships(filters: ScholarshipFilters = {}) {
+  await resumeDueScholarships();
   const page = filters.page ?? 1;
   const limit = filters.limit ?? 20;
   const query = db('Scholarships as s').join('Sponsors as sp', 'sp.SponsorID', 's.SponsorID')
@@ -66,11 +109,24 @@ export async function getAllScholarships(filters: ScholarshipFilters = {}) {
       '(SELECT COUNT(1) FROM Applications a WHERE a.ScholarshipID = s.ScholarshipID AND a.Status <> ?) as ApplicantCount',
       ['Cancelled'],
     ));
-  if (filters.status) query.where('s.Status', filters.status);
+  if (filters.status) {
+    const statuses = filters.status.split(',').map((value) => value.trim())
+      .filter((value) => ['Active', 'Paused', 'Inactive', 'Closed'].includes(value));
+    if (statuses.length) query.whereIn('s.Status', statuses);
+  }
+  if (filters.sponsorId) query.where('s.SponsorID', filters.sponsorId);
+  if (filters.search) {
+    const search = prefixSearchPattern(filters.search);
+    const searchId = numericSearchId(filters.search);
+    query.where((builder) => { builder.where('s.Name', 'like', search).orWhere('sp.SponsorName', 'like', search);
+      if (searchId) builder.orWhere('s.ScholarshipID', searchId); });
+  }
+  const order = filters.sort === 'amount'
+    ? [{ column: 's.PerStudentAmount', order: 'desc' as const }, { column: 's.ScholarshipID', order: 'asc' as const }]
+    : [{ column: 's.ApplicationCloseDate', order: 'asc' as const }, { column: 's.ScholarshipID', order: 'asc' as const }];
   const [total, scholarships] = await Promise.all([
     query.clone().clearSelect().count('* as count').first(),
-    query.orderBy([{ column: 's.ApplicationCloseDate', order: 'asc' }, { column: 's.ScholarshipID', order: 'asc' }])
-      .limit(limit).offset((page - 1) * limit),
+    query.orderBy(order).limit(limit).offset((page - 1) * limit),
   ]);
   return { scholarships: scholarships.map((row) => ({ ...row,
     SponsorLogoURL: row.HasSponsorLogo ? `/api/v1/scholarships/${row.ScholarshipID}/logo` : null })),
@@ -78,6 +134,7 @@ export async function getAllScholarships(filters: ScholarshipFilters = {}) {
 }
 
 export async function getScholarshipById(id: number) {
+  await resumeDueScholarships();
   const scholarship = await db('Scholarships as s').join('Sponsors as sp', 'sp.SponsorID', 's.SponsorID')
     .leftJoin('ScholarshipContents as content', 'content.ScholarshipID', 's.ScholarshipID')
     .select('s.*', 'sp.SponsorName', 'content.ReviewStatus as ContentStatus', 'content.PublishedJSON',
@@ -93,9 +150,15 @@ export async function getScholarshipById(id: number) {
 }
 
 export async function updateScholarship(id: number, data: UpdateScholarshipInput, actor: WorkflowActor) {
-  return db.transaction(async (trx) => {
+  await db.transaction(async (trx) => {
     const existing = await trx('Scholarships').where({ ScholarshipID: id }).first();
     if (!existing) throw new NotFoundError('Scholarship not found.');
+    if (existing.Status === 'Active' && data.status === 'Inactive') {
+      throw new ConflictError('Use the pause workflow so a reason, resume plan, and audit record are captured.');
+    }
+    if (existing.Status === 'Paused' && data.status === 'Active') {
+      throw new ConflictError('Use the resume action to make a paused scholarship live.');
+    }
     const hasApplications = await trx('Applications').where({ ScholarshipID: id }).whereNot('Status', 'Draft').first();
     if (hasApplications && ['sponsorId', 'perStudentAmount', 'totalBudget'].some((field) => field in data)) {
       throw new ConflictError('Financial scholarship fields cannot change after applications are submitted.');
@@ -124,6 +187,66 @@ export async function updateScholarship(id: number, data: UpdateScholarshipInput
     }
     await writeAudit(trx, { userId: actor.userId, action: 'SCHOLARSHIP_UPDATED', entityType: 'Scholarship',
       entityId: id, oldValue: existing, newValue: payload, requestId: actor.requestId, ipAddress: actor.ipAddress });
-    return getScholarshipById(id);
   });
+  return getScholarshipById(id);
+}
+
+export async function pauseScholarship(id: number, data: PauseScholarshipInput, actor: WorkflowActor) {
+  await db.transaction(async (trx) => {
+    const scholarship = await trx('Scholarships').where({ ScholarshipID: id }).forUpdate().first();
+    if (!scholarship) throw new NotFoundError('Scholarship not found.');
+    if (scholarship.Status !== 'Active') throw new ConflictError('Only an active scholarship can be paused.');
+    const now = new Date();
+    let announcementId: number | null = null;
+    if (data.publishNotice) {
+      const message = pauseMessage(scholarship.Name, data.reason, data.resumeAt);
+      const inserted = await trx('AdminAnnouncements').insert({
+        Title: `${scholarship.Name} temporarily paused`,
+        Message: message,
+        Audience: 'Students', Status: 'Published', CreatedBy: actor.userId,
+        PublishedAt: now, ExpiresAt: data.resumeAt ? new Date(data.resumeAt) : null,
+      }).returning('AnnouncementID');
+      announcementId = Number(inserted[0]?.AnnouncementID ?? inserted[0]);
+      const payload = JSON.stringify({ scholarshipId: id, status: 'Paused', resumeAt: data.resumeAt ?? null });
+      await trx.raw(`INSERT INTO Notifications
+        (UserID, Type, Channel, Message, Payload, IsSent, RetryCount, NextAttemptAt, Priority,
+         RequiresAction, ActionURL, GroupKey, ExpiresAt)
+        SELECT u.UserID, 'SCHOLARSHIP_PAUSED', 'InApp', ?, ?, 0, 0, SYSUTCDATETIME(), 'Normal',
+          0, ?, ?, ?
+        FROM Users u WHERE u.Role = 'Student' AND u.IsActive = 1`, [message, payload,
+        `/student/scholarships/${id}`, `scholarship-pause:${id}`, data.resumeAt ? new Date(data.resumeAt) : null]);
+    }
+    const values = { Status: 'Paused', PauseReason: data.reason, PausedAt: now, PausedBy: actor.userId,
+      ResumeAt: data.resumeAt ? new Date(data.resumeAt) : null, PublishPauseNotice: data.publishNotice,
+      PauseAnnouncementID: announcementId, UpdatedAt: now };
+    await trx('Scholarships').where({ ScholarshipID: id }).update(values);
+    await writeAudit(trx, { userId: actor.userId, action: 'SCHOLARSHIP_PAUSED', entityType: 'Scholarship', entityId: id,
+      oldValue: { status: scholarship.Status }, newValue: { status: 'Paused', reason: data.reason,
+        resumeAt: data.resumeAt ?? null, publicNotice: data.publishNotice, announcementId },
+      requestId: actor.requestId, ipAddress: actor.ipAddress });
+  });
+  return getScholarshipById(id);
+}
+
+export async function resumeScholarship(id: number, actor: WorkflowActor) {
+  await db.transaction(async (trx) => {
+    const scholarship = await trx('Scholarships').where({ ScholarshipID: id }).forUpdate().first();
+    if (!scholarship) throw new NotFoundError('Scholarship not found.');
+    if (scholarship.Status !== 'Paused') throw new ConflictError('Only a paused scholarship can be resumed.');
+    const now = new Date();
+    await trx('Scholarships').where({ ScholarshipID: id }).update({ Status: 'Active', PauseReason: null,
+      PausedAt: null, PausedBy: null, ResumeAt: null, PublishPauseNotice: false,
+      PauseAnnouncementID: null, UpdatedAt: now });
+    if (scholarship.PauseAnnouncementID) await trx('AdminAnnouncements')
+      .where({ AnnouncementID: scholarship.PauseAnnouncementID }).whereNot({ Status: 'Archived' })
+      .update({ Status: 'Archived', UpdatedAt: now });
+    await trx('Notifications').where({ GroupKey: `scholarship-pause:${id}` })
+      .where((query) => query.whereNull('ExpiresAt').orWhere('ExpiresAt', '>', now))
+      .update({ ExpiresAt: now });
+    await writeAudit(trx, { userId: actor.userId, action: 'SCHOLARSHIP_RESUMED', entityType: 'Scholarship', entityId: id,
+      oldValue: { status: 'Paused', reason: scholarship.PauseReason, resumeAt: scholarship.ResumeAt,
+        publicNotice: Boolean(scholarship.PublishPauseNotice) }, newValue: { status: 'Active', resumedAt: now },
+      requestId: actor.requestId, ipAddress: actor.ipAddress });
+  });
+  return getScholarshipById(id);
 }

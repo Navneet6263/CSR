@@ -11,7 +11,7 @@ export default function LiveUpdates() {
   const [items, setItems] = useState<AuditEventView[]>([]);
   useEffect(() => {
     let active = true;
-    adminApi.getAuditEvents().then((response) => active && setItems((response.data ?? []).slice(0, 6).map(mapAuditEvent))).catch(() => setItems([]));
+    adminApi.getAuditEvents('page=1&limit=6').then((response) => active && setItems((response.data?.events ?? []).map(mapAuditEvent))).catch(() => setItems([]));
     return () => { active = false; };
   }, []);
   return <div className="px-3 pb-3 pt-3"><div className="flex items-center gap-2 px-2.5 pb-1.5"><Radio className="h-[14px] w-[14px] text-slate-500" />

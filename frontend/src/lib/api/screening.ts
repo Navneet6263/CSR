@@ -6,19 +6,21 @@ import { mapScreeningApp, mapCSRApp } from '@/lib/mappers';
 import { apiClient } from './client';
 import type { ScreenerStats, ScreeningDecisionRequest, ScreeningDetail } from '@/types/screening';
 
+type ApplicationPage<T> = { applications: T[]; pagination: { page: number; limit: number; total: number } };
+
 export const screeningApi = {
   getStats: async () => {
     return await apiClient<ScreenerStats>('/screening/stats');
   },
 
-  getPendingScreening: async () => {
-    const res = await apiClient<Record<string, unknown>[]>('/screening/pending');
-    return { ...res, data: (res.data || []).map(mapScreeningApp) as ScreeningApplicationRow[] };
+  getPendingScreening: async (params = '') => {
+    const res = await apiClient<ApplicationPage<Record<string, unknown>>>(`/screening/pending${params ? `?${params}` : ''}`);
+    return { ...res, data: { applications: (res.data?.applications || []).map(mapScreeningApp) as ScreeningApplicationRow[], pagination: res.data?.pagination } };
   },
 
-  getHistory: async () => {
-    const res = await apiClient<Record<string, unknown>[]>('/screening/history');
-    return { ...res, data: (res.data || []).map(mapScreeningApp) as ScreeningApplicationRow[] };
+  getHistory: async (params = '') => {
+    const res = await apiClient<ApplicationPage<Record<string, unknown>>>(`/screening/history${params ? `?${params}` : ''}`);
+    return { ...res, data: { applications: (res.data?.applications || []).map(mapScreeningApp) as ScreeningApplicationRow[], pagination: res.data?.pagination } };
   },
 
   getConsolidated: async (id: number) => {
@@ -37,12 +39,12 @@ export const screeningApi = {
   submitScreening: (id: number, data: ScreeningPayload) =>
     apiClient(`/screening/${id}/decision`, { method: 'POST', body: JSON.stringify(data) }),
 
-  getPendingCSR: async () => {
-    const res = await apiClient<Record<string, unknown>[]>('/screening/csr/pending');
-    return { ...res, data: (res.data || []).map(mapCSRApp) as CSRApplicationRow[] };
+  getPendingCSR: async (params = '') => {
+    const res = await apiClient<ApplicationPage<Record<string, unknown>>>(`/screening/csr/pending${params ? `?${params}` : ''}`);
+    return { ...res, data: { applications: (res.data?.applications || []).map(mapCSRApp) as CSRApplicationRow[], pagination: res.data?.pagination } };
   },
   getCSRStats: () => apiClient<Record<string, unknown>>('/screening/csr/stats'),
-  getCSRHistory: () => apiClient<Record<string, unknown>[]>('/screening/csr/history'),
+  getCSRHistory: (params = '') => apiClient<ApplicationPage<Record<string, unknown>>>(`/screening/csr/history${params ? `?${params}` : ''}`),
   getCSRApplication: (id: number) => apiClient<Record<string, unknown>>(`/screening/csr/${id}`),
 
   submitCSR: (id: number, data: CSRPayload) =>

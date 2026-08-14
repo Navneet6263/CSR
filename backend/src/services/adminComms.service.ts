@@ -4,6 +4,7 @@ import { NotFoundError } from '../utils/errors';
 import { AnnouncementInput, BroadcastInput } from '../validators/adminComms.validator';
 import { WorkflowActor } from './workflow.service';
 import { writeAudit } from './audit.service';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 const broadcastWhere: Record<BroadcastInput['audience'], string> = {
   AllStudents: "u.Role = 'Student'",
@@ -21,9 +22,22 @@ async function insertNotifications(trx: Knex.Transaction, where: string, type: s
   return Number(Array.isArray(count) ? count[0]?.count ?? 0 : 0);
 }
 
-export function listAnnouncements() {
-  return db('AdminAnnouncements as a').leftJoin('Users as u', 'u.UserID', 'a.CreatedBy')
-    .select('a.*', 'u.FullName as CreatedByName').whereNot('a.Status', 'Archived').orderBy('a.CreatedAt', 'desc').limit(100);
+export async function listAnnouncements(page = 1, limit = 12, search = '') {
+  const query = db('AdminAnnouncements as a').leftJoin('Users as u', 'u.UserID', 'a.CreatedBy').whereNot('a.Status', 'Archived');
+  if (search.trim()) { const needle = prefixSearchPattern(search); query.where('a.Title', 'like', needle); }
+  const [totalRow, facets, announcements] = await Promise.all([
+    query.clone().countDistinct('a.AnnouncementID as count').first(),
+    db('AdminAnnouncements').whereNot('Status', 'Archived').select(
+      db.raw("SUM(CASE WHEN Status = 'Draft' THEN 1 ELSE 0 END) AS draft"),
+      db.raw("SUM(CASE WHEN Status = 'Published' AND ExpiresAt IS NOT NULL AND ExpiresAt <= SYSUTCDATETIME() THEN 1 ELSE 0 END) AS expired"),
+      db.raw("SUM(CASE WHEN Status = 'Published' AND (ExpiresAt IS NULL OR ExpiresAt > SYSUTCDATETIME()) AND Audience <> 'Staff' THEN 1 ELSE 0 END) AS live"),
+    ).first(),
+    query.clone().select('a.*', 'u.FullName as CreatedByName')
+      .orderByRaw("CASE WHEN a.Status='Published' AND (a.ExpiresAt IS NULL OR a.ExpiresAt > SYSUTCDATETIME()) AND a.Audience <> 'Staff' THEN 0 WHEN a.Status='Draft' THEN 1 ELSE 2 END")
+      .orderBy('a.CreatedAt', 'desc').offset((page - 1) * limit).limit(limit),
+  ]);
+  return { announcements, pagination: { page, limit, total: Number(totalRow?.count ?? 0) },
+    facets: { live: Number(facets?.live ?? 0), draft: Number(facets?.draft ?? 0), expired: Number(facets?.expired ?? 0) } };
 }
 
 export async function createAnnouncement(input: AnnouncementInput, actor: WorkflowActor) {
@@ -76,9 +90,14 @@ export async function archiveAnnouncement(id: number, actor: WorkflowActor) {
   });
 }
 
-export function listBroadcasts() {
-  return db('AdminBroadcasts as b').leftJoin('Users as u', 'u.UserID', 'b.CreatedBy')
-    .select('b.*', 'u.FullName as CreatedByName').orderBy('b.CreatedAt', 'desc').limit(50);
+export async function listBroadcasts(page = 1, limit = 12, search = '') {
+  const query = db('AdminBroadcasts as b').leftJoin('Users as u', 'u.UserID', 'b.CreatedBy');
+  if (search.trim()) { const needle = prefixSearchPattern(search); query.where((builder) => builder.where('b.Title', 'like', needle)
+    .orWhere('b.Audience', 'like', needle)); }
+  const totalRow = await query.clone().countDistinct('b.BroadcastID as count').first();
+  const broadcasts = await query.select('b.*', 'u.FullName as CreatedByName').orderBy('b.CreatedAt', 'desc')
+    .offset((page - 1) * limit).limit(limit);
+  return { broadcasts, pagination: { page, limit, total: Number(totalRow?.count ?? 0) } };
 }
 
 export async function sendBroadcast(input: BroadcastInput, actor: WorkflowActor) {
@@ -93,11 +112,27 @@ export async function sendBroadcast(input: BroadcastInput, actor: WorkflowActor)
   });
 }
 
-export function listSupportTickets() {
-  return db('SupportTickets as t').join('Users as u', 'u.UserID', 't.UserID')
-    .leftJoin('Students as st', 'st.UserID', 'u.UserID').leftJoin('Users as assignee', 'assignee.UserID', 't.AssignedTo')
-    .select('t.*', 'u.FullName as RequesterName', 'u.Email as RequesterEmail', 'st.State', 'assignee.FullName as AssigneeName')
-    .orderBy([{ column: 't.Status', order: 'asc' }, { column: 't.CreatedAt', order: 'asc' }]).limit(200);
+export async function listSupportTickets(page = 1, limit = 12, search = '', status = '', state = '') {
+  const query = db('SupportTickets as t').join('Users as u', 'u.UserID', 't.UserID')
+    .leftJoin('Students as st', 'st.UserID', 'u.UserID').leftJoin('Users as assignee', 'assignee.UserID', 't.AssignedTo');
+  if (status && status !== 'all') query.where('t.Status', status);
+  if (state && state !== 'All') query.whereRaw("COALESCE(st.State, 'Unspecified') = ?", [state]);
+  if (search.trim()) { const needle = prefixSearchPattern(search); const searchId = numericSearchId(search);
+    query.where((builder) => { builder.where('t.Subject', 'like', needle).orWhere('u.FullName', 'like', needle);
+      if (searchId) builder.orWhere('t.TicketID', searchId); }); }
+  const [totalRow, totals, states, tickets] = await Promise.all([
+    query.clone().countDistinct('t.TicketID as count').first(),
+    db('SupportTickets').select(db.raw("SUM(CASE WHEN Status='Open' THEN 1 ELSE 0 END) AS openCount"),
+      db.raw("SUM(CASE WHEN Status='InProgress' THEN 1 ELSE 0 END) AS progressCount"),
+      db.raw("SUM(CASE WHEN Status='Resolved' THEN 1 ELSE 0 END) AS resolvedCount"),
+      db.raw("SUM(CASE WHEN Priority='Urgent' AND Status<>'Resolved' THEN 1 ELSE 0 END) AS urgentCount")).first(),
+    db('Students').select(db.raw("COALESCE(State, 'Unspecified') AS state")).whereNotNull('UserID').groupBy('State').orderBy('State'),
+    query.clone().select('t.*', 'u.FullName as RequesterName', 'u.Email as RequesterEmail', 'st.State', 'assignee.FullName as AssigneeName')
+      .orderBy([{ column: 't.Status', order: 'asc' }, { column: 't.CreatedAt', order: 'asc' }]).offset((page - 1) * limit).limit(limit),
+  ]);
+  return { tickets, pagination: { page, limit, total: Number(totalRow?.count ?? 0) },
+    facets: { open: Number(totals?.openCount ?? 0), progress: Number(totals?.progressCount ?? 0),
+      resolved: Number(totals?.resolvedCount ?? 0), urgent: Number(totals?.urgentCount ?? 0), states: states.map((item) => item.state) } };
 }
 
 export async function updateTicket(id: number, status: string, actor: WorkflowActor) {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildContentFromText, buildGeneratedScholarshipContent } from '../src/services/scholarshipContent.service';
-import { scholarshipContentSchema } from '../src/validators/scholarship.validator';
+import { pauseScholarshipSchema, scholarshipContentSchema } from '../src/validators/scholarship.validator';
 
 const context = {
   ScholarshipID: 10, Name: 'Future Leaders Scholarship', Description: 'Support for promising students from underserved communities.',
@@ -39,4 +39,16 @@ test('uploaded text headings replace generated sections while retaining safe def
   assert.ok(content.benefits.some((item) => item.includes('Tuition support')));
   assert.ok(content.requiredDocuments.some((item) => item.includes('Identity proof')));
   assert.ok(content.applicationSteps.length > 0);
+});
+
+test('scholarship pause requires a reason and accepts an optional future resume date', () => {
+  assert.equal(pauseScholarshipSchema.safeParse({ reason: 'short', publishNotice: true }).success, false);
+  assert.equal(pauseScholarshipSchema.safeParse({
+    reason: 'Sponsor requested a temporary eligibility review.',
+    resumeAt: new Date(Date.now() + 86_400_000).toISOString(), publishNotice: true,
+  }).success, true);
+  assert.equal(pauseScholarshipSchema.safeParse({
+    reason: 'Sponsor requested a temporary eligibility review.',
+    resumeAt: new Date(Date.now() - 86_400_000).toISOString(), publishNotice: false,
+  }).success, false);
 });

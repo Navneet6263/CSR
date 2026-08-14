@@ -136,6 +136,10 @@ export interface Scholarship {
   status: string;
   sponsorLogoURL?: string;
   contentStatus?: string;
+  pauseReason?: string;
+  pausedAt?: string;
+  resumeAt?: string;
+  publishPauseNotice?: boolean;
   publishedContent?: ScholarshipStructuredContent | null;
 }
 

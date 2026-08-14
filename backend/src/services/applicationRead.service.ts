@@ -1,6 +1,7 @@
 import db from '../config/database';
 import { AuthPayload } from '../types';
 import { assertApplicationAccess } from './applicationAccess.service';
+import { numericSearchId, prefixSearchPattern } from '../utils/searchPattern';
 
 export async function getApplicationById(id: number, user: AuthPayload) {
   await assertApplicationAccess(id, user);
@@ -53,13 +54,31 @@ export async function getApplicationById(id: number, user: AuthPayload) {
     EligibilitySnapshot: parseJson(application.EligibilitySnapshot), documentChecklist, statusHistory };
 }
 
-export async function getStudentApplications(studentId: number) {
-  return db('Applications as a')
+export async function getStudentApplications(studentId: number, filters: { page?: number; limit?: number; search?: string; bucket?: string } = {}) {
+  const page = filters.page ?? 1; const limit = filters.limit ?? 10;
+  const query = db('Applications as a')
     .join('Scholarships as sc', 'sc.ScholarshipID', 'a.ScholarshipID')
     .select('a.*', 'sc.Name as ScholarshipName')
-    .where('a.StudentID', studentId)
-    .orderBy('a.CreatedAt', 'desc')
-    .limit(100);
+    .where('a.StudentID', studentId);
+  const buckets: Record<string, string[]> = {
+    Pending: ['Draft'], Funded: ['PaymentCompleted'],
+    Rejected: ['EligibilityFailed', 'ScreeningRejected', 'CSRDeclined', 'Cancelled', 'PaymentFailed'],
+    'Under Review': ['Submitted', 'AutoMatched', 'DocAuditInProgress', 'DocAuditComplete', 'BGCheckInProgress',
+      'BGCheckComplete', 'ScreeningPending', 'ScreeningApproved', 'CSRPending', 'CSRApproved', 'PaymentPending', 'PaymentInitiated'],
+  };
+  if (filters.bucket && buckets[filters.bucket]) query.whereIn('a.Status', buckets[filters.bucket]);
+  if (filters.search) {
+    const search = prefixSearchPattern(filters.search);
+    const searchId = numericSearchId(filters.search);
+    query.where((builder) => { builder.where('sc.Name', 'like', search);
+      if (searchId) builder.orWhere('a.ApplicationID', searchId); });
+  }
+  const [total, applications] = await Promise.all([
+    query.clone().clearSelect().count('* as count').first(),
+    query.orderBy([{ column: 'a.CreatedAt', order: 'desc' }, { column: 'a.ApplicationID', order: 'desc' }])
+      .limit(limit).offset((page - 1) * limit),
+  ]);
+  return { applications, pagination: { page, limit, total: Number(total?.count ?? 0) } };
 }
 
 interface ApplicationFilters {
@@ -80,10 +99,12 @@ export async function getAllApplications(filters: ApplicationFilters = {}) {
   if (filters.status) query.where('a.Status', filters.status);
   if (filters.scholarshipId) query.where('a.ScholarshipID', filters.scholarshipId);
 
-  const total = await query.clone().clearSelect().count('* as count').first();
-  const applications = await query
-    .orderBy([{ column: 'a.CreatedAt', order: 'desc' }, { column: 'a.ApplicationID', order: 'desc' }])
-    .limit(limit)
-    .offset((page - 1) * limit);
-  return { applications, pagination: { page, limit, total: Number(total?.count ?? 0) } };
+  const [total, applications, funnel] = await Promise.all([
+    query.clone().clearSelect().count('* as count').first(),
+    query.orderBy([{ column: 'a.CreatedAt', order: 'desc' }, { column: 'a.ApplicationID', order: 'desc' }])
+      .limit(limit).offset((page - 1) * limit),
+    db('Applications').select('Status').count('* as count').groupBy('Status'),
+  ]);
+  const statusCounts = Object.fromEntries(funnel.map((row) => [String(row.Status), Number(row.count)]));
+  return { applications, pagination: { page, limit, total: Number(total?.count ?? 0) }, statusCounts };
 }

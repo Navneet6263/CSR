@@ -1,17 +1,23 @@
 import db from '../config/database';
 import { IStudent } from '../types';
 import { EligibilityRuleRecord, evaluateEligibility } from './eligibilityEvaluator.service';
+import { resumeDueScholarships } from './scholarship.service';
 
-export async function matchStudentToScholarships(studentId: number) {
+export async function matchStudentToScholarships(studentId: number, onlyScholarshipIds?: number[]) {
+  await resumeDueScholarships();
   const student = await db<IStudent>('Students').where({ StudentID: studentId }).first();
   if (!student) return { matched: [], failed: [] };
 
   const now = new Date();
-  const scholarships = await db('Scholarships')
+  const query = db('Scholarships')
     .where({ Status: 'Active' })
     .where('ApplicationOpenDate', '<=', now)
-    .where('ApplicationCloseDate', '>=', now)
-    .select('ScholarshipID', 'Name');
+    .where('ApplicationCloseDate', '>=', now);
+  if (onlyScholarshipIds) {
+    if (!onlyScholarshipIds.length) return { matched: [], failed: [] };
+    query.whereIn('ScholarshipID', onlyScholarshipIds);
+  }
+  const scholarships = await query.select('ScholarshipID', 'Name');
   if (!scholarships.length) return { matched: [], failed: [] };
 
   const scholarshipIds = scholarships.map((item) => item.ScholarshipID);
